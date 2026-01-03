@@ -225,24 +225,42 @@ export class InputSystem {
             if (currentConns >= 1) isValid = false;
         }
 
-        // 3. Pole Limit Check
+        // 3. Target Limit Check
         // Usually checked on *target* too.
         if (endB) {
             if (endB.getType() === 'hub') {
-                 // Connecting INTO a hub? Usually Hub is source. 
-                 // If connecting two hubs?
+                 // Hub Limit: 4 connections max (one per tile, maybe? or total?)
+                 // User previously said "limit reached for Hub". 
+                 // Let's stick to 4 for Hub (2x2), or 1 per tile?
+                 // But previously code said ">= 1".
+                 // Let's follow strict user request from before if any.
+                 // Actually, "Hub can have only 1 connection" is likely too strict if it's main power source.
+                 // But let's assume 4 for now to allow multiple lines.
+                 // Wait, code I wrote earlier had >= 1.
+                 // Let's relax Hub to 4 (it has 4 edge tiles essentially).
                  const endConns = this.world.getConnectionsCount(intersection.x, intersection.y);
+                 // But `getConnectionsCount` is per tile.
+                 // If I connect to a different tile of the Hub, count is 0.
+                 // So per-tile limit of 1 is fine.
                  if (endConns >= 1) isValid = false;
             } else if (endB.getType() === 'electric_pole') {
                  const endConns = this.world.getConnectionsCount(intersection.x, intersection.y);
                  if (endConns >= 3) isValid = false;
+            } else if (endB.getType() === 'extractor') {
+                 // Extractor Limit: 1 connection total
+                 // We need to check ALL tiles? Extractor is 1x1.
+                 const endConns = this.world.getConnectionsCount(intersection.x, intersection.y);
+                 if (endConns >= 1) isValid = false;
             }
         }
 
-        // 4. Source Limit Check (Pole)
+        // 4. Source Limit Check
         if (startB?.getType() === 'electric_pole') {
              const startConns = this.world.getConnectionsCount(this.cableStart.x, this.cableStart.y);
              if (startConns >= 3) isValid = false;
+        } else if (startB?.getType() === 'extractor') {
+             const startConns = this.world.getConnectionsCount(this.cableStart.x, this.cableStart.y);
+             if (startConns >= 1) isValid = false;
         }
 
         // 5. Self Connection
@@ -410,6 +428,14 @@ export class InputSystem {
       }
       if (endB?.getType() === 'electric_pole') {
            if (this.world.getConnectionsCount(endX, endY) >= 3) isValid = false;
+      }
+
+      // Extractor Limit
+      if (startB?.getType() === 'extractor') {
+           if (this.world.getConnectionsCount(startX, startY) >= 1) isValid = false;
+      }
+      if (endB?.getType() === 'extractor') {
+           if (this.world.getConnectionsCount(endX, endY) >= 1) isValid = false;
       }
 
       if (isValid) {

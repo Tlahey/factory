@@ -18,6 +18,14 @@ export abstract class BuildingEntity extends Entity {
 
   public powerConfig?: PowerConfig;
   public powerStatus: 'active' | 'warn' | 'idle' = 'idle'; // 'warn' = no power
+  
+  // Real-time tracking for UI
+  public currentPowerDraw: number = 0;
+  public currentPowerSatisfied: number = 0;
+  public currentGridId: number = -1;
+  public hasPowerSource: boolean = false; // Connected to at least one producer?
+  
+  public hasDemand: boolean = true; // By default true, can be toggled by logic (e.g. idle/blocked)
 
   constructor(x: number, y: number, buildingType: string, direction: 'north' | 'south' | 'east' | 'west' = 'north') {
     super(x, y, 'building');

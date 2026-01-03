@@ -1,12 +1,14 @@
 
 import { World } from '../core/World';
 import { BuildingEntity } from '../entities/BuildingEntity';
+import { Hub } from '../buildings/hub/Hub';
 
 interface PowerGrid {
     id: number;
     producers: BuildingEntity[];
     consumers: BuildingEntity[];
-    batteries: BuildingEntity[]; // Future proofing
+    nodes: BuildingEntity[]; // All connected buildings including relays
+    batteries: BuildingEntity[]; 
     totalGen: number;
     totalDemand: number;
     satisfaction: number; // 0..1
@@ -15,30 +17,47 @@ interface PowerGrid {
 export class PowerSystem {
     private world: World;
     private grids: PowerGrid[] = [];
+    private historyTimer: number = 0;
 
     constructor(world: World) {
         this.world = world;
     }
 
     public update(delta: number): void {
-        // 1. Rebuild Grids logic (optimally, only when network changes, but for now every N frames or dirty flag)
-        // For simplicity in this phase, we might just assume the network is static unless a cable/building is placed.
-        // But we need to recalculate *values* every tick (or less often).
-        
-        // Let's rely on a dirty flag in World or just re-eval periodically.
-        // For the MVP, we can re-scan connectivity if we assume small scale. 
-        // Better: World tells us when connections change.
-        
+        // Re-calculate values every frame to handle dynamic consumption/production changes
+        // (e.g. if we add day/night later, or if machines stop working for other reasons)
         this.recalculatePower();
+
+        // Update History every 1 second
+        this.historyTimer += delta;
+        if (this.historyTimer >= 1.0) {
+            this.historyTimer = 0;
+            this.updateHistory();
+        }
+    }
+
+    private updateHistory(): void {
+        const now = Date.now();
+        this.grids.forEach(grid => {
+            // Push history to all producers (Hubs) in this grid
+            grid.producers.forEach(p => {
+                if (p instanceof Hub) {
+                    p.statsHistory.push({
+                        time: now,
+                        production: grid.totalGen,
+                        consumption: grid.totalDemand
+                    });
+                    
+                    // Keep last 60 seconds
+                    if (p.statsHistory.length > 60) {
+                        p.statsHistory.shift();
+                    }
+                }
+            });
+        });
     }
 
     public recalculatePower(): void {
-        // Reset all buildings to 'warn' (no power) if consumer
-        // This is expensive to do every frame. We should only do this when topology changes.
-        // However, we need to update 'satisfaction' every frame if generation varies (solar).
-        
-        // For now, let's assume we reconstructed grids.
-        
         this.grids.forEach(grid => {
             grid.totalGen = 0;
             grid.totalDemand = 0;
@@ -46,15 +65,25 @@ export class PowerSystem {
             // 1. Calculate Generation
             grid.producers.forEach(b => {
                if (b.powerConfig) {
-                   // Variable generation logic could go here or in Building
                    grid.totalGen += b.powerConfig.rate; 
+                   // Update entity visual state
+                   b.currentPowerSatisfied = b.powerConfig.rate; 
+                   b.currentGridId = grid.id;
                }
             });
 
             // 2. Calculate Demand
             grid.consumers.forEach(b => {
                 if (b.powerConfig) {
-                    grid.totalDemand += b.powerConfig.rate;
+                    // Only count if building *needs* power (is trying to work)
+                    if (b.hasDemand) {
+                        grid.totalDemand += b.powerConfig.rate;
+                        b.currentPowerDraw = b.powerConfig.rate;
+                    } else {
+                        // Consumes nothing
+                        b.currentPowerDraw = 0;
+                    }
+                    b.currentGridId = grid.id;
                 }
             });
 
@@ -62,22 +91,29 @@ export class PowerSystem {
             if (grid.totalDemand === 0) {
                 grid.satisfaction = 1;
             } else {
-                grid.satisfaction = Math.min(1, grid.totalGen / grid.totalDemand);
+                if (grid.totalGen >= grid.totalDemand) {
+                    grid.satisfaction = 1;
+                } else {
+                    grid.satisfaction = Math.max(0, grid.totalGen / grid.totalDemand);
+                }
             }
 
-            // 4. Update Status
-            grid.consumers.forEach(b => {
-                // If satisfaction < 1, maybe still work but slow? Or stop?
-                // User said: "Si elles ont pas assez l'électricité, elle passent en état "warn" (orange) et ne fonctionnent plus."
-                // So strict cutoff? Or usually threshold?
-                // "warn" typically means 0 power or low power.
-                // Let's say if satisfaction < 1, it's a warning state, but maybe we allow partial?
-                // User: "ne fonctionnent plus" -> strict.
+            // 4. Update Status for ALL nodes
+            // Tolerance for floating point errors or tiny fluctuations (0.999 instead of 1.0)
+            const status = grid.satisfaction >= 0.99 ? 'active' : 'warn';
+            const hasSource = grid.producers.length > 0;
+
+            grid.nodes.forEach(b => {
+                b.powerStatus = status;
+                b.hasPowerSource = hasSource;
                 
-                if (grid.totalGen >= grid.totalDemand) {
-                    b.powerStatus = 'active';
-                } else {
-                    b.powerStatus = 'warn';
+                // Consumers calculate specific satisfied amount
+                if (b.powerConfig?.type === 'consumer') {
+                    b.currentPowerSatisfied = b.currentPowerDraw * grid.satisfaction;
+                }
+                // Producers always active (unless fuel logic added later)
+                if (b.powerConfig?.type === 'producer') {
+                    b.powerStatus = 'active'; 
                 }
             });
         });
@@ -107,8 +143,6 @@ export class PowerSystem {
         this.world.buildings.forEach((b, key) => {
              if (b.powerConfig) {
                  powerNodes.set(key, b);
-             } else {
-                 // Reset status for non-power buildings just in case (though they shouldn't have one)
              }
         });
 
@@ -117,13 +151,14 @@ export class PowerSystem {
 
         powerNodes.forEach((startNode, startKey) => {
             if (visited.has(startKey)) return;
-            if (processedBuildings.has(startNode)) return; // Already processed via another key
+            if (processedBuildings.has(startNode)) return; 
 
             // Start new Grid
             const grid: PowerGrid = {
                 id: this.grids.length + 1,
                 producers: [],
                 consumers: [],
+                nodes: [],
                 batteries: [],
                 totalGen: 0,
                 totalDemand: 0,
@@ -131,56 +166,47 @@ export class PowerSystem {
             };
 
             const queue: string[] = [startKey];
-            // visited.add(startKey); // Will be added in loop
 
             while (queue.length > 0) {
                 const currKey = queue.shift()!;
                 if (visited.has(currKey)) continue;
                 visited.add(currKey);
 
-                const node = this.world.getBuilding(parseInt(currKey.split(',')[0]), parseInt(currKey.split(',')[1]));
+                const [cx, cy] = currKey.split(',').map(Number);
+                const node = this.world.getBuilding(cx, cy);
                 
                 if (node) {
                     // Check if entire building processed
                     if (!processedBuildings.has(node)) {
                         processedBuildings.add(node);
+                        grid.nodes.push(node); // Add to general nodes list
+
                         if (node.powerConfig?.type === 'producer') grid.producers.push(node);
                         else if (node.powerConfig?.type === 'consumer') grid.consumers.push(node);
                         
-                        // Add ALL tiles of this building to visited/queue logic? 
-                        // We must explore neighbors of ALL its tiles.
+                        // Add neighbors of ALL tiles of this building
                         for (let dx = 0; dx < (node.width || 1); dx++) {
                             for (let dy = 0; dy < (node.height || 1); dy++) {
                                 const tKey = `${node.x + dx},${node.y + dy}`;
-                                // Ensure we process this tile key if we haven't visited it yet (though handled by loop below)
-                                // But crucially, we must get 'adj' from it.
-                                
-                                // Actually, if we just push to queue, the loop top 'visited' check handles it.
-                                // We push ALL neighbors of ALL tiles.
                                 const tileNeighbors = adj.get(tKey) || [];
                                 queue.push(...tileNeighbors);
-                                
-                                // Also mark this tile as visited to avoid redundant processing?
                                 visited.add(tKey); 
                             }
                         }
-                    } else {
-                        // Already processed, but we might be at a new tile of the same building.
-                        // We still need to explore neighbors of THIS tile if not explored?
-                        // The block above explores ALL neighbors of ALL tiles once.
-                        // So we are good.
-                    }
+                    } 
                 } else {
-                    // Just a node (cable point)
+                    // Cable point
                     const neighbors = adj.get(currKey) || [];
                     queue.push(...neighbors);
                 }
             }
 
-            this.grids.push(grid);
+            // Only add grid if it has at least one building
+            if (grid.nodes.length > 0) {
+                this.grids.push(grid);
+            }
         });
 
-        // Recalculate immediately
         this.recalculatePower();
         console.log(`PowerSystem: Rebuilt ${this.grids.length} grids.`);
     }

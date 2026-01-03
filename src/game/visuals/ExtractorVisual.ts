@@ -32,13 +32,21 @@ export class ExtractorVisual implements VisualEntity {
       
       // Update Status Light
       const statusMat = this.statusLight.material as THREE.MeshBasicMaterial;
-      if (entity.active) {
-          statusMat.color.setHex(0x00ff00);
-          // Gently pulse when active
-          this.statusLight.scale.setScalar(1.0 + Math.sin(time * 10) * 0.2);
-      } else {
-          statusMat.color.setHex(0xff0000);
+      // 3-State Logic
+      // 1. Not Linked (No Power Source) -> RED
+      if (!entity.hasPowerSource) {
+          statusMat.color.setHex(0xff0000); 
           this.statusLight.scale.setScalar(1.0);
+      }
+      // 2. Linked but Low Energy OR Linked & Full Energy but Idle -> ORANGE
+      else if (entity.powerStatus === 'warn' || !entity.active) {
+          statusMat.color.setHex(0xffaa00);
+          this.statusLight.scale.setScalar(1.0);
+      }
+      // 3. Linked & Active -> GREEN
+      else {
+          statusMat.color.setHex(0x00ff00);
+          this.statusLight.scale.setScalar(1.0 + Math.sin(time * 10) * 0.2);
       }
 
       if (!entity.active) return;

@@ -26,7 +26,7 @@ export default function BuildingInfoPanel() {
             const b = (window as any).game?.world.getBuilding(x, y);
             setBuilding(b);
             forceUpdate(n => n + 1);
-        }, 100);
+        }, 33);
 
         return () => clearInterval(interval);
     }, [openedEntityKey]);
@@ -229,10 +229,36 @@ export default function BuildingInfoPanel() {
                             <div className="space-y-6 py-2">
                                 <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
                                     <div className="flex items-center gap-3 mb-4">
-                                        <div className={`w-3 h-3 rounded-full animate-pulse ${building.active ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]'}`} />
-                                        <span className="text-sm font-bold tracking-tight text-white/90">
-                                            {building.active ? 'OPERATIONAL' : 'SYSTEM STOPPED'}
-                                        </span>
+                                        {(() => {
+                                            let status = 'IDLE';
+                                            let color = 'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]'; // Orange/Yellow
+
+                                            // 1. Not Linked
+                                            if (!building.hasPowerSource) {
+                                                status = 'NO POWER SOURCE';
+                                                color = 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]';
+                                            }
+                                            // 2. Active
+                                            else if (building.active) {
+                                                status = 'OPERATIONAL';
+                                                color = 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]';
+                                            }
+                                            // 3. Linked but Warn OR Idle
+                                            else {
+                                                // Could distinguish Low Power vs Idle text if desired, but User grouped them as Orange.
+                                                status = building.powerStatus === 'warn' ? 'LOW POWER' : 'IDLE';
+                                                color = 'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]';
+                                            }
+
+                                            return (
+                                                <>
+                                                    <div className={`w-3 h-3 rounded-full animate-pulse ${color}`} />
+                                                    <span className="text-sm font-bold tracking-tight text-white/90">
+                                                        {status}
+                                                    </span>
+                                                </>
+                                            );
+                                        })()}
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
@@ -249,6 +275,14 @@ export default function BuildingInfoPanel() {
                                                 <Box size={10} className="text-blue-500" /> Output
                                             </div>
                                             <div className="text-lg font-mono font-bold text-white capitalize">Stone</div>
+                                        </div>
+                                        <div className="col-span-2 p-3 bg-black/20 rounded-lg border border-white/5 flex justify-between items-center">
+                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
+                                                <Zap size={10} className="text-red-500" /> Energy Consumption
+                                            </div>
+                                            <div className="text-lg font-mono font-bold text-red-400">
+                                                {parseFloat(String(building.powerConfig?.rate || 0)).toFixed(2)} <span className="text-[10px] text-gray-500">kW</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -273,7 +307,115 @@ export default function BuildingInfoPanel() {
                             </div>
                         )}
 
-                        {!isChest && !(building instanceof Extractor) && (
+                        {!isChest && building.getType() === 'hub' && (
+                            <div className="space-y-6 py-2">
+                                <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse" />
+                                        <span className="text-sm font-bold tracking-tight text-white/90">
+                                            MAIN GENERATOR
+                                        </span>
+                                    </div>
+
+                                    {/* Stats Grid */}
+                                    <div className="grid grid-cols-2 gap-4 mb-4">
+                                        <div className="p-3 bg-black/20 rounded-lg border border-white/5">
+                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+                                                <Zap size={10} className="text-green-500" /> Production
+                                            </div>
+                                            <div className="text-lg font-mono font-bold text-green-400">
+                                                {(building.statsHistory && building.statsHistory.length > 0)
+                                                    ? building.statsHistory[building.statsHistory.length - 1].production.toFixed(2)
+                                                    : (building.powerConfig.rate).toFixed(2)}
+                                                <span className="text-[10px] text-gray-500 ml-1">kW</span>
+                                            </div>
+                                        </div>
+                                        <div className="p-3 bg-black/20 rounded-lg border border-white/5">
+                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+                                                <Zap size={10} className="text-red-500" /> Consumption
+                                            </div>
+                                            <div className="text-lg font-mono font-bold text-red-400">
+                                                {(building.statsHistory && building.statsHistory.length > 0)
+                                                    ? building.statsHistory[building.statsHistory.length - 1].consumption.toFixed(2)
+                                                    : (0).toFixed(2)}
+                                                <span className="text-[10px] text-gray-500 ml-1">kW</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Graph */}
+                                    <div className="h-32 bg-black/40 rounded border border-white/10 relative overflow-hidden">
+                                        {/* Grid lines */}
+                                        <div className="absolute inset-0 flex flex-col justify-between opacity-10 pointer-events-none p-2">
+                                            <div className="w-full h-px bg-white"></div>
+                                            <div className="w-full h-px bg-white"></div>
+                                            <div className="w-full h-px bg-white"></div>
+                                        </div>
+
+                                        {(() => {
+                                            const history = building.statsHistory || [];
+                                            if (history.length < 2) return <div className="text-xs text-gray-600 flex items-center justify-center h-full">Gathering Data...</div>;
+
+                                            const maxVal = Math.max(
+                                                10, // Minimum scale
+                                                ...history.map((h: any) => Math.max(h.production, h.consumption))
+                                            ) * 1.1;
+
+                                            const width = 100; // Use percentage for width coords to simplify
+                                            const height = 100;
+
+                                            // Create points
+                                            const createPoints = (key: 'production' | 'consumption') => {
+                                                return history.map((pt: any, i: number) => {
+                                                    const x = (i / (history.length - 1)) * width;
+                                                    const y = height - (pt[key] / maxVal) * height;
+                                                    return `${x},${y}`;
+                                                }).join(' ');
+                                            };
+
+                                            return (
+                                                <>
+                                                    <svg className="w-full h-full p-2" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                                        {/* Consumption Line (Red) */}
+                                                        <polyline
+                                                            points={createPoints('consumption')}
+                                                            fill="none"
+                                                            stroke="rgba(239, 68, 68, 0.8)"
+                                                            strokeWidth="2"
+                                                            vectorEffect="non-scaling-stroke"
+                                                        />
+                                                        {/* Production Line (Green) */}
+                                                        <polyline
+                                                            points={createPoints('production')}
+                                                            fill="none"
+                                                            stroke="rgba(74, 222, 128, 0.8)"
+                                                            strokeWidth="2"
+                                                            vectorEffect="non-scaling-stroke"
+                                                        />
+                                                    </svg>
+                                                    {/* Y-Axis Labels */}
+                                                    <div className="absolute top-1 left-1 text-[9px] font-mono text-gray-500 bg-black/50 px-1 rounded">
+                                                        {maxVal.toFixed(2)} kW
+                                                    </div>
+                                                    <div className="absolute top-1/2 left-1 text-[9px] font-mono text-gray-500 bg-black/50 px-1 rounded -translate-y-1/2">
+                                                        {(maxVal / 2).toFixed(2)} kW
+                                                    </div>
+                                                    <div className="absolute bottom-1 left-1 text-[9px] font-mono text-gray-500 bg-black/50 px-1 rounded">
+                                                        0.00 kW
+                                                    </div>
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
+                                    <div className="flex justify-between px-1 mt-1">
+                                        <span className="text-[9px] text-gray-600 font-mono">60s ago</span>
+                                        <span className="text-[9px] text-gray-600 font-mono">Now</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {!isChest && !(building instanceof Extractor) && building.getType() !== 'hub' && (
                             <div className="flex items-center justify-center h-full text-gray-500 text-sm italic py-8 text-center uppercase tracking-widest opacity-50">
                                 No statistics available
                             </div>

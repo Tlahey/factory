@@ -80,4 +80,15 @@ export class CableVisual {
     public hidePreview() {
         this.previewMesh.visible = false;
     }
+
+    public highlightCable(cable: {x1: number, y1: number, x2: number, y2: number} | null, world: any) {
+        if (!cable) {
+            this.hidePreview();
+            return;
+        }
+
+        this.showPreview({x: cable.x1, y: cable.y1}, {x: cable.x2, y: cable.y2}, false, world);
+        // Force color to distinct Red if showPreview logic varies? 
+        // showPreview uses 'isValid' boolean for color. False = Red. So passing false works.
+    }
 }

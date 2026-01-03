@@ -122,6 +122,25 @@ export class ConveyorVisual implements VisualEntity {
       }
   }
 
+  public setHighlight(active: boolean): void {
+      this.mesh.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+              if (active) {
+                   if (!child.userData.originalEmissive) {
+                       child.userData.originalEmissive = (child.material as THREE.MeshLambertMaterial).emissive?.clone() || new THREE.Color(0,0,0);
+                   }
+                   (child.material as THREE.MeshLambertMaterial).emissive.setHex(0xff0000);
+                   (child.material as THREE.MeshLambertMaterial).emissiveIntensity = 0.5;
+              } else {
+                   if (child.userData.originalEmissive) {
+                       (child.material as THREE.MeshLambertMaterial).emissive.copy(child.userData.originalEmissive);
+                       (child.material as THREE.MeshLambertMaterial).emissiveIntensity = 0;
+                   }
+              }
+          }
+      });
+  }
+
   public dispose(): void {
       // Dispose textures/materials
       if (this.beltMaterial && this.beltMaterial.map) {

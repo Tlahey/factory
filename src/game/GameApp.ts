@@ -122,8 +122,25 @@ export class GameApp {
              this.placementVisuals.update(end.x, end.y, isValid, null);
         } else {
              this.cableVisuals.hidePreview();
-             // Hide cursor
+            // Hide cursor
              this.placementVisuals.update(-1, -1);
+        }
+    }, (target) => {
+        // Reset all highlights first
+        this.visuals.forEach(v => {
+            if (v.setHighlight) v.setHighlight(false);
+        });
+        this.cableVisuals.highlightCable(null, this.world);
+
+        if (target) {
+            if (target.type === 'cable' && target.cable) {
+                 this.cableVisuals.highlightCable(target.cable, this.world);
+            } else if (target.type === 'building' && target.id) {
+                 const visual = this.visuals.get(target.id);
+                 if (visual && visual.setHighlight) {
+                     visual.setHighlight(true);
+                 }
+            }
         }
     });
 

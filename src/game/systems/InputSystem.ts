@@ -12,6 +12,7 @@ export class InputSystem {
   private onWorldChange?: () => void;
   private onHover?: (x: number, y: number, isValid?: boolean, ghostBuilding?: string | null) => void;
   private onCableDrag?: (start: {x: number, y: number} | null, end: {x: number, y: number} | null, isValid: boolean) => void;
+  private onDeleteHover?: (target: {type: 'cable' | 'building', id: string, x?: number, y?: number, cable?: any} | null) => void;
 
   // Camera Controls
   private isDragging = false;
@@ -21,13 +22,15 @@ export class InputSystem {
   constructor(domElement: HTMLElement, camera: THREE.PerspectiveCamera, world: World, 
               onWorldChange?: () => void, 
               onHover?: (x: number, y: number, isValid?: boolean, ghostBuilding?: string | null) => void,
-              onCableDrag?: (start: {x: number, y: number} | null, end: {x: number, y: number} | null, isValid: boolean) => void) {
+              onCableDrag?: (start: {x: number, y: number} | null, end: {x: number, y: number} | null, isValid: boolean) => void,
+              onDeleteHover?: (target: {type: 'cable' | 'building', id: string, x?: number, y?: number, cable?: any} | null) => void) {
     this.domElement = domElement;
     this.camera = camera;
     this.world = world;
     this.onWorldChange = onWorldChange;
     this.onHover = onHover;
     this.onCableDrag = onCableDrag;
+    this.onDeleteHover = onDeleteHover;
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
 
@@ -251,21 +254,62 @@ export class InputSystem {
     } else {
         // Standard Hover
         if (this.onHover) {
-            if (intersection) {
-                const { selectedBuilding } = useGameStore.getState();
-                let isValid = true;
-                let ghost = null;
+             const { selectedBuilding } = useGameStore.getState();
+             let isValid = true;
+             let ghost = null;
 
-                if (selectedBuilding && selectedBuilding !== 'delete' && selectedBuilding !== 'select' && selectedBuilding !== 'cable') {
-                    isValid = this.world.canPlaceBuilding(intersection.x, intersection.y, selectedBuilding);
-                    ghost = selectedBuilding;
-                }
-                this.onHover(intersection.x, intersection.y, isValid, ghost);
-            } else {
-                 this.onHover(-1, -1);
-            }
+             if (intersection) {
+                 if (selectedBuilding === 'delete') {
+                     // Check for Building
+                     const building = this.world.getBuilding(intersection.x, intersection.y);
+                     
+                     // Check for Cable (Raycast Logic)
+                     const rect = this.domElement.getBoundingClientRect();
+                     const mx = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                     const my = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                     this.raycaster.setFromCamera(new THREE.Vector2(mx, my), this.camera);
+                     const target = new THREE.Vector3();
+                     const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0.5);
+                     
+                     let hoveredCable: any = null;
+                     if (this.raycaster.ray.intersectPlane(plane, target)) {
+                         const cables = this.world.cables;
+                         const THRESHOLD = 0.5; 
+                         for (const c of cables) {
+                             const dist = this.distToSegment(target.x, target.z, c.x1, c.y1, c.x2, c.y2);
+                             if (dist < THRESHOLD) {
+                                 hoveredCable = c;
+                                 break;
+                             }
+                         }
+                     }
+
+                     if (this.onDeleteHover) {
+                         if (hoveredCable) {
+                             this.onDeleteHover({ type: 'cable', id: 'cable', cable: hoveredCable });
+                         } else if (building) {
+                             this.onDeleteHover({ type: 'building', id: `${building.x},${building.y}`, x: building.x, y: building.y });
+                         } else {
+                             this.onDeleteHover(null);
+                         }
+                     }
+                     
+                     this.onHover(intersection.x, intersection.y, true, 'delete'); 
+                 } else if (selectedBuilding && selectedBuilding !== 'select' && selectedBuilding !== 'cable') {
+                     isValid = this.world.canPlaceBuilding(intersection.x, intersection.y, selectedBuilding);
+                     ghost = selectedBuilding;
+                     this.onHover(intersection.x, intersection.y, isValid, ghost);
+                 } else {
+                      this.onHover(intersection.x, intersection.y, true, null);
+                      if (this.onDeleteHover) this.onDeleteHover(null); 
+                 }
+             } else {
+                  this.onHover(-1, -1);
+                  if (this.onDeleteHover) this.onDeleteHover(null);
+             }
         }
     }
+
 
 
     // 2. Camera Drag Logic (Only if NOT dragging cable)

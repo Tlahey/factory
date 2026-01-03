@@ -227,8 +227,22 @@ export class World {
       const type = b.getType();
       this.updateConveyorNetwork();
       useGameStore.getState().updateBuildingCount(type, -1);
+
+      // Remove connected cables
+      this.cables = this.cables.filter(c => {
+          // Check if cable connects to any tile of the building
+          const connectedToStart = c.x1 >= b.x && c.x1 < b.x + b.width && c.y1 >= b.y && c.y1 < b.y + b.height;
+          const connectedToEnd = c.x2 >= b.x && c.x2 < b.x + b.width && c.y2 >= b.y && c.y2 < b.y + b.height;
+          return !connectedToStart && !connectedToEnd;
+      });
       
       return true;
+  }
+
+  public getConnectionsCount(x: number, y: number): number {
+      return this.cables.filter(c => 
+          (c.x1 === x && c.y1 === y) || (c.x2 === x && c.y2 === y)
+      ).length;
   }
 
   public getBuilding(x: number, y: number): BuildingEntity | undefined {

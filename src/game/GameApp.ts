@@ -115,6 +115,16 @@ export class GameApp {
         this.powerSystem.rebuildNetworks();
     }, (x, y, isValid, ghostBuilding) => {
         this.placementVisuals.update(x, y, isValid, ghostBuilding); // DELEGATED
+    }, (start, end, isValid) => {
+        if (start && end) {
+             this.cableVisuals.showPreview(start, end, isValid, this.world);
+             // Show cursor at target
+             this.placementVisuals.update(end.x, end.y, isValid, null);
+        } else {
+             this.cableVisuals.hidePreview();
+             // Hide cursor
+             this.placementVisuals.update(-1, -1);
+        }
     });
 
     const originalPlace = this.world.placeBuilding.bind(this.world);

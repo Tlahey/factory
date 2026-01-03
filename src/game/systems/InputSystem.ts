@@ -11,18 +11,23 @@ export class InputSystem {
   private mouse: THREE.Vector2;
   private onWorldChange?: () => void;
   private onHover?: (x: number, y: number, isValid?: boolean, ghostBuilding?: string | null) => void;
+  private onCableDrag?: (start: {x: number, y: number} | null, end: {x: number, y: number} | null, isValid: boolean) => void;
 
   // Camera Controls
   private isDragging = false;
   private previousMousePosition = { x: 0, y: 0 };
   private currentRotation: 'north' | 'south' | 'east' | 'west' = 'north';
 
-  constructor(domElement: HTMLElement, camera: THREE.PerspectiveCamera, world: World, onWorldChange?: () => void, onHover?: (x: number, y: number, isValid?: boolean, ghostBuilding?: string | null) => void) {
+  constructor(domElement: HTMLElement, camera: THREE.PerspectiveCamera, world: World, 
+              onWorldChange?: () => void, 
+              onHover?: (x: number, y: number, isValid?: boolean, ghostBuilding?: string | null) => void,
+              onCableDrag?: (start: {x: number, y: number} | null, end: {x: number, y: number} | null, isValid: boolean) => void) {
     this.domElement = domElement;
     this.camera = camera;
     this.world = world;
     this.onWorldChange = onWorldChange;
     this.onHover = onHover;
+    this.onCableDrag = onCableDrag;
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
 
@@ -46,8 +51,6 @@ export class InputSystem {
             this.targetElevation = state.cameraElevation;
             // Do NOT snap. Let update() smooth it.
         }
-        
-        // ViewMode (Preset) handled by Store Update in GameApp/UI
     });
     
     // Initial sync
@@ -83,8 +86,7 @@ export class InputSystem {
   
   // Cable State
   private cableStart: { x: number, y: number } | null = null;
-  
-  // ...
+  private isDraggingCable = false;
 
   private setupInteractions() {
     this.domElement.addEventListener('pointerdown', this.onPointerDown.bind(this));
@@ -95,7 +97,7 @@ export class InputSystem {
     // Add key listener
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            this.cableStart = null;
+            this.cancelCableDrag();
             // Also clear selection?
             // useGameStore.getState().setSelectedBuilding(null);
         }
@@ -161,11 +163,29 @@ export class InputSystem {
 
   private onPointerDown(event: PointerEvent) {
     if (event.button === 0) { // Left Click
-        this.isDragging = true;
-        this.previousMousePosition = { x: event.clientX, y: event.clientY };
         this.mouseDownPosition = { x: event.clientX, y: event.clientY };
         
+        // Potential Start of Cable Drag?
+        const { selectedBuilding } = useGameStore.getState();
+        if (selectedBuilding === 'cable') {
+            const intersection = this.getIntersection(event);
+            if (intersection) {
+                const building = this.world.getBuilding(intersection.x, intersection.y);
+                if (building && building.powerConfig) {
+                    // Start Cable Drag
+                    this.cableStart = { x: intersection.x, y: intersection.y };
+                    this.isDraggingCable = true;
+                    // Do not prevent dragging camera yet, wait for move?
+                    // Usually we want to block camera drag if dragging item.
+                    return; 
+                }
+            }
+        }
+
+        this.isDragging = true;
+        this.previousMousePosition = { x: event.clientX, y: event.clientY };
         this.isRotating = event.ctrlKey || event.metaKey;
+
     } else if (event.button === 1) { // Middle Click
         this.isDragging = true;
         this.isRotating = true;
@@ -174,31 +194,82 @@ export class InputSystem {
   }
 
   private onPointerMove(event: PointerEvent) {
-    // 1. Hover Check (Always run this to update UI/Cursor)
+    // 1. Hover/Drag Visuals
     const intersection = this.getIntersection(event);
-    if (this.onHover) {
-        if (intersection) {
-            const { selectedBuilding } = useGameStore.getState();
-            let isValid = true;
-            let ghost = null;
 
-            if (selectedBuilding && selectedBuilding !== 'delete' && selectedBuilding !== 'select') {
-                isValid = this.world.canPlaceBuilding(intersection.x, intersection.y, selectedBuilding);
-                ghost = selectedBuilding;
-            } else if (selectedBuilding === 'delete') {
-                 // Delete mode logic if needed
-            } else if (selectedBuilding === 'select') {
-                // Select mode logic (highlight?)
+    if (this.isDraggingCable && this.cableStart && intersection) {
+        // Validation Logic
+        const dx = intersection.x - this.cableStart.x;
+        const dy = intersection.y - this.cableStart.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        
+        const startB = this.world.getBuilding(this.cableStart.x, this.cableStart.y);
+        const endB = this.world.getBuilding(intersection.x, intersection.y);
+
+        let isValid = true;
+        
+        // 1. Distance Check
+        const range = startB?.powerConfig?.range || 8; 
+        if (dist > range) isValid = false;
+
+        // 2. Hub Limit Check
+        if (startB?.getType() === 'hub') {
+            // Already checked on start? No, we check connections now.
+            // Hub can only have 1 connection.
+            // Current Connections + 1 (new) <= 1 ?
+            // Actually, we need to check if we are *adding* a connection.
+            const currentConns = this.world.getConnectionsCount(this.cableStart.x, this.cableStart.y);
+            if (currentConns >= 1) isValid = false;
+        }
+
+        // 3. Pole Limit Check
+        // Usually checked on *target* too.
+        if (endB) {
+            if (endB.getType() === 'hub') {
+                 // Connecting INTO a hub? Usually Hub is source. 
+                 // If connecting two hubs?
+                 const endConns = this.world.getConnectionsCount(intersection.x, intersection.y);
+                 if (endConns >= 1) isValid = false;
+            } else if (endB.getType() === 'electric_pole') {
+                 const endConns = this.world.getConnectionsCount(intersection.x, intersection.y);
+                 if (endConns >= 3) isValid = false;
             }
-            
-            this.onHover(intersection.x, intersection.y, isValid, ghost);
-        } else {
-             this.onHover(-1, -1);
+        }
+
+        // 4. Source Limit Check (Pole)
+        if (startB?.getType() === 'electric_pole') {
+             const startConns = this.world.getConnectionsCount(this.cableStart.x, this.cableStart.y);
+             if (startConns >= 3) isValid = false;
+        }
+
+        // 5. Self Connection
+        if (dist === 0) isValid = false;
+
+        if (this.onCableDrag) {
+            this.onCableDrag(this.cableStart, {x: intersection.x, y: intersection.y}, isValid);
+        }
+    } else {
+        // Standard Hover
+        if (this.onHover) {
+            if (intersection) {
+                const { selectedBuilding } = useGameStore.getState();
+                let isValid = true;
+                let ghost = null;
+
+                if (selectedBuilding && selectedBuilding !== 'delete' && selectedBuilding !== 'select' && selectedBuilding !== 'cable') {
+                    isValid = this.world.canPlaceBuilding(intersection.x, intersection.y, selectedBuilding);
+                    ghost = selectedBuilding;
+                }
+                this.onHover(intersection.x, intersection.y, isValid, ghost);
+            } else {
+                 this.onHover(-1, -1);
+            }
         }
     }
 
-    // 2. Drag Logic
-    if (this.isDragging) {
+
+    // 2. Camera Drag Logic (Only if NOT dragging cable)
+    if (this.isDragging && !this.isDraggingCable) {
         const deltaX = event.clientX - this.previousMousePosition.x;
         const deltaY = event.clientY - this.previousMousePosition.y;
 
@@ -214,7 +285,7 @@ export class InputSystem {
             
             useGameStore.getState().setCameraAngles(newAzimuth, newElevation);
         } else {
-            // Pan uses current azimuth for intuitive direction
+            // Pan
             const panSpeed = 0.05 * (this.radius / 20); // Scale with zoom
             
             // Forward vector on plane (Azimuth)
@@ -224,25 +295,11 @@ export class InputSystem {
             const rightX = Math.cos(this.azimuth);
             const rightZ = -Math.sin(this.azimuth);
 
-            // Drag Left -> Move Camera Left -> Move Target Left
-            // Actually usually drag world matches cursor.
-            // If I move mouse Left (-X), I want camera to move Left (-X) relative to view?
-            // Actually usually "Drag the world" means Camera moves opposite to Drag.
-            
-            // Relative Pan
-            // dX affects Right vector
-            // dY affects Forward vector (reversed, down mouse = backward camera?)
-            
-            // Move Target
             const dx = -deltaX * panSpeed;
             const dy = -deltaY * panSpeed;
 
-            this.cameraTarget.x += dx * rightX + dy * forwardX; // Approximation
+            this.cameraTarget.x += dx * rightX + dy * forwardX; 
             this.cameraTarget.z += dx * rightZ + dy * forwardZ;
-            
-            // Simple X/Z pan:
-            // this.cameraTarget.x -= deltaX * panSpeed;
-            // this.cameraTarget.z -= deltaY * panSpeed;
         }
 
         this.updateCameraTransform();
@@ -253,6 +310,19 @@ export class InputSystem {
   private onPointerUp(event: PointerEvent) {
     this.isDragging = false;
     
+    if (this.isDraggingCable && this.cableStart) {
+        // Commit Cable
+        const intersection = this.getIntersection(event);
+        if (intersection) {
+             this.handleCableEnd(intersection.x, intersection.y);
+        } else {
+             this.cancelCableDrag();
+        }
+        this.isDraggingCable = false;
+        this.cableStart = null;
+        return;
+    }
+
     // Check if it was a drag or a click
     const dx = event.clientX - this.mouseDownPosition.x;
     const dy = event.clientY - this.mouseDownPosition.y;
@@ -261,6 +331,61 @@ export class InputSystem {
     if (dist < 5) {
         this.handleClick(event);
     }
+  }
+
+  private handleCableEnd(endX: number, endY: number) {
+      if (!this.cableStart) return;
+      const startX = this.cableStart.x;
+      const startY = this.cableStart.y;
+      
+      // Re-validate same conditions as Move
+      const dx = endX - startX;
+      const dy = endY - startY;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      
+      const startB = this.world.getBuilding(startX, startY);
+      const endB = this.world.getBuilding(endX, endY);
+      
+      let isValid = true;
+      if (!startB?.powerConfig || !endB?.powerConfig) isValid = false;
+      const range = startB?.powerConfig?.range || 8; 
+      if (dist > range) isValid = false;
+      if (dist === 0) isValid = false;
+
+      // Hub Limit
+      if (startB?.getType() === 'hub') {
+          if (this.world.getConnectionsCount(startX, startY) >= 1) isValid = false;
+      }
+      if (endB?.getType() === 'hub') {
+           if (this.world.getConnectionsCount(endX, endY) >= 1) isValid = false;
+      }
+
+      // Pole Limit
+      if (startB?.getType() === 'electric_pole') {
+           if (this.world.getConnectionsCount(startX, startY) >= 3) isValid = false;
+      }
+      if (endB?.getType() === 'electric_pole') {
+           if (this.world.getConnectionsCount(endX, endY) >= 3) isValid = false;
+      }
+
+      if (isValid) {
+          const added = this.world.addCable(startX, startY, endX, endY);
+          if (added) {
+              console.log('Cable Added via Drag');
+              this.onWorldChange?.();
+          }
+      } else {
+          console.log('Cable Connect Invalid');
+      }
+      
+      // Cleanup
+      this.cancelCableDrag();
+  }
+
+  private cancelCableDrag() {
+      this.cableStart = null;
+      this.isDraggingCable = false;
+      if (this.onCableDrag) this.onCableDrag(null, null, false);
   }
 
   private getIntersection(event: PointerEvent): {x: number, y: number} | null {
@@ -291,24 +416,72 @@ export class InputSystem {
   private handleClick(event: PointerEvent) {
       const intersection = this.getIntersection(event);
       if (intersection) {
-          this.handleGameAction(intersection.x, intersection.y);
+          this.handleGameAction(intersection.x, intersection.y, event);
+      } else {
+          // Check if clicked ON a cable (no grid intersection? Unlikely for plane, but maybe outside grid)
+          // But our plane is infinite?
+          // Actually getIntersection limits to Grid Bounds.
       }
   }
   
-  private handleGameAction(gridX: number, gridY: number) {
-      const { selectedBuilding, inventory } = useGameStore.getState();
+  private handleGameAction(gridX: number, gridY: number, originalEvent: PointerEvent) {
+      const { selectedBuilding } = useGameStore.getState();
 
       if (selectedBuilding) {
           if (selectedBuilding === 'delete') {
-              this.world.removeBuilding(gridX, gridY);
+              const building = this.world.getBuilding(gridX, gridY);
               
-              // Fix: Clear selection if the deleted building was selected
-              const currentOpened = useGameStore.getState().openedEntityKey;
-              if (currentOpened === `${gridX},${gridY}`) {
-                  useGameStore.getState().setOpenedEntityKey(null);
-              }
+              if (building) {
+                  this.world.removeBuilding(gridX, gridY);
+                  // Fix: Clear selection if the deleted building was selected
+                  const currentOpened = useGameStore.getState().openedEntityKey;
+                  if (currentOpened === `${gridX},${gridY}`) {
+                      useGameStore.getState().setOpenedEntityKey(null);
+                  }
+                  this.onWorldChange?.();
+              } else {
+                  // Try to delete Cable
+                  // We need precise hit detection for cables, not just grid tile.
+                  // Since cables are lines, we need distance from point to line segment.
+                  // Raycaster can intersection objects!
+                  
+                  // Use Three.js Raycaster against CableVisuals? 
+                  // But InputSystem doesn't have access to Visuals easily.
+                  // Alternative: Iterate World Cables and check distance to click.
+                  
+                  // Map Grid Click to World Pos?
+                  const clickX = gridX;
+                  const clickY = gridY;
+                  
+                  // Simple distance check: is point (clickX, clickY) close to segment (c.x1,y1 -> c.x2,y2)?
+                  // Actually gridX, gridY are integers. That's too coarse for cable clicking if they span.
+                  // But user clicks on a tile.
+                  // Let's use the Raycaster exact intersection point if possible, but getIntersection returns rounded grid.
+                  
+                  // Let's re-calculate exact world pos
+                  const rect = this.domElement.getBoundingClientRect();
+                  const mx = ((originalEvent.clientX - rect.left) / rect.width) * 2 - 1;
+                  const my = -((originalEvent.clientY - rect.top) / rect.height) * 2 + 1;
+                  this.raycaster.setFromCamera(new THREE.Vector2(mx, my), this.camera);
+                  const target = new THREE.Vector3();
+                  const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0.5);
+                  if (this.raycaster.ray.intersectPlane(plane, target)) {
+                      // target.x, target.z
+                      const cables = this.world.cables;
+                      let deleted = false;
+                      const THRESHOLD = 0.5; // distance from line
 
-              this.onWorldChange?.();
+                      for (const c of cables) {
+                          const dist = this.distToSegment(target.x, target.z, c.x1, c.y1, c.x2, c.y2);
+                          if (dist < THRESHOLD) {
+                              this.world.removeCable(c.x1, c.y1, c.x2, c.y2);
+                              deleted = true;
+                              break; // Delete one at a time
+                          }
+                      }
+                      if (deleted) this.onWorldChange?.();
+                  }
+              }
               return;
           }
 
@@ -323,42 +496,9 @@ export class InputSystem {
           }
 
           if (selectedBuilding === 'cable') {
-              const building = this.world.getBuilding(gridX, gridY);
-              
-              // Must click on a building with powerConfig (Pole, Hub, Consumer)
-              // Wait, plan said "ElectricPole" extends range, but can we connect direct Hub -> Extractor? Yes.
-              
-              if (building && building.powerConfig) {
-                  if (!this.cableStart) {
-                      this.cableStart = { x: gridX, y: gridY };
-                      console.log('Cable Start:', gridX, gridY);
-                  } else {
-                      // Validate Distance
-                      const dx = gridX - this.cableStart.x;
-                      const dy = gridY - this.cableStart.y;
-                      const dist = Math.sqrt(dx*dx + dy*dy);
-                      
-                      // Check max distance (e.g. 10 or based on building type)
-                      // For now hardcoded or check start/end config
-                      const startB = this.world.getBuilding(this.cableStart.x, this.cableStart.y);
-                      const range = Math.max(startB?.powerConfig?.range || 5, building.powerConfig.range || 5);
-
-                      if (dist <= range && dist > 0) {
-                          const added = this.world.addCable(this.cableStart.x, this.cableStart.y, gridX, gridY);
-                          if (added) {
-                              console.log('Cable Added');
-                              this.onWorldChange?.();
-                          }
-                      } else {
-                          console.log('Cable Invalid: Too far or same spot', dist, range);
-                      }
-                      // Reset start after attempt
-                      this.cableStart = null;
-                  }
-              } else {
-                  // Clicked empty space or non-power building -> cancel
-                  this.cableStart = null;
-              }
+              // Now handled by Drag logic mainly.
+              // But if user just Clicks, we might want to start drag or feedback?
+              // Current logic starts drag on Down.
               return;
           }
 
@@ -366,7 +506,6 @@ export class InputSystem {
           if (success) {
               
               this.world.autoOrientBuilding(gridX, gridY);
-              // Also re-orient neighbors to form paths
               const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
               for (const [dx, dy] of dirs) {
                   this.world.autoOrientBuilding(gridX + dx, gridY + dy);
@@ -379,17 +518,45 @@ export class InputSystem {
 
       const tile = this.world.getTile(gridX, gridY);
       
-      // If clicking on a building with empty hand -> Open it
       const building = this.world.getBuilding(gridX, gridY);
       if (building && building.hasInteractionMenu()) {
            useGameStore.getState().setOpenedEntityKey(`${gridX},${gridY}`);
            return;
       }
       
-      // Otherwise, gather resource
       if (tile.isStone()) {
            useGameStore.getState().addItem('stone', 1);
       }
+  }
+
+  private distToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
+      const A = x1 - px;
+      const B = y1 - py;
+      const C = x2 - x1;
+      const D = y2 - y1;
+
+      const dot = A * C + B * D;
+      const len_sq = C * C + D * D;
+      let param = -dot / len_sq;
+
+      let xx, yy;
+
+      if (param < 0) {
+        xx = x1;
+        yy = y1;
+      }
+      else if (param > 1) {
+        xx = x2;
+        yy = y2;
+      }
+      else {
+        xx = x1 + param * C;
+        yy = y1 + param * D;
+      }
+
+      const dx = px - xx;
+      const dy = py - yy;
+      return Math.sqrt(dx * dx + dy * dy);
   }
 
   private onWheel(event: WheelEvent) {
@@ -406,11 +573,7 @@ export class InputSystem {
       this.domElement.removeEventListener('pointermove', this.onPointerMove.bind(this));
       this.domElement.removeEventListener('pointerup', this.onPointerUp.bind(this));
       this.domElement.removeEventListener('wheel', this.onWheel.bind(this));
-      window.removeEventListener('keydown', (e) => {}); // Lambda mismatch logic requires named function if strictly removing
-      // For lambda, we can't fully remove, but since window is global, we should use AbortController or named function.
-      // Ignoring for now to minimal change or fix properly?
-      // Let's rely on garbage collection for now or just acknowledge potential leak if reused excessively, but GameApp is typically singleton per view.
-      // Better: Store listeners.
-      // For this step, just adding the method to satisfy contract.
+      window.removeEventListener('keydown', (e) => {}); 
   }
 }
+

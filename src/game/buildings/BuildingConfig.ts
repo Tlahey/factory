@@ -1,4 +1,20 @@
 import { BuildingEntity } from '../entities/BuildingEntity';
+import { CHEST_CONFIG } from './chest/ChestConfig';
+import { CONVEYOR_CONFIG } from './conveyor/ConveyorConfig';
+import { EXTRACTOR_CONFIG } from './extractor/ExtractorConfig';
+import { HUB_CONFIG } from './hub/HubConfig';
+import { ELECTRIC_POLE_CONFIG } from './electric-pole/ElectricPoleConfig';
+
+
+export interface BuildingUpgrade {
+    id: string;
+    name: string;
+    description: string;
+    baseCost: number;
+    costMultiplier: number;
+    onUpgrade: (building: any) => void;
+    getValue: (building: any) => string;
+}
 
 export interface BuildingConfig {
     name: string;
@@ -9,49 +25,16 @@ export interface BuildingConfig {
     maxCount?: number;
     width?: number;
     height?: number;
+    upgrades?: BuildingUpgrade[];
 }
 
 export const BUILDINGS: Record<string, BuildingConfig> = {
-    'extractor': {
-        name: 'Extractor',
-        type: 'extractor',
-        cost: 10,
-        hasMenu: true,
-        description: 'Extracts resources from the ground. Requires Energy.',
-        maxCount: 3
-    },
-    'conveyor': {
-        name: 'Conveyor Belt',
-        type: 'conveyor',
-        cost: 2,
-        hasMenu: false,
-        description: 'Transports items.'
-    },
-    'chest': {
-        name: 'Chest',
-        type: 'chest',
-        cost: 5,
-        hasMenu: true,
-        description: 'Stores items.',
-        maxCount: 1
-    },
-    'hub': {
-        name: 'Central Hub',
-        type: 'hub',
-        cost: 50,
-        hasMenu: true,
-        description: 'Generates electricity from solar panels.',
-        maxCount: 1,
-        width: 2,
-        height: 2
-    },
-    'electric_pole': {
-        name: 'Electric Pole',
-        type: 'electric_pole',
-        cost: 5,
-        hasMenu: false,
-        description: 'Extends power range.'
-    },
+    'extractor': EXTRACTOR_CONFIG,
+    'conveyor': CONVEYOR_CONFIG,
+    'chest': CHEST_CONFIG,
+    'hub': HUB_CONFIG,
+    'electric_pole': ELECTRIC_POLE_CONFIG,
+
     'cable': {
         name: 'Cable',
         type: 'cable',

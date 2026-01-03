@@ -1,7 +1,9 @@
-import { BuildingConfig } from '../BuildingConfig';
+import type { BuildingConfig } from '../BuildingConfig';
 
 export const CONVEYOR_CONFIG: BuildingConfig = {
+    name: 'Conveyor Belt',
     type: 'conveyor',
-    displayName: 'Conveyor',
-    hasMenu: false
+    cost: 2,
+    hasMenu: false,
+    description: 'Transports items.'
 };

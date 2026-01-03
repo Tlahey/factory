@@ -1,10 +1,13 @@
-import { BuildingConfig } from '../BuildingConfig';
+import type { BuildingConfig } from '../BuildingConfig';
 import { Extractor } from './Extractor';
 
 export const EXTRACTOR_CONFIG: BuildingConfig = {
+    name: 'Extractor',
     type: 'extractor',
-    displayName: 'Extractor',
+    cost: 10,
     hasMenu: true,
+    description: 'Extracts resources from the ground. Requires Energy.',
+    maxCount: 3,
     upgrades: [
         {
             id: 'speed',
@@ -12,8 +15,8 @@ export const EXTRACTOR_CONFIG: BuildingConfig = {
             description: 'Increase extraction speed by 50%.',
             baseCost: 50,
             costMultiplier: 1.5,
-            onUpgrade: (b: Extractor) => b.upgradeSpeed(),
-            getValue: (b: Extractor) => (b.speedMultiplier * 60).toFixed(0) + ' items/min'
+            onUpgrade: (b: any) => (b as Extractor).upgradeSpeed(),
+            getValue: (b: any) => ((b as Extractor).speedMultiplier * 60).toFixed(0) + ' items/min'
         }
     ]
 };

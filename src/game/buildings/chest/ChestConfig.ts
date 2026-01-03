@@ -1,10 +1,13 @@
-import { BuildingConfig } from '../BuildingConfig';
+import type { BuildingConfig } from '../BuildingConfig';
 import { Chest } from './Chest';
 
 export const CHEST_CONFIG: BuildingConfig = {
+    name: 'Chest',
     type: 'chest',
-    displayName: 'Chest',
+    cost: 5,
     hasMenu: true,
+    description: 'Stores items.',
+    maxCount: 1,
     upgrades: [
         {
             id: 'capacity',
@@ -12,8 +15,8 @@ export const CHEST_CONFIG: BuildingConfig = {
             description: 'Add an additional inventory slot to this chest.',
             baseCost: 50,
             costMultiplier: 2,
-            onUpgrade: (b: Chest) => b.upgradeCapacity(),
-            getValue: (b: Chest) => b.maxSlots + ' slots'
+            onUpgrade: (b: any) => (b as Chest).upgradeCapacity(),
+            getValue: (b: any) => (b as Chest).maxSlots + ' slots'
         }
     ]
 };

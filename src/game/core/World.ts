@@ -91,6 +91,12 @@ export class World {
 
   public canPlaceBuilding(x: number, y: number, type: string): boolean {
      const config = getBuildingConfig(type);
+     
+     if (config?.maxCount) {
+         const current = useGameStore.getState().buildingCounts[type] || 0;
+         if (current >= config.maxCount) return false;
+     }
+
      const width = config?.width || 1;
      const height = config?.height || 1;
 
@@ -111,7 +117,7 @@ export class World {
              // Specific checks (only check origin or all? usually all for terrain)
              if (type === 'extractor') {
                  if (!tile.isStone()) return false;
-             } else if (type === 'conveyor' || type === 'chest') {
+             } else if (type === 'conveyor' || type === 'chest' || type === 'hub') {
                  if (tile.isStone()) return false;
              }
          }

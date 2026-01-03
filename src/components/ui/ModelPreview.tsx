@@ -74,6 +74,22 @@ export default function ModelPreview({
                 model = createChestModel();
                 model.scale.set(1.3, 1.3, 1.3);
                 model.position.y = -0.4;
+            } else if (id === 'hub') {
+                const geometry = new THREE.BoxGeometry(1.5, 0.5, 1.5);
+                const material = new THREE.MeshLambertMaterial({ color: 0xffaa00 });
+                model = new THREE.Mesh(geometry, material);
+                model.position.y = -0.25;
+            } else if (id === 'electric_pole') {
+                const geometry = new THREE.CylinderGeometry(0.1, 0.1, 2);
+                const material = new THREE.MeshLambertMaterial({ color: 0x888888 });
+                model = new THREE.Mesh(geometry, material);
+                model.position.y = 0;
+            } else if (id === 'cable') {
+                // Represents a coil of wire
+                const geometry = new THREE.TorusGeometry(0.3, 0.1, 8, 20);
+                const material = new THREE.MeshLambertMaterial({ color: 0xffffff });
+                model = new THREE.Mesh(geometry, material);
+                model.position.y = 0;
             }
         } else if (type === 'item') {
             if (id === 'stone') {

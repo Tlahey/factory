@@ -146,7 +146,7 @@ export default function BuildingInfoPanel() {
     };
 
     return (
-        <div className="fixed right-4 top-20 w-80 bg-gray-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl text-white overflow-hidden z-40 animate-in slide-in-from-right-10 fade-in duration-200">
+        <div className="fixed left-24 top-20 w-80 bg-gray-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl text-white overflow-hidden z-40 animate-in slide-in-from-left-10 fade-in duration-200">
             {/* Header */}
             <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
                 <div className="flex items-center gap-3">

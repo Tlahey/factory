@@ -5,12 +5,16 @@ import { useGameStore } from '@/game/state/store';
 export class Extractor extends BuildingEntity {
   public active: boolean = false;
 
-  constructor(x: number, y: number, direction: 'north' | 'south' | 'east' | 'west' = 'north') {
-    super(x, y, 'extractor', direction);
-  }
-
   public speedMultiplier: number = 1.0;
   private accumTime: number = 0;
+  
+  constructor(x: number, y: number, direction: 'north' | 'south' | 'east' | 'west' = 'north') {
+    super(x, y, 'extractor', direction);
+    this.powerConfig = {
+        type: 'consumer',
+        rate: 10 // Consumes 10 units
+    };
+  }
   
   public tick(delta: number, world?: any): void {
     if (!world) return;
@@ -18,7 +22,14 @@ export class Extractor extends BuildingEntity {
     this.accumTime += delta;
     const interval = 1.0 / this.speedMultiplier;
 
+
     if (this.accumTime < interval) return;
+
+    // Check Power
+    if (this.powerStatus !== 'active') {
+        this.active = false;
+        return;
+    }
 
     const isConnected = this.isConnectedTo(world, 'chest');
     const tile = world.getTile(this.x, this.y);

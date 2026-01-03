@@ -3,9 +3,18 @@ import { useGameStore } from '@/game/state/store';
 import { Tile } from '../core/Tile';
 import { getBuildingConfig, BuildingConfig } from '../buildings/BuildingConfig';
 
+export interface PowerConfig {
+  type: 'consumer' | 'producer' | 'relay';
+  rate: number; // Consumption or Generation
+  range?: number; // For poles
+}
+
 export abstract class BuildingEntity extends Entity {
   public buildingType: string;
   public direction: 'north' | 'south' | 'east' | 'west' = 'north';
+  
+  public powerConfig?: PowerConfig;
+  public powerStatus: 'active' | 'warn' | 'idle' = 'idle'; // 'warn' = no power
 
   constructor(x: number, y: number, buildingType: string, direction: 'north' | 'south' | 'east' | 'west' = 'north') {
     super(x, y, 'building');

@@ -7,6 +7,7 @@ import ControlBar from '@/components/ui/ControlBar';
 import CameraControls from '@/components/ui/CameraControls';
 import GameMenu from '@/components/ui/GameMenu';
 import BuildingInfoPanel from '@/components/ui/BuildingInfoPanel';
+import BuildingMenu from '@/components/ui/BuildingMenu';
 import HUD from '@/components/ui/HUD';
 import { useGameStore } from '@/game/state/store';
 
@@ -55,6 +56,9 @@ export default function Home() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') togglePause();
+      if (e.key === 'b' || e.key === 'B') {
+        useGameStore.getState().toggleBuildingMenu();
+      }
       if (e.key === 'F5') {
         e.preventDefault();
         handleSave();
@@ -106,11 +110,12 @@ export default function Home() {
       <div className={`transition-opacity duration-300 ${isPaused ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <HUD />
         <BuildingInfoPanel />
+        <BuildingMenu />
         <div className="absolute inset-0 z-10 pointer-events-none p-6">
-          <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-4">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-end">
             <BuildingSidebar />
           </div>
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
+          <div className="absolute bottom-28 left-1/2 -translate-x-1/2">
             <ControlBar />
           </div>
           <div className="absolute bottom-6 right-6">

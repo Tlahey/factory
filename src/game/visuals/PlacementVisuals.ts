@@ -59,6 +59,16 @@ export class PlacementVisuals {
                   this.ghostMesh = mesh;
                   this.ghostType = ghostType;
                   this.scene.add(this.ghostMesh);
+              } else {
+                  // Fallback Generic Box
+                  const geometry = new THREE.BoxGeometry(0.8, 1, 0.8);
+                  if (ghostType === 'electric_pole') {
+                       geometry.scale(0.2, 2, 0.2);
+                  }
+                  const material = new THREE.MeshBasicMaterial({ color: 0xffffff }); // Will be replaced by ghostMat
+                  this.ghostMesh = new THREE.Mesh(geometry, material);
+                  this.ghostType = ghostType;
+                  this.scene.add(this.ghostMesh);
               }
           }
 

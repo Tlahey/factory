@@ -4,7 +4,9 @@ import { useGameStore } from './state/store';
 import { World } from './core/World';
 import { WORLD_HEIGHT, WORLD_WIDTH } from './constants';
 import { FactorySystem } from './systems/FactorySystem';
+import { PowerSystem } from './systems/PowerSystem';
 import { InputSystem } from './systems/InputSystem';
+import { CableVisual } from './visuals/CableVisual';
 import { getGrassGeometry } from './environment/grass/GrassGeometry';
 import { createGrassMaterial } from './environment/grass/GrassMaterial';
 import { createGrassTexture } from './environment/grass/GrassTexture';
@@ -34,6 +36,7 @@ export class GameApp {
   private container: HTMLElement;
   public world: World;
   private factorySystem: FactorySystem;
+  public powerSystem: PowerSystem;
   private inputSystem!: InputSystem;
   private isDestroyed = false;
 
@@ -41,6 +44,7 @@ export class GameApp {
   private particleSystem: ParticleSystem;
   private placementVisuals: PlacementVisuals; 
   private selectionIndicator: SelectionIndicator;
+  private cableVisuals: CableVisual;
 
   private grassUniforms: any = null;
   private waterfallTexture: THREE.CanvasTexture | null = null;
@@ -60,18 +64,22 @@ export class GameApp {
     this.container = container;
     this.world = new World();
     this.factorySystem = new FactorySystem(this.world);
+    this.powerSystem = new PowerSystem(this.world);
 
     // Three.js Setup
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x000000); // Black Void
 
-    this.camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    
+    // Visuals
+    this.cableVisuals = new CableVisual(this.scene, this.world);
     
     // Default Top-Down View
     this.camera.position.set(WORLD_WIDTH / 2, 20, WORLD_HEIGHT / 2);
     this.camera.lookAt(WORLD_WIDTH / 2, 0, WORLD_HEIGHT / 2);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(container.clientWidth, container.clientHeight);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -103,9 +111,31 @@ export class GameApp {
     
     this.inputSystem = new InputSystem(this.renderer.domElement, this.camera, this.world, () => {
         this.syncBuildings();
+        this.powerSystem.rebuildNetworks();
     }, (x, y, isValid, ghostBuilding) => {
         this.placementVisuals.update(x, y, isValid, ghostBuilding); // DELEGATED
     });
+
+    const originalPlace = this.world.placeBuilding.bind(this.world);
+    this.world.placeBuilding = (x, y, type, direction) => {
+        const res = originalPlace(x, y, type, direction);
+        if (res) {
+            this.syncBuildings(); 
+            this.powerSystem.rebuildNetworks();
+            // Worker sync if needed
+        }
+        return res;
+    };
+
+    const originalRemove = this.world.removeBuilding.bind(this.world);
+    this.world.removeBuilding = (x, y) => {
+        const res = originalRemove(x, y);
+        if (res) {
+            this.syncBuildings();
+            this.powerSystem.rebuildNetworks();
+        }
+        return res;
+    };
 
     this.initTerrain();
     this.syncBuildings();
@@ -173,6 +203,7 @@ export class GameApp {
               v.dispose();
           });
           this.visuals.clear();
+          this.cableVisuals.clear(); // Clear cables too
 
           // 3. Clear Inventory via event (UI side should handle store)
           console.log(`App: [Instance ${this.instanceId}] Dispatching inventory reset...`);
@@ -202,6 +233,7 @@ export class GameApp {
     this.inputSystem.dispose();
     this.placementVisuals.dispose();
     this.selectionIndicator.dispose();
+    this.cableVisuals.dispose(this.scene);
     
     // Dispose visuals
     this.visuals.forEach(v => v.dispose());
@@ -627,6 +659,7 @@ export class GameApp {
         }
     });
     
+    this.cableVisuals.update(this.world); // Update cables after buildings are synced
     this.updateGrassOcclusion();
   }
 
@@ -732,6 +765,7 @@ export class GameApp {
               v.dispose();
           });
           this.visuals.clear();
+          this.cableVisuals.clear(); // Clear cables too
 
           // 3. Sync
           this.initTerrain();
@@ -757,6 +791,7 @@ export class GameApp {
 
     const delta = this.clock.getDelta();
     this.factorySystem.update(delta);
+    this.powerSystem.update(delta);
 
     if (this.inputSystem) {
         this.inputSystem.update(delta);
@@ -782,6 +817,11 @@ export class GameApp {
     Object.values(this.currentTextures).forEach((tex: any) => {
       tex.offset.x += delta * 1.5;
     });
+
+    // Sync Cables
+    if (this.cableVisuals) {
+        this.cableVisuals.update(this.world);
+    }
 
     // Update Building Visuals
     this.visuals.forEach((visual, key) => {

@@ -1,23 +1,54 @@
 import { TileType, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
+import { useGameStore } from '../state/store';
 import { BuildingEntity } from '../entities/BuildingEntity';
 import { Extractor } from '../buildings/extractor/Extractor';
 import { Conveyor } from '../buildings/conveyor/Conveyor';
 import { Chest } from '../buildings/chest/Chest';
+import { Hub } from '../buildings/hub/Hub';
+import { ElectricPole } from '../buildings/electric-pole/ElectricPole';
+import { getBuildingConfig } from '../buildings/BuildingConfig';
 
 import { Tile } from './Tile';
 
 export class World {
   public grid: Tile[][];
   public buildings: Map<string, BuildingEntity>;
+  public cables: {x1: number, y1: number, x2: number, y2: number}[] = [];
 
   constructor() {
     this.grid = this.generateEmptyWorld();
     this.buildings = new Map();
   }
 
+  public addCable(x1: number, y1: number, x2: number, y2: number): boolean {
+      // Check if already exists (undirected)
+      const exists = this.cables.some(c => 
+          (c.x1 === x1 && c.y1 === y1 && c.x2 === x2 && c.y2 === y2) ||
+          (c.x1 === x2 && c.y1 === y2 && c.x2 === x1 && c.y2 === y1)
+      );
+      if (exists) return false;
+
+      // Max distance check (Euclidean or Manhattan? Plan said validation limits. Let's enforce here or in InputSystem.
+      // World should probably just be storage, but basic validation is good.)
+      // Let's assume validation happens before calling addCable.
+      
+      this.cables.push({x1, y1, x2, y2});
+      return true;
+  }
+
+  public removeCable(x1: number, y1: number, x2: number, y2: number): void {
+      this.cables = this.cables.filter(c => 
+          !((c.x1 === x1 && c.y1 === y1 && c.x2 === x2 && c.y2 === y2) ||
+            (c.x1 === x2 && c.y1 === y2 && c.x2 === x1 && c.y2 === y1))
+      );
+  }
+
   public reset(): void {
       this.grid = this.generateEmptyWorld();
       this.buildings.clear();
+      this.cables = [];
+      // Reset store counts
+      useGameStore.setState({ buildingCounts: {} });
   }
 
   private generateEmptyWorld(): Tile[][] {
@@ -84,11 +115,28 @@ export class World {
     // Validate first
     if (!this.canPlaceBuilding(x, y, type)) return false;
 
+    // Check Limits
+    const config = getBuildingConfig(type);
+    if (config?.maxCount) {
+        let count = 0;
+        this.buildings.forEach(b => {
+             if (b.getType() === type) count++;
+        });
+        if (count >= config.maxCount) {
+            console.warn(`Limit reached for ${type}: ${config.maxCount}`);
+            return false;
+        }
+    }
+
+    // ... imports
+
     let building: BuildingEntity;
     switch(type) {
         case 'extractor': building = new Extractor(x, y, direction); break;
         case 'conveyor': building = new Conveyor(x, y, direction); break;
         case 'chest': building = new Chest(x, y, direction); break;
+        case 'hub': building = new Hub(x, y); break;
+        case 'electric_pole': building = new ElectricPole(x, y); break;
         default: return false;
     }
 
@@ -102,6 +150,9 @@ export class World {
         this.autoOrientBuilding(x, y);
     }
     
+    // Update Store Counts for UI
+    useGameStore.getState().updateBuildingCount(type, 1);
+
     return true;
   }
 
@@ -141,9 +192,14 @@ export class World {
 
   public removeBuilding(x: number, y: number): boolean {
       const key = `${x},${y}`;
+      const building = this.buildings.get(key);
+      if (!building) return false;
+
+      const type = building.getType();
       const res = this.buildings.delete(key);
       if (res) {
           this.updateConveyorNetwork();
+          useGameStore.getState().updateBuildingCount(type, -1);
       }
       return res;
   }
@@ -264,7 +320,8 @@ export class World {
               }
 
               return base;
-          })
+          }),
+          cables: this.cables
       };
   }
 
@@ -285,6 +342,7 @@ export class World {
       }
 
       // 2. Restore Buildings
+      this.cables = (data.cables || []).map((c: any) => ({...c}));
       this.buildings.clear();
       if (data.buildings && Array.isArray(data.buildings)) {
           console.log(`Deserializing ${data.buildings.length} buildings...`);

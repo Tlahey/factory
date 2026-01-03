@@ -80,7 +80,10 @@ export class InputSystem {
   // Mouse state
   private mouseDownPosition = { x: 0, y: 0 };
   private isRotating = false;
-
+  
+  // Cable State
+  private cableStart: { x: number, y: number } | null = null;
+  
   // ...
 
   private setupInteractions() {
@@ -91,6 +94,11 @@ export class InputSystem {
     
     // Add key listener
     window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            this.cableStart = null;
+            // Also clear selection?
+            // useGameStore.getState().setSelectedBuilding(null);
+        }
         if (e.key === 'v') {
             const current = useGameStore.getState().viewMode;
             useGameStore.getState().setViewMode(current === '3D' ? '2D' : '3D');
@@ -310,6 +318,46 @@ export class InputSystem {
                   useGameStore.getState().setOpenedEntityKey(`${gridX},${gridY}`);
               } else {
                   useGameStore.getState().setOpenedEntityKey(null);
+              }
+              return;
+          }
+
+          if (selectedBuilding === 'cable') {
+              const building = this.world.getBuilding(gridX, gridY);
+              
+              // Must click on a building with powerConfig (Pole, Hub, Consumer)
+              // Wait, plan said "ElectricPole" extends range, but can we connect direct Hub -> Extractor? Yes.
+              
+              if (building && building.powerConfig) {
+                  if (!this.cableStart) {
+                      this.cableStart = { x: gridX, y: gridY };
+                      console.log('Cable Start:', gridX, gridY);
+                  } else {
+                      // Validate Distance
+                      const dx = gridX - this.cableStart.x;
+                      const dy = gridY - this.cableStart.y;
+                      const dist = Math.sqrt(dx*dx + dy*dy);
+                      
+                      // Check max distance (e.g. 10 or based on building type)
+                      // For now hardcoded or check start/end config
+                      const startB = this.world.getBuilding(this.cableStart.x, this.cableStart.y);
+                      const range = Math.max(startB?.powerConfig?.range || 5, building.powerConfig.range || 5);
+
+                      if (dist <= range && dist > 0) {
+                          const added = this.world.addCable(this.cableStart.x, this.cableStart.y, gridX, gridY);
+                          if (added) {
+                              console.log('Cable Added');
+                              this.onWorldChange?.();
+                          }
+                      } else {
+                          console.log('Cable Invalid: Too far or same spot', dist, range);
+                      }
+                      // Reset start after attempt
+                      this.cableStart = null;
+                  }
+              } else {
+                  // Clicked empty space or non-power building -> cancel
+                  this.cableStart = null;
               }
               return;
           }

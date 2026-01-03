@@ -1,0 +1,64 @@
+import { Entity } from './Entity';
+import { useGameStore } from '@/game/state/store';
+import { Tile } from '../core/Tile';
+import { getBuildingConfig, BuildingConfig } from '../buildings/BuildingConfig';
+
+export abstract class BuildingEntity extends Entity {
+  public buildingType: string;
+  public direction: 'north' | 'south' | 'east' | 'west' = 'north';
+
+  constructor(x: number, y: number, buildingType: string, direction: 'north' | 'south' | 'east' | 'west' = 'north') {
+    super(x, y, 'building');
+    this.buildingType = buildingType;
+    this.direction = direction;
+  }
+
+  public rotate(): void {
+    const clockwise: Record<string, 'north' | 'south' | 'east' | 'west'> = {
+      'north': 'east',
+      'east': 'south',
+      'south': 'west',
+      'west': 'north'
+    };
+    this.direction = clockwise[this.direction];
+  }
+
+  public update(delta: number): void {
+     if (this.buildingType === 'extractor') {
+         // Logic specific to extractor
+         // We might want to throttle this so it doesn't run every frame, but every second.
+         // For now, let's just log or assume external throttle, OR handle it here with a timer accumulator.
+     }
+  }
+  
+  // Custom method to be called by FactorySystem for "tick" based logic
+  public tick(delta: number, world?: any): void {
+      if (this.buildingType === 'extractor') {
+          // This should be handled in Extractor.ts override
+      }
+  }
+
+  public isConnectedTo(world: any, targetType: string, viaTypes: string[] = ['conveyor']): boolean {
+      return world.hasPathTo(this.x, this.y, targetType, viaTypes);
+  }
+
+  public getType(): string {
+      return this.buildingType;
+  }
+
+  public getConfig(): BuildingConfig | undefined {
+      return getBuildingConfig(this.buildingType);
+  }
+
+  public hasInteractionMenu(): boolean {
+      return this.getConfig()?.hasMenu ?? false;
+  }
+
+  public abstract getColor(): number;
+  
+  public getHeight(): number {
+      return 1;
+  }
+
+  public abstract isValidPlacement(tile: Tile): boolean;
+}

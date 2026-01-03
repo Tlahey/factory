@@ -16,7 +16,7 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
         name: 'Extractor',
         type: 'extractor',
         cost: 10,
-        hasMenu: false, // Updated to false as per user request/code observation (was true in some plans?)
+        hasMenu: true,
         description: 'Extracts resources from the ground. Requires Energy.',
         maxCount: 3
     },

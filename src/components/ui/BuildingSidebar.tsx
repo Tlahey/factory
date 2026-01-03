@@ -12,9 +12,28 @@ export default function BuildingSidebar() {
 
     const handleDrop = (e: React.DragEvent, index: number) => {
         e.preventDefault();
-        const buildingId = e.dataTransfer.getData('buildingId');
-        if (buildingId) {
-            setHotbarSlot(index, buildingId);
+        const source = e.dataTransfer.getData('source');
+        console.log('Drop source:', source);
+
+        if (source === 'hotbar') {
+            const sourceIndex = parseInt(e.dataTransfer.getData('index'));
+            if (!isNaN(sourceIndex) && sourceIndex !== index) {
+                // Swap logic
+                const sourceId = hotbar[sourceIndex];
+                const targetId = hotbar[index];
+
+                // We need to update both. 
+                // Since Zustand updates trigger re-renders, doing one then the other might be glitchy but likely fine.
+                // Better to have a swap action, but this works for now.
+                setHotbarSlot(sourceIndex, targetId);
+                setHotbarSlot(index, sourceId);
+            }
+        } else {
+            // From Building Menu
+            const buildingId = e.dataTransfer.getData('buildingId');
+            if (buildingId) {
+                setHotbarSlot(index, buildingId);
+            }
         }
     };
 
@@ -38,13 +57,22 @@ export default function BuildingSidebar() {
                         <span className="absolute left-1 top-1 text-[10px] text-gray-500 font-mono z-10">{index + 1}</span>
 
                         <button
+                            draggable={!!buildingId}
+                            onDragStart={(e) => {
+                                if (buildingId) {
+                                    e.dataTransfer.setData('source', 'hotbar');
+                                    e.dataTransfer.setData('index', index.toString());
+                                    e.dataTransfer.setData('buildingId', buildingId);
+                                }
+                            }}
                             onClick={() => buildingId && setSelectedBuilding(isSelected ? null : buildingId)}
                             disabled={!buildingId}
                             className={clsx(
                                 'w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-200 border-2 relative overflow-hidden',
                                 isSelected
                                     ? 'bg-blue-600/20 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
-                                    : 'bg-white/5 border-white/5 hover:border-white/20 hover:bg-white/10'
+                                    : 'bg-white/5 border-white/5 hover:border-white/20 hover:bg-white/10',
+                                !!buildingId && 'cursor-grab active:cursor-grabbing'
                             )}
                             title={buildingId || 'Empty Slot'}
                         >

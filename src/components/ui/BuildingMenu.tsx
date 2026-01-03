@@ -19,9 +19,25 @@ export default function BuildingMenu() {
     const toggleBuildingMenu = useGameStore((state) => state.toggleBuildingMenu);
     const buildingCounts = useGameStore((state) => state.buildingCounts);
     const setSelectedBuilding = useGameStore((state) => state.setSelectedBuilding);
+    const setHotbarSlot = useGameStore((state) => state.setHotbarSlot);
 
     const handleDragStart = (e: React.DragEvent, id: string) => {
         e.dataTransfer.setData('buildingId', id);
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        const source = e.dataTransfer.getData('source');
+        if (source === 'hotbar') {
+            const index = parseInt(e.dataTransfer.getData('index'));
+            if (!isNaN(index)) {
+                setHotbarSlot(index, null);
+            }
+        }
     };
 
     return (
@@ -29,8 +45,11 @@ export default function BuildingMenu() {
             className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-200 ${isBuildingMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
                 }`}
         >
-            <div className={`bg-black/60 backdrop-blur-md border border-white/10 rounded-2xl w-[800px] h-[600px] shadow-2xl flex flex-col overflow-hidden transition-transform duration-200 ${isBuildingMenuOpen ? 'scale-100' : 'scale-95'
-                }`}>
+            <div
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                className={`bg-black/60 backdrop-blur-md border border-white/10 rounded-2xl w-[800px] h-[600px] shadow-2xl flex flex-col overflow-hidden transition-transform duration-200 ${isBuildingMenuOpen ? 'scale-100' : 'scale-95'
+                    }`}>
                 {/* Header */}
                 <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
                     <div>

@@ -33,3 +33,4 @@ To add a new building (e.g., "SolarPanel"):
 - **Performance**: Minimize heavy calculations in `tick()`. Use deltas.
 - **Persistence**: Ensure new state data is correctly saved/loaded if necessary.
 - **UI**: Buildings with `hasMenu: true` must have their `upgrades` defined in their config to automatically appear in the info panel.
+- **Development**: Keep it simple. Don't create huge files, prefer to split logic into smaller files and folders. Use naming conventions to make it easy to understand what each file does.

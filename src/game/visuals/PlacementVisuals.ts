@@ -4,6 +4,7 @@ import { createChestModel } from '../buildings/chest/ChestModel';
 import { createConveyorTexture } from '../buildings/conveyor/ConveyorTexture';
 import { createConveyorModel } from '../buildings/conveyor/ConveyorGeometry';
 import { createHubModel } from '../buildings/hub/HubModel';
+import { createElectricPoleModel } from '../buildings/electric-pole/ElectricPoleModel';
 
 export class PlacementVisuals {
   private scene: THREE.Scene;
@@ -56,6 +57,8 @@ export class PlacementVisuals {
                   mesh = createConveyorModel('straight', texture);
               } else if (ghostType === 'hub') {
                   mesh = createHubModel();
+              } else if (ghostType === 'electric_pole') {
+                  mesh = createElectricPoleModel();
               }
 
               if (mesh) {
@@ -81,11 +84,12 @@ export class PlacementVisuals {
               
               // Apply Ghost Material
               const ghostColor = isValid ? 0xffffff : 0xff0000;
-              const ghostMat = new THREE.MeshBasicMaterial({
+              const ghostMat = new THREE.MeshStandardMaterial({
                   color: ghostColor,
                   transparent: true,
                   opacity: 0.5,
-                  wireframe: false 
+                  roughness: 0.5,
+                  metalness: 0.1
               });
 
               this.ghostMesh.traverse((child) => {

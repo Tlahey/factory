@@ -18,6 +18,7 @@ import { createChestModel } from './buildings/chest/ChestModel';
 import { createConveyorTexture } from './buildings/conveyor/ConveyorTexture';
 import { createConveyorModel } from './buildings/conveyor/ConveyorGeometry';
 import { createHubModel } from './buildings/hub/HubModel';
+import { createElectricPoleModel } from './buildings/electric-pole/ElectricPoleModel';
 import { InventorySlot } from './state/store';
 
 import { VisualEntity } from './visuals/VisualEntity';
@@ -667,6 +668,9 @@ export class GameApp {
                 visual = new SimpleVisual(mesh);
             } else if (building.getType() === 'hub') {
                 mesh = createHubModel();
+                visual = new SimpleVisual(mesh);
+            } else if (building.getType() === 'electric_pole') {
+                mesh = createElectricPoleModel();
                 visual = new SimpleVisual(mesh);
             } else {
                 // Fallback for generic

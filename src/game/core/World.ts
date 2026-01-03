@@ -117,7 +117,7 @@ export class World {
              // Specific checks (only check origin or all? usually all for terrain)
              if (type === 'extractor') {
                  if (!tile.isStone()) return false;
-             } else if (type === 'conveyor' || type === 'chest' || type === 'hub') {
+             } else if (type === 'conveyor' || type === 'chest' || type === 'hub' || type === 'electric_pole') {
                  if (tile.isStone()) return false;
              }
          }

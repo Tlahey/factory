@@ -13,6 +13,9 @@ export abstract class BuildingEntity extends Entity {
   public buildingType: string;
   public direction: 'north' | 'south' | 'east' | 'west' = 'north';
   
+  public width: number = 1;
+  public height: number = 1;
+
   public powerConfig?: PowerConfig;
   public powerStatus: 'active' | 'warn' | 'idle' = 'idle'; // 'warn' = no power
 

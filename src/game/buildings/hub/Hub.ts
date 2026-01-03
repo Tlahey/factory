@@ -4,6 +4,8 @@ import { Tile } from '../../core/Tile';
 export class Hub extends BuildingEntity {
     constructor(x: number, y: number) {
         super(x, y, 'hub');
+        this.width = 2;
+        this.height = 2;
         // Initial Power Generation
         this.powerConfig = {
             type: 'producer',

@@ -90,19 +90,31 @@ export class World {
 
 
   public canPlaceBuilding(x: number, y: number, type: string): boolean {
-     const key = `${x},${y}`;
-     if (this.buildings.has(key)) return false; 
-     
-     const tile = this.getTile(x, y);
-     if (tile.isWater()) return false;
-     
-     // Quick check based on type rules (avoiding full instantiation if possible, but safer to match)
-     if (type === 'extractor') {
-         return tile.isStone();
-     } else if (type === 'conveyor') {
-         return !tile.isStone();
-     } else if (type === 'chest') {
-         return !tile.isStone();
+     const config = getBuildingConfig(type);
+     const width = config?.width || 1;
+     const height = config?.height || 1;
+
+     for (let dx = 0; dx < width; dx++) {
+         for (let dy = 0; dy < height; dy++) {
+             const checkX = x + dx;
+             const checkY = y + dy;
+             
+             // Check bounds
+             if (checkX >= WORLD_WIDTH || checkY >= WORLD_HEIGHT) return false;
+
+             const key = `${checkX},${checkY}`;
+             if (this.buildings.has(key)) return false; 
+             
+             const tile = this.getTile(checkX, checkY);
+             if (tile.isWater()) return false;
+             
+             // Specific checks (only check origin or all? usually all for terrain)
+             if (type === 'extractor') {
+                 if (!tile.isStone()) return false;
+             } else if (type === 'conveyor' || type === 'chest') {
+                 if (tile.isStone()) return false;
+             }
+         }
      }
      
      return true;
@@ -140,7 +152,12 @@ export class World {
         default: return false;
     }
 
-    this.buildings.set(key, building);
+    // Register all tiles
+    for (let dx = 0; dx < building.width; dx++) {
+        for (let dy = 0; dy < building.height; dy++) {
+            this.buildings.set(`${x + dx},${y + dy}`, building);
+        }
+    }
     
     // Update Network
     this.updateConveyorNetwork();
@@ -191,17 +208,21 @@ export class World {
   }
 
   public removeBuilding(x: number, y: number): boolean {
-      const key = `${x},${y}`;
-      const building = this.buildings.get(key);
-      if (!building) return false;
+      const b = this.getBuilding(x, y);
+      if (!b) return false;
 
-      const type = building.getType();
-      const res = this.buildings.delete(key);
-      if (res) {
-          this.updateConveyorNetwork();
-          useGameStore.getState().updateBuildingCount(type, -1);
+      // Remove all keys
+      for (let dx = 0; dx < b.width; dx++) {
+          for (let dy = 0; dy < b.height; dy++) {
+              this.buildings.delete(`${b.x + dx},${b.y + dy}`);
+          }
       }
-      return res;
+
+      const type = b.getType();
+      this.updateConveyorNetwork();
+      useGameStore.getState().updateBuildingCount(type, -1);
+      
+      return true;
   }
 
   public getBuilding(x: number, y: number): BuildingEntity | undefined {

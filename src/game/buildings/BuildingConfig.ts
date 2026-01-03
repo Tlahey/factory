@@ -7,6 +7,8 @@ export interface BuildingConfig {
     hasMenu: boolean;
     description: string;
     maxCount?: number;
+    width?: number;
+    height?: number;
 }
 
 export const BUILDINGS: Record<string, BuildingConfig> = {
@@ -39,7 +41,9 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
         cost: 50,
         hasMenu: true,
         description: 'Generates electricity from solar panels.',
-        maxCount: 1
+        maxCount: 1,
+        width: 2,
+        height: 2
     },
     'electric_pole': {
         name: 'Electric Pole',

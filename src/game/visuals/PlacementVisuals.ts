@@ -3,6 +3,7 @@ import { createExtractorModel } from '../buildings/extractor/ExtractorModel';
 import { createChestModel } from '../buildings/chest/ChestModel';
 import { createConveyorTexture } from '../buildings/conveyor/ConveyorTexture';
 import { createConveyorModel } from '../buildings/conveyor/ConveyorGeometry';
+import { createHubModel } from '../buildings/hub/HubModel';
 
 export class PlacementVisuals {
   private scene: THREE.Scene;
@@ -53,6 +54,8 @@ export class PlacementVisuals {
               } else if (ghostType === 'conveyor') {
                   const texture = createConveyorTexture();
                   mesh = createConveyorModel('straight', texture);
+              } else if (ghostType === 'hub') {
+                  mesh = createHubModel();
               }
 
               if (mesh) {

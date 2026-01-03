@@ -113,8 +113,11 @@ export class PowerSystem {
         });
 
         // 3. Find Connected Components
+        const processedBuildings = new Set<BuildingEntity>();
+
         powerNodes.forEach((startNode, startKey) => {
             if (visited.has(startKey)) return;
+            if (processedBuildings.has(startNode)) return; // Already processed via another key
 
             // Start new Grid
             const grid: PowerGrid = {
@@ -128,24 +131,49 @@ export class PowerSystem {
             };
 
             const queue: string[] = [startKey];
-            visited.add(startKey);
+            // visited.add(startKey); // Will be added in loop
 
             while (queue.length > 0) {
                 const currKey = queue.shift()!;
-                const node = powerNodes.get(currKey);
+                if (visited.has(currKey)) continue;
+                visited.add(currKey);
+
+                const node = this.world.getBuilding(parseInt(currKey.split(',')[0]), parseInt(currKey.split(',')[1]));
                 
                 if (node) {
-                    if (node.powerConfig?.type === 'producer') grid.producers.push(node);
-                    else if (node.powerConfig?.type === 'consumer') grid.consumers.push(node);
-                    // Relays don't need to be in a list, they just connect
-                }
-
-                const neighbors = adj.get(currKey) || [];
-                for (const neighborKey of neighbors) {
-                    if (!visited.has(neighborKey) && powerNodes.has(neighborKey)) {
-                        visited.add(neighborKey);
-                        queue.push(neighborKey);
+                    // Check if entire building processed
+                    if (!processedBuildings.has(node)) {
+                        processedBuildings.add(node);
+                        if (node.powerConfig?.type === 'producer') grid.producers.push(node);
+                        else if (node.powerConfig?.type === 'consumer') grid.consumers.push(node);
+                        
+                        // Add ALL tiles of this building to visited/queue logic? 
+                        // We must explore neighbors of ALL its tiles.
+                        for (let dx = 0; dx < (node.width || 1); dx++) {
+                            for (let dy = 0; dy < (node.height || 1); dy++) {
+                                const tKey = `${node.x + dx},${node.y + dy}`;
+                                // Ensure we process this tile key if we haven't visited it yet (though handled by loop below)
+                                // But crucially, we must get 'adj' from it.
+                                
+                                // Actually, if we just push to queue, the loop top 'visited' check handles it.
+                                // We push ALL neighbors of ALL tiles.
+                                const tileNeighbors = adj.get(tKey) || [];
+                                queue.push(...tileNeighbors);
+                                
+                                // Also mark this tile as visited to avoid redundant processing?
+                                visited.add(tKey); 
+                            }
+                        }
+                    } else {
+                        // Already processed, but we might be at a new tile of the same building.
+                        // We still need to explore neighbors of THIS tile if not explored?
+                        // The block above explores ALL neighbors of ALL tiles once.
+                        // So we are good.
                     }
+                } else {
+                    // Just a node (cable point)
+                    const neighbors = adj.get(currKey) || [];
+                    queue.push(...neighbors);
                 }
             }
 

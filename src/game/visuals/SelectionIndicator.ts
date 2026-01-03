@@ -38,18 +38,28 @@ export class SelectionIndicator {
         this.scene.add(this.mesh);
     }
 
-    public update(x: number | null, y: number | null) {
+    public update(x: number | null, y: number | null, width: number = 1, height: number = 1) {
         if (x === null || y === null) {
             this.mesh.visible = false;
             return;
         }
 
         this.mesh.visible = true;
-        this.mesh.position.set(x, 0.05, y);
+        // Center the indicator based on dimensions
+        // Tile (x,y) center is at (x, 0, y).
+        // For width 2, we want center at x + 0.5.
+        // Formula: x + (width - 1) / 2
+        this.mesh.position.set(x + (width - 1) / 2, 0.05, y + (height - 1) / 2);
+
+        // Scale the ring to fit
+        // Original radius 0.7 covers ~1.4 units. Slightly larger than 1.
+        // simple scaling:
+        this.mesh.scale.set(width, 1, height);
 
         const time = performance.now() / 1000;
         
         // Pulse effect
+        // Apply pulse to rings (local scale), distinct from mesh scale
         const s1 = 1.0 + Math.sin(time * 5) * 0.1;
         this.ring.scale.set(s1, s1, 1);
         (this.ring.material as THREE.MeshBasicMaterial).opacity = 0.4 + Math.sin(time * 5) * 0.2;

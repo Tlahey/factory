@@ -17,6 +17,7 @@ import { createBeachTexture } from './environment/sand/BeachTexture';
 import { createChestModel } from './buildings/chest/ChestModel';
 import { createConveyorTexture } from './buildings/conveyor/ConveyorTexture';
 import { createConveyorModel } from './buildings/conveyor/ConveyorGeometry';
+import { createHubModel } from './buildings/hub/HubModel';
 import { InventorySlot } from './state/store';
 
 import { VisualEntity } from './visuals/VisualEntity';
@@ -577,9 +578,11 @@ export class GameApp {
   }
 
   private syncBuildings() {
-    // 1. Remove buildings that no longer exist
+    // 1. Remove buildings that no longer exist or shouldn't have visuals (non-origin)
     for (const key of this.visuals.keys()) {
-        if (!this.world.buildings.has(key)) {
+        const building = this.world.buildings.get(key);
+        // If building missing OR this key is not the origin (e.g. part of 2x2 but not top-left), remove visual
+        if (!building || key !== `${building.x},${building.y}`) {
             const visual = this.visuals.get(key);
             if (visual) {
                 this.scene.remove(visual.mesh);
@@ -591,6 +594,9 @@ export class GameApp {
 
     // 2. Add/Update buildings
     this.world.buildings.forEach((building, key) => {
+        // Only render at the origin tile
+        if (key !== `${building.x},${building.y}`) return;
+
         let visual = this.visuals.get(key);
         let shapeId = '';
         
@@ -631,6 +637,9 @@ export class GameApp {
             } else if (building.getType() === 'chest') {
                 mesh = createChestModel();
                 mesh.name = 'chest';
+                visual = new SimpleVisual(mesh);
+            } else if (building.getType() === 'hub') {
+                mesh = createHubModel();
                 visual = new SimpleVisual(mesh);
             } else {
                 // Fallback for generic
@@ -801,7 +810,12 @@ export class GameApp {
     const openedKey = useGameStore.getState().openedEntityKey;
     if (openedKey) {
         const [sx, sy] = openedKey.split(',').map(Number);
-        this.selectionIndicator.update(sx, sy);
+        const b = this.world.getBuilding(sx, sy);
+        if (b) {
+             this.selectionIndicator.update(b.x, b.y, b.width, b.height);
+        } else {
+             this.selectionIndicator.update(sx, sy);
+        }
     } else {
         this.selectionIndicator.update(null, null);
     }

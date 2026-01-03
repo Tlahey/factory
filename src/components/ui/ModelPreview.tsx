@@ -94,10 +94,33 @@ export default function ModelPreview({
                     model = new THREE.Mesh(geometry, material);
                     model.position.y = 0;
                 } else if (id === 'cable') {
-                    const geometry = new THREE.TorusGeometry(0.3, 0.1, 8, 20);
-                    const material = new THREE.MeshLambertMaterial({ color: 0xffffff });
+                    // Striped Texture
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 64; canvas.height = 64;
+                    const ctx = canvas.getContext('2d')!;
+                    ctx.fillStyle = '#ffaa00'; ctx.fillRect(0, 0, 64, 64);
+                    ctx.fillStyle = '#222222';
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0); ctx.lineTo(32, 0); ctx.lineTo(0, 32); ctx.fill();
+                    ctx.moveTo(32, 64); ctx.lineTo(64, 64); ctx.lineTo(64, 32); ctx.fill();
+                    ctx.moveTo(0, 64); ctx.lineTo(32, 64); ctx.lineTo(64, 32); ctx.lineTo(64, 0); ctx.lineTo(32, 0); ctx.lineTo(0, 32); ctx.fill();
+
+                    const tex = new THREE.CanvasTexture(canvas);
+                    tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+                    tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter;
+                    tex.repeat.set(1, 4);
+
+                    // U-Shape
+                    const curve = new THREE.CatmullRomCurve3([
+                        new THREE.Vector3(-0.4, 0.4, 0),
+                        new THREE.Vector3(0, -0.2, 0),
+                        new THREE.Vector3(0.4, 0.4, 0)
+                    ]);
+
+                    const geometry = new THREE.TubeGeometry(curve, 20, 0.08, 8, false);
+                    const material = new THREE.MeshLambertMaterial({ map: tex });
                     model = new THREE.Mesh(geometry, material);
-                    model.position.y = 0;
+                    model.position.y = -0.1;
                 }
             } else if (type === 'item') {
                 if (id === 'stone') {

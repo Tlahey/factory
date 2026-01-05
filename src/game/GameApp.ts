@@ -143,6 +143,13 @@ export class GameApp {
                  }
             }
         }
+    }, (path) => {
+        // Conveyor Drag Preview
+        if (path.length > 0) {
+            this.placementVisuals.updateConveyorDragPreview(path);
+        } else {
+            this.placementVisuals.clearConveyorDragPreview();
+        }
     });
 
     const originalPlace = this.world.placeBuilding.bind(this.world);
@@ -872,6 +879,14 @@ export class GameApp {
     this.visuals.forEach((visual, key) => {
         const building = this.world.buildings.get(key);
         if (building) {
+            // Update resolution status for conveyors
+            if (building instanceof Conveyor && visual instanceof ConveyorVisual) {
+                visual.setResolved(building.isResolved);
+                
+                // Check if visual type needs to change (e.g., new neighbor placed)
+                const visualState = building.getVisualState(this.world);
+                visual.updateType(visualState.type, this.scene);
+            }
             visual.update(delta, building);
         }
     });

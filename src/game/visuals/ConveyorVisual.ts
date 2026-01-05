@@ -70,7 +70,43 @@ export class ConveyorVisual implements VisualEntity {
       this.mesh.rotation.y = rot;
   }
 
+  /**
+   * Update the resolved status of the conveyor, changing belt material to enable/disable animation
+   */
+  public setResolved(isResolved: boolean): void {
+      const belt = this.mesh.getObjectByName('belt');
+      if (belt && belt instanceof THREE.Mesh) {
+          if (isResolved) {
+              // Enable animated belt - get the texture from current material or create new one
+              if (!this.beltMaterial) {
+                  // Belt was previously unresolved, create a new texture
+                  const currentMat = belt.material as THREE.MeshLambertMaterial;
+                  let texture = currentMat.map; // Try to preserve texture if exists
+                  
+                  // If no texture exists (e.g., was unresolved grey material), create a new one
+                  if (!texture) {
+                      texture = createConveyorTexture();
+                  }
+                  
+                  this.beltMaterial = new THREE.MeshLambertMaterial({ 
+                      map: texture,
+                      side: THREE.DoubleSide 
+                  });
+                  belt.material = this.beltMaterial;
+              }
+          } else {
+              // Disable animation, set to static grey
+              belt.material = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
+              this.beltMaterial = null;
+          }
+      }
+  }
+
   public update(delta: number, conveyor: Conveyor): void {
+      // 0. Check if conveyor type has changed (e.g., new neighbor placed)
+      // This requires world access which we don't have here...
+      // We'll handle this differently - recreate mesh if type mismatch is detected
+      
       // 1. Animate Belt
       if (this.beltMaterial && this.beltMaterial.map) {
           this.beltMaterial.map.offset.y -= delta * 0.5;
@@ -120,6 +156,58 @@ export class ConveyorVisual implements VisualEntity {
           this.itemMesh.visible = false;
           this.lastItemId = null;
       }
+  }
+  
+  /**
+   * Check if visual needs to be rebuilt due to type change
+   * Returns true if mesh was rebuilt
+   */
+  public updateType(newType: 'straight' | 'left' | 'right', world: THREE.Scene): boolean {
+      if (this.type !== newType) {
+          console.log(`Conveyor type changed from ${this.type} to ${newType}, rebuilding mesh`);
+          this.type = newType;
+          
+          // Store current position and rotation
+          const pos = this.mesh.position.clone();
+          const rot = this.mesh.rotation.clone();
+          const scale = this.mesh.scale.clone();
+          const isResolved = this.beltMaterial !== null;
+          
+          // Remove old mesh from scene
+          if (this.mesh.parent) {
+              this.mesh.parent.remove(this.mesh);
+          }
+          
+          // Create new mesh with new type
+          const texture = createConveyorTexture();
+          this.mesh = createConveyorModel(newType, texture);
+          this.mesh.name = 'conveyor';
+          this.mesh.position.copy(pos);
+          this.mesh.rotation.copy(rot);
+          this.mesh.scale.copy(scale);
+          
+          // Re-setup belt material
+          const belt = this.mesh.getObjectByName('belt');
+          if (belt && belt instanceof THREE.Mesh) {
+              if (isResolved) {
+                  this.beltMaterial = belt.material as THREE.MeshLambertMaterial;
+              } else {
+                  belt.material = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
+                  this.beltMaterial = null;
+              }
+          }
+          
+          // Re-setup item container
+          this.itemContainer = new THREE.Group();
+          this.mesh.add(this.itemContainer);
+          this.itemContainer.add(this.itemMesh);
+          
+          // Add new mesh to scene
+          world.add(this.mesh);
+          
+          return true;
+      }
+      return false;
   }
 
   public setHighlight(active: boolean): void {

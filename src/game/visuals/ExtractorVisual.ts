@@ -31,7 +31,12 @@ export class ExtractorVisual implements VisualEntity {
       const time = performance.now() / 1000;
       
       // Update Status Light
-      const statusMat = this.statusLight.material as THREE.MeshBasicMaterial;
+      const statusMat = this.statusLight?.material as THREE.MeshBasicMaterial;
+      if (!statusMat || !statusMat.color) {
+          console.error('ExtractorVisual: statusLight material is undefined');
+          return;
+      }
+      
       // 3-State Logic
       // 1. Not Linked (No Power Source) -> RED
       if (!entity.hasPowerSource) {

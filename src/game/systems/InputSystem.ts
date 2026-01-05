@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { World } from '../core/World';
 import { TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
 import { useGameStore } from '@/game/state/store';
+import { calculateConveyorPath, getSegmentDirection } from '../buildings/conveyor/ConveyorPathHelper';
 
 export class InputSystem {
   private domElement: HTMLElement;
@@ -13,6 +14,7 @@ export class InputSystem {
   private onHover?: (x: number, y: number, isValid?: boolean, ghostBuilding?: string | null) => void;
   private onCableDrag?: (start: {x: number, y: number} | null, end: {x: number, y: number} | null, isValid: boolean) => void;
   private onDeleteHover?: (target: {type: 'cable' | 'building', id: string, x?: number, y?: number, cable?: any} | null) => void;
+  private onConveyorDrag?: (path: {x: number, y: number, isValid: boolean}[]) => void;
 
   // Camera Controls
   private isDragging = false;
@@ -23,7 +25,8 @@ export class InputSystem {
               onWorldChange?: () => void, 
               onHover?: (x: number, y: number, isValid?: boolean, ghostBuilding?: string | null) => void,
               onCableDrag?: (start: {x: number, y: number} | null, end: {x: number, y: number} | null, isValid: boolean) => void,
-              onDeleteHover?: (target: {type: 'cable' | 'building', id: string, x?: number, y?: number, cable?: any} | null) => void) {
+              onDeleteHover?: (target: {type: 'cable' | 'building', id: string, x?: number, y?: number, cable?: any} | null) => void,
+              onConveyorDrag?: (path: {x: number, y: number, isValid: boolean}[]) => void) {
     this.domElement = domElement;
     this.camera = camera;
     this.world = world;
@@ -31,6 +34,7 @@ export class InputSystem {
     this.onHover = onHover;
     this.onCableDrag = onCableDrag;
     this.onDeleteHover = onDeleteHover;
+    this.onConveyorDrag = onConveyorDrag;
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
 
@@ -90,6 +94,10 @@ export class InputSystem {
   // Cable State
   private cableStart: { x: number, y: number } | null = null;
   private isDraggingCable = false;
+  
+  // Conveyor Drag State
+  private conveyorDragStart: { x: number, y: number } | null = null;
+  private isDraggingConveyor = false;
 
   private setupInteractions() {
     this.domElement.addEventListener('pointerdown', this.onPointerDown.bind(this));
@@ -101,6 +109,7 @@ export class InputSystem {
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             this.cancelCableDrag();
+            this.cancelConveyorDrag();
             // Also clear selection?
             // useGameStore.getState().setSelectedBuilding(null);
         }
@@ -184,6 +193,17 @@ export class InputSystem {
                 }
             }
         }
+        
+        // Potential Start of Conveyor Drag?
+        if (selectedBuilding === 'conveyor') {
+            const intersection = this.getIntersection(event);
+            if (intersection && this.world.canPlaceBuilding(intersection.x, intersection.y, 'conveyor')) {
+                // Start Conveyor Drag
+                this.conveyorDragStart = { x: intersection.x, y: intersection.y };
+                this.isDraggingConveyor = true;
+                return;
+            }
+        }
 
         this.isDragging = true;
         this.previousMousePosition = { x: event.clientX, y: event.clientY };
@@ -200,7 +220,7 @@ export class InputSystem {
     // 1. Hover/Drag Visuals
     const intersection = this.getIntersection(event);
 
-    if (this.isDraggingCable && this.cableStart && intersection) {
+     if (this.isDraggingCable && this.cableStart && intersection) {
         // Validation Logic
         const dx = intersection.x - this.cableStart.x;
         const dy = intersection.y - this.cableStart.y;
@@ -268,6 +288,26 @@ export class InputSystem {
 
         if (this.onCableDrag) {
             this.onCableDrag(this.cableStart, {x: intersection.x, y: intersection.y}, isValid);
+        }
+    } else if (this.isDraggingConveyor && this.conveyorDragStart && intersection) {
+        // Conveyor Drag: Calculate path and validate each position
+        const path = calculateConveyorPath(
+            this.conveyorDragStart.x,
+            this.conveyorDragStart.y,
+            intersection.x,
+            intersection.y
+        );
+        
+        // Validate each position in the path
+        const validatedPath = path.map(pos => ({
+            x: pos.x,
+            y: pos.y,
+            isValid: this.world.canPlaceBuilding(pos.x, pos.y, 'conveyor')
+        }));
+        
+        // Call preview callback
+        if (this.onConveyorDrag) {
+            this.onConveyorDrag(validatedPath);
         }
     } else {
         // Standard Hover
@@ -384,6 +424,19 @@ export class InputSystem {
         this.cableStart = null;
         return;
     }
+    
+    if (this.isDraggingConveyor && this.conveyorDragStart) {
+        // Commit Conveyor Path
+        const intersection = this.getIntersection(event);
+        if (intersection) {
+            this.handleConveyorDragEnd(intersection.x, intersection.y);
+        } else {
+            this.cancelConveyorDrag();
+        }
+        this.isDraggingConveyor = false;
+        this.conveyorDragStart = null;
+        return;
+    }
 
     // Check if it was a drag or a click
     const dx = event.clientX - this.mouseDownPosition.x;
@@ -456,6 +509,64 @@ export class InputSystem {
       this.cableStart = null;
       this.isDraggingCable = false;
       if (this.onCableDrag) this.onCableDrag(null, null, false);
+  }
+  
+  private cancelConveyorDrag() {
+      this.conveyorDragStart = null;
+      this.isDraggingConveyor = false;
+      if (this.onConveyorDrag) this.onConveyorDrag([]);
+  }
+  
+  private handleConveyorDragEnd(endX: number, endY: number) {
+      if (!this.conveyorDragStart) return;
+      
+      // Calculate path
+      const path = calculateConveyorPath(
+          this.conveyorDragStart.x,
+          this.conveyorDragStart.y,
+          endX,
+          endY
+      );
+      
+      // Validate and place all conveyors
+      let allValid = true;
+      for (const pos of path) {
+          if (!this.world.canPlaceBuilding(pos.x, pos.y, 'conveyor')) {
+              allValid = false;
+              break;
+          }
+      }
+      
+      if (allValid && path.length > 0) {
+          // Place all conveyors with correct direction
+          for (let i = 0; i < path.length; i++) {
+              const current = path[i];
+              const next = i < path.length - 1 ? path[i + 1] : null;
+              const prev = i > 0 ? path[i - 1] : null;
+              
+              // Calculate direction based on next segment, or maintain prev direction if end
+              const direction = getSegmentDirection(
+                  current.x, current.y, 
+                  next ? next.x : null, next ? next.y : null,
+                  prev ? prev.x : null, prev ? prev.y : null
+              );
+              
+              this.world.placeBuilding(current.x, current.y, 'conveyor', direction);
+          }
+          
+          // Update conveyor network to orient all conveyors correctly
+          this.world.updateConveyorNetwork();
+          
+          // Notify world changed
+          this.onWorldChange?.();
+          
+          console.log(`Placed ${path.length} conveyors via drag`);
+      } else {
+          console.log('Conveyor drag placement failed - invalid positions');
+      }
+      
+      // Cleanup
+      this.cancelConveyorDrag();
   }
 
   private getIntersection(event: PointerEvent): {x: number, y: number} | null {

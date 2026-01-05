@@ -75,5 +75,34 @@ export function createExtractorModel(): THREE.Group {
     slideGroup.add(drillMesh);
     group.add(slideGroup);
 
+    // 5. Output Direction Indicator (Arrow pointing forward)
+    // This shows where the conveyor should be placed
+    const arrowGroup = new THREE.Group();
+    arrowGroup.name = 'output_indicator';
+    
+    // Arrow shaft (smaller and higher)
+    const shaftGeo = new THREE.BoxGeometry(0.1, 0.04, 0.3);
+    const arrowMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0xffaa00,  // Orange/yellow for visibility
+        transparent: true,
+        opacity: 0.95
+    });
+    const shaft = new THREE.Mesh(shaftGeo, arrowMaterial);
+    shaft.position.z = -0.35; // Point forward (negative Z in local space)
+    shaft.position.y = 0.3; // Raised higher above ground
+    arrowGroup.add(shaft);
+    
+    // Arrow head (triangle) - smaller
+    const headGeo = new THREE.ConeGeometry(0.12, 0.2, 3);
+    const head = new THREE.Mesh(headGeo, arrowMaterial);
+    head.position.z = -0.55; // At tip of shaft
+    head.position.y = 0.3; // Same height as shaft
+    head.rotation.x = -Math.PI / 2; // Point forward (negative rotation)
+    arrowGroup.add(head);
+    
+    // Position arrow at base level
+    arrowGroup.position.y = 0.2;
+    group.add(arrowGroup);
+
     return group;
 }

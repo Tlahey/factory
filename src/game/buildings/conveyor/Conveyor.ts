@@ -72,49 +72,181 @@ export class Conveyor extends BuildingEntity {
       return !tile.isStone();
   }
 
-  public getVisualState(world: any): { type: 'straight' | 'left' | 'right', outDir: 'north' | 'south' | 'east' | 'west', shapeId: string } {
-      let conveyorType: 'straight' | 'left' | 'right' = 'straight';
-      let conveyorOutDir = this.direction;
-      let isConveyorResolved = this.isResolved;
-
-      if (isConveyorResolved) {
-          let inputDir: string | null = null;
-          const dirs = [
-              { dx: 0, dy: -1, dir: 'north', opposite: 'south' },
-              { dx: 0, dy: 1, dir: 'south', opposite: 'north' },
-              { dx: 1, dy: 0, dir: 'east', opposite: 'west' },
-              { dx: -1, dy: 0, dir: 'west', opposite: 'east' }
-          ];
-
-          for (const d of dirs) {
-              const nb = world.getBuilding(this.x + d.dx, this.y + d.dy);
-              if (nb) {
-                  // Check if neighbor is outputting to THIS conveyor
-                  if (nb instanceof Conveyor) {
-                      if (nb.isResolved && nb.direction === d.opposite) {
-                          inputDir = d.dir;
-                          break;
-                      }
-                  } else if (nb.getType() === 'extractor') {
-                       // Extractor outputting to us
-                      if (nb.direction === d.opposite) {
-                          inputDir = d.dir;
-                          break;
-                      }
-                  }
-              }
+  /**
+   * Auto-orient this conveyor to connect to adjacent buildings
+   * Called once at placement time
+   * 
+   * Priority:
+   * 1. Chest - point toward it (it's a destination)
+   * 2. Resolved conveyor - point toward it (continue flow)
+   * 3. Extractor - point in same direction IF we're in its output path
+   */
+  public autoOrientToNeighbor(world: any): void {
+      const { getDirectionOffset, getOppositeDirection } = require('./ConveyorLogicSystem');
+      
+      interface Candidate {
+          direction: 'north' | 'south' | 'east' | 'west';
+          priority: number;
+      }
+      
+      // Priorities (Lower is better)
+      const PRIO_CHEST = 1;         // Definite destination
+      const PRIO_CONVEYOR_OUT = 2;  // Valid conveyor target
+      const PRIO_CONVEYOR_IN = 3;   // Continuing a flow from neighbor
+      const PRIO_EXTRACTOR_IN = 4;  // Starting a flow from extractor
+      
+      const directions: Array<'north' | 'south' | 'east' | 'west'> = ['north', 'south', 'east', 'west'];
+      let bestCandidate: Candidate | null = null;
+      
+      // Phase 1: Look for OUTPUTS (Where can we send items?)
+      for (const checkDir of directions) {
+          const offset = getDirectionOffset(checkDir);
+          const neighbor = world.getBuilding(this.x + offset.dx, this.y + offset.dy);
+          
+          if (!neighbor) continue;
+          const neighborType = neighbor.getType();
+          
+          // 1. Chest Target
+          if (neighborType === 'chest') {
+              const candidate: Candidate = { direction: checkDir, priority: PRIO_CHEST };
+              this.updateBestCandidate(candidate, bestCandidate, (c) => bestCandidate = c);
           }
-
-          if (inputDir) {
-              const lefts: Record<string, string> = { 'north': 'west', 'west': 'south', 'south': 'east', 'east': 'north' };
-              const rights: Record<string, string> = { 'north': 'east', 'east': 'south', 'south': 'west', 'west': 'north' };
+          
+          // 2. Conveyor Target (ANY conveyor is a potential output)
+          else if (neighborType === 'conveyor') {
+              const neighborDir = neighbor.direction;
+              const dirToUs = getOppositeDirection(checkDir);
               
-              if (lefts[conveyorOutDir] === inputDir) conveyorType = 'left';
-              else if (rights[conveyorOutDir] === inputDir) conveyorType = 'right';
+              // ANY conveyor is a valid output target. 
+              // Even if it currently points at us (wrong direction), we should point toward it.
+              // The propagation will fix its direction afterward.
+              let priority = PRIO_CONVEYOR_OUT;
+              
+              // Small penalty if neighbor points at us (potential conflict, but still valid)
+              if (neighborDir === dirToUs) {
+                  priority += 0.5; // 2.5 - less preferred but still better than Extractor (4)
+              }
+              
+              // Bonus if we are ALREADY pointing at it (Keep existing links)
+              if (this.direction === checkDir) {
+                  priority -= 0.1;
+              }
+              
+              const candidate: Candidate = { direction: checkDir, priority: priority };
+              this.updateBestCandidate(candidate, bestCandidate, (c) => bestCandidate = c);
           }
       }
       
-      const shapeId = isConveyorResolved ? `conveyor-${conveyorType}-${conveyorOutDir}-v2` : `conveyor-unresolved-v2`;
+      // Phase 2: Look for INPUTS (Who is feeding us?) - only matters if no Output found?
+      // Actually, we collect them as lower priority candidates.
+      for (const checkDir of directions) {
+          const offset = getDirectionOffset(checkDir);
+          const neighbor = world.getBuilding(this.x + offset.dx, this.y + offset.dy);
+          
+          if (!neighbor) continue;
+          const neighborType = neighbor.getType();
+          
+          // 3. Conveyor Input (Neighbor points AT us)
+          if (neighborType === 'conveyor') {
+              const neighborDir = neighbor.direction;
+              const dirToUs = getOppositeDirection(checkDir);
+              
+              if (neighborDir === dirToUs) {
+                  // It points at us! Flow suggests we continue this direction.
+                  // Example: A(East) -> Me. Neighbor is West. Points East.
+                  // Suggests I point East.
+                  const suggestedDir = neighborDir; 
+                  const candidate: Candidate = { direction: suggestedDir, priority: PRIO_CONVEYOR_IN };
+                  this.updateBestCandidate(candidate, bestCandidate, (c) => bestCandidate = c);
+              }
+          }
+          
+          // 4. Extractor Input
+          else if (neighborType === 'extractor') {
+              const extractorDir = neighbor.direction;
+              const dirToUs = getOppositeDirection(checkDir);
+              
+              if (extractorDir === dirToUs) {
+                  // It points at us! We should continue in the same direction as its output.
+                  // PRIORITY 4 (Lowest): Only use this if no Output target found.
+                  // This ensures we prefer pointing toward the NEXT conveyor over aligning with extractor.
+                  const candidate: Candidate = { 
+                      direction: extractorDir,
+                      priority: PRIO_EXTRACTOR_IN 
+                  };
+                  this.updateBestCandidate(candidate, bestCandidate, (c) => bestCandidate = c);
+              }
+      }
+      
+      }
+      
+      if (bestCandidate) {
+          const finalCand = bestCandidate as Candidate;
+          const oldDirection = this.direction;
+          this.direction = finalCand.direction;
+          
+          // PROPAGATION: If we changed direction, notify neighbors so they can react
+          // This creates a chain reaction ensuring flow consistency from source to destination
+          if (this.direction !== oldDirection) {
+              try {
+                  const { getDirectionOffset } = require('./ConveyorLogicSystem');
+                  const directions = ['north', 'south', 'east', 'west'];
+                  
+                  for (const dir of directions) {
+                      const offset = getDirectionOffset(dir);
+                      const neighbor = world.getBuilding(this.x + offset.dx, this.y + offset.dy);
+                      
+                      // Only propagate to conveyors to avoid infinite loops with other checks
+                      if (neighbor && neighbor.getType() === 'conveyor') {
+                          (neighbor as Conveyor).autoOrientToNeighbor(world);
+                      }
+                  }
+              } catch (e) { 
+                  // Prevent crashes during propagation
+              }
+          }
+      }
+  }
+
+  // Helper to update best candidate with tie-breaking
+  private updateBestCandidate(candidate: any, currentBest: any, setBest: (c: any) => void) {
+      if (!currentBest || candidate.priority < currentBest.priority) {
+          setBest(candidate);
+      } else if (candidate.priority === currentBest.priority) {
+          // Tie-breaker: Prefer User Drag Direction
+          if (candidate.direction === this.direction) {
+              setBest(candidate);
+          }
+      }
+  }    
+
+  public getVisualState(world: any): { type: 'straight' | 'left' | 'right', outDir: 'north' | 'south' | 'east' | 'west', shapeId: string } {
+      // Import at runtime to avoid circular dependencies
+      const { calculateTurnType, determineFlowInputDirection } = require('./ConveyorLogicSystem');
+      
+      let conveyorType: 'straight' | 'left' | 'right' = 'straight';
+      const conveyorOutDir = this.direction; // Always use actual direction
+      
+      // RULE: Unresolved conveyors always display as straight (grey, non-animated)
+      if (!this.isResolved) {
+          const shapeId = `conveyor-straight-${conveyorOutDir}-v2`;
+          return { type: 'straight', outDir: conveyorOutDir, shapeId };
+      }
+      
+      // Calculate Turn
+      // We assume flow comes FROM the input direction
+      const inputDir = determineFlowInputDirection(this.x, this.y, this.direction, world);
+      
+      if (!inputDir) {
+          // No valid input - display as straight
+          const shapeId = `conveyor-straight-${conveyorOutDir}-v2`;
+          return { type: 'straight', outDir: conveyorOutDir, shapeId };
+      }
+      
+      // RULE: Calculate turn type based on flow input and this.direction
+      conveyorType = calculateTurnType(inputDir, conveyorOutDir);
+      
+      const shapeId = `conveyor-${conveyorType}-${conveyorOutDir}-v2`;
       return { type: conveyorType, outDir: conveyorOutDir, shapeId };
   }
 }

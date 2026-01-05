@@ -165,6 +165,31 @@ export class World {
         }
     }
     
+    // Auto-orient conveyors to connect to neighbors
+    // 1. If we are a conveyor, look around
+    if (building instanceof Conveyor) {
+        building.autoOrientToNeighbor(this);
+    }
+    
+    // 2. IMPORTANT: Notify ALL identifiable neighbors to re-check their orientation
+    // This allows existing conveyors to react when we place a Chest or Extractor next to them
+    const { getDirectionOffset } = require('../buildings/conveyor/ConveyorLogicSystem');
+    const directions = ['north', 'south', 'east', 'west'];
+    
+    for (const dir of directions) {
+        const offset = getDirectionOffset(dir);
+        const neighbor = this.getBuilding(building.x + offset.dx, building.y + offset.dy);
+        
+        // If neighbor is a conveyor, tell it to re-orient
+        if (neighbor && neighbor.getType() === 'conveyor') {
+            (neighbor as Conveyor).autoOrientToNeighbor(this);
+        }
+    }
+    
+    // CRITICAL: Propagate flow direction from sources BEFORE network update
+    // This ensures all conveyors point AWAY from extractors
+    this.propagateFlowFromSources();
+    
     // Update Network
     this.updateConveyorNetwork();
     
@@ -258,6 +283,7 @@ export class World {
 
   public updateConveyorNetwork(): void {
       console.log('--- Start Network Update ---');
+      
       // 1. Reset all conveyors
       let convCount = 0;
       this.buildings.forEach(b => {
@@ -268,50 +294,177 @@ export class World {
       });
       console.log(`Reset ${convCount} conveyors.`);
 
-      // 2. BFS from Chests (Sinks)
+      // 2. Pass 1: Forward flow tracking from extractors
       const queue: {x: number, y: number}[] = [];
       const visited = new Set<string>();
 
+      // Start from all extractors (sources)
+      // NOTE: Chests are DESTINATIONS by default, not sources (Phase 2 will add output sides)
       this.buildings.forEach(b => {
-          if (b instanceof Chest) {
+          if (b instanceof Extractor) {
               queue.push({x: b.x, y: b.y});
               visited.add(`${b.x},${b.y}`);
           }
       });
-      console.log(`Starting BFS with ${queue.length} chests.`);
+      console.log(`Pass 1: Starting forward flow from ${queue.length} extractors.`);
 
-      const dirs = [
-          {dx: 0, dy: -1, dir: 'north'},
-          {dx: 0, dy: 1, dir: 'south'},
-          {dx: 1, dy: 0, dir: 'east'},
-          {dx: -1, dy: 0, dir: 'west'}
-      ];
+      let resolvedCount = 0;
 
       while (queue.length > 0) {
           const {x, y} = queue.shift()!;
-          // console.log(`Processing ${x},${y}`); // Verbose
+          const current = this.getBuilding(x, y);
           
-          for (const d of dirs) {
-              const nx = x + d.dx;
-              const ny = y + d.dy;
-              const nKey = `${nx},${ny}`;
-              const nb = this.getBuilding(nx, ny);
-
-              if (nb && nb instanceof Conveyor && !nb.isResolved) {
-                  // Found an unresolved conveyor adjacent to a resolved node
-                  if (d.dir === 'north') nb.direction = 'south'; 
-                  else if (d.dir === 'south') nb.direction = 'north'; 
-                  else if (d.dir === 'east') nb.direction = 'west'; 
-                  else if (d.dir === 'west') nb.direction = 'east'; 
-
-                  nb.isResolved = true;
-                  visited.add(nKey);
-                  queue.push({x: nx, y: ny});
-                  // console.log(`Resolved Conveyor at ${nx},${ny} -> ${nb.direction}`);
+          if (!current) continue;
+          
+          // Determine output direction
+          let outputDir = current.direction;
+          
+          // Calculate target position based on output direction  
+          let tx = x, ty = y;
+          if (outputDir === 'north') ty -= 1;
+          else if (outputDir === 'south') ty += 1;
+          else if (outputDir === 'east') tx += 1;
+          else if (outputDir === 'west') tx -= 1;
+          
+          const target = this.getBuilding(tx, ty);
+          
+          if (target) {
+              if (target instanceof Conveyor && !target.isResolved) {
+                  // Mark this conveyor as resolved (it's reachable from a source)
+                  target.isResolved = true;
+                  resolvedCount++;
+                  visited.add(`${tx},${ty}`);
+                  queue.push({x: tx, y: ty});
+                  console.log(`Pass 1: Resolved Conveyor at ${tx},${ty} (flow from ${x},${y})`);
+              } else if (target instanceof Chest) {
+                  console.log(`Pass 1: Flow reaches Chest at ${tx},${ty} from ${x},${y}`);
               }
           }
       }
-      console.log(`BFS Complete. Visited ${visited.size} nodes.`);
+      
+      console.log(`Pass 1 complete. Resolved ${resolvedCount} conveyors from extractors.`);
+      
+      // 3. Pass 2: Resolve conveyors connecting to resolved conveyors or chests
+      // Keep iterating until no new conveyors are resolved
+      let pass2Count = 0;
+      let changed = true;
+      
+      while (changed) {
+          changed = false;
+          
+          this.buildings.forEach(b => {
+              if (b instanceof Conveyor && !b.isResolved) {
+                  // Check if this conveyor points to a resolved conveyor or chest
+                  let tx = b.x, ty = b.y;
+                  if (b.direction === 'north') ty -= 1;
+                  else if (b.direction === 'south') ty += 1;
+                  else if (b.direction === 'east') tx += 1;
+                  else if (b.direction === 'west') tx -= 1;
+                  
+                  const target = this.getBuilding(tx, ty);
+                  
+                  if (target) {
+                      if ((target instanceof Conveyor && target.isResolved) || target instanceof Chest) {
+                          b.isResolved = true;
+                          pass2Count++;
+                          changed = true;
+                          console.log(`Pass 2: Resolved Conveyor at ${b.x},${b.y} (connects to resolved ${tx},${ty})`);
+                      }
+                  }
+              }
+          });
+      }
+      
+      console.log(`Pass 2 complete. Resolved ${pass2Count} additional conveyors.`);
+      console.log(`Total resolved: ${resolvedCount + pass2Count} conveyors.`);
+  }
+
+  /**
+   * Propagate flow direction from all sources (Extractors) through the conveyor network.
+   * This ensures all conveyors point AWAY from the source, creating a consistent flow.
+   */
+  public propagateFlowFromSources(): void {
+      const { getDirectionOffset, getOppositeDirection } = require('../buildings/conveyor/ConveyorLogicSystem');
+      
+      // Find all extractors (sources)
+      const extractors: Extractor[] = [];
+      this.buildings.forEach(b => {
+          if (b instanceof Extractor) {
+              extractors.push(b);
+          }
+      });
+      
+      // For each extractor, propagate flow through connected conveyors
+      for (const extractor of extractors) {
+          const outputOffset = getDirectionOffset(extractor.direction);
+          const startX = extractor.x + outputOffset.dx;
+          const startY = extractor.y + outputOffset.dy;
+          
+          const firstConveyor = this.getBuilding(startX, startY);
+          if (!firstConveyor || firstConveyor.getType() !== 'conveyor') continue;
+          
+          // BFS to propagate direction
+          const visited = new Set<string>();
+          const queue: {x: number, y: number, fromDir: 'north' | 'south' | 'east' | 'west'}[] = [];
+          
+          // The first conveyor receives flow from the extractor's direction
+          // It should NOT point back toward the extractor
+          queue.push({ x: startX, y: startY, fromDir: getOppositeDirection(extractor.direction) });
+          
+          while (queue.length > 0) {
+              const { x, y, fromDir } = queue.shift()!;
+              const key = `${x},${y}`;
+              
+              if (visited.has(key)) continue;
+              visited.add(key);
+              
+              const conveyor = this.getBuilding(x, y);
+              if (!conveyor || conveyor.getType() !== 'conveyor') continue;
+              
+              const conv = conveyor as Conveyor;
+              const forbiddenDir = fromDir; // Cannot point back to where we came from
+              
+              // If conveyor points back toward the source, find a better direction
+              if (conv.direction === forbiddenDir) {
+                  // Find first valid alternative (any adjacent conveyor or chest)
+                  const directions: Array<'north' | 'south' | 'east' | 'west'> = ['north', 'south', 'east', 'west'];
+                  
+                  for (const dir of directions) {
+                      if (dir === forbiddenDir) continue;
+                      
+                      const offset = getDirectionOffset(dir);
+                      const neighbor = this.getBuilding(x + offset.dx, y + offset.dy);
+                      
+                      if (neighbor) {
+                          const nType = neighbor.getType();
+                          if (nType === 'conveyor' || nType === 'chest') {
+                              conv.direction = dir;
+                              break;
+                          }
+                      }
+                  }
+              }
+              
+              // Continue propagation to where we output
+              const outOffset = getDirectionOffset(conv.direction);
+              const nextX = x + outOffset.dx;
+              const nextY = y + outOffset.dy;
+              const nextKey = `${nextX},${nextY}`;
+              
+              if (!visited.has(nextKey)) {
+                  const next = this.getBuilding(nextX, nextY);
+                  if (next && next.getType() === 'conveyor') {
+                      // The next conveyor receives flow from `conv.direction` 
+                      // which means it should not point back in the opposite direction
+                      queue.push({ 
+                          x: nextX, 
+                          y: nextY, 
+                          fromDir: getOppositeDirection(conv.direction) 
+                      });
+                  }
+              }
+          }
+      }
   }
 
   public getDistanceToChest(startX: number, startY: number): number {

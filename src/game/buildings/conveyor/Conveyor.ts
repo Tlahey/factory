@@ -1,5 +1,6 @@
 import { Tile } from '../../core/Tile';
 import { BuildingEntity } from '../../entities/BuildingEntity';
+import { getDirectionOffset, getOppositeDirection } from './ConveyorLogicSystem';
 
 export class Conveyor extends BuildingEntity {
   constructor(x: number, y: number, direction: 'north' | 'south' | 'east' | 'west' = 'north') {
@@ -82,7 +83,6 @@ export class Conveyor extends BuildingEntity {
    * 3. Extractor - point in same direction IF we're in its output path
    */
   public autoOrientToNeighbor(world: any): void {
-      const { getDirectionOffset, getOppositeDirection } = require('./ConveyorLogicSystem');
       
       interface Candidate {
           direction: 'north' | 'south' | 'east' | 'west';
@@ -98,7 +98,7 @@ export class Conveyor extends BuildingEntity {
       const directions: Array<'north' | 'south' | 'east' | 'west'> = ['north', 'south', 'east', 'west'];
       let bestCandidate: Candidate | null = null;
       
-      // Phase 1: Look for OUTPUTS (Where can we send items?)
+      // Phase 1: Look for OUTPUTS
       for (const checkDir of directions) {
           const offset = getDirectionOffset(checkDir);
           const neighbor = world.getBuilding(this.x + offset.dx, this.y + offset.dy);
@@ -137,8 +137,7 @@ export class Conveyor extends BuildingEntity {
           }
       }
       
-      // Phase 2: Look for INPUTS (Who is feeding us?) - only matters if no Output found?
-      // Actually, we collect them as lower priority candidates.
+      // Phase 2: Look for INPUTS (Who is feeding us?)
       for (const checkDir of directions) {
           const offset = getDirectionOffset(checkDir);
           const neighbor = world.getBuilding(this.x + offset.dx, this.y + offset.dy);
@@ -176,8 +175,7 @@ export class Conveyor extends BuildingEntity {
                   };
                   this.updateBestCandidate(candidate, bestCandidate, (c) => bestCandidate = c);
               }
-      }
-      
+          }
       }
       
       if (bestCandidate) {
@@ -190,63 +188,57 @@ export class Conveyor extends BuildingEntity {
           if (this.direction !== oldDirection) {
               try {
                   const { getDirectionOffset } = require('./ConveyorLogicSystem');
-                  const directions = ['north', 'south', 'east', 'west'];
+                  const directionsInProp = ['north', 'south', 'east', 'west'];
                   
-                  for (const dir of directions) {
+                  for (const dir of directionsInProp) {
                       const offset = getDirectionOffset(dir);
                       const neighbor = world.getBuilding(this.x + offset.dx, this.y + offset.dy);
                       
                       // Only propagate to conveyors to avoid infinite loops with other checks
                       if (neighbor && neighbor.getType() === 'conveyor') {
-                          (neighbor as Conveyor).autoOrientToNeighbor(world);
+                           // Use 'as any' to avoid circular dependency issues in types if strictly checked
+                          (neighbor as any).autoOrientToNeighbor(world);
                       }
                   }
-              } catch (e) { 
-                  // Prevent crashes during propagation
+              } catch (e) {
+                  // Ignore propagation errors 
               }
           }
       }
   }
 
-  // Helper to update best candidate with tie-breaking
   private updateBestCandidate(candidate: any, currentBest: any, setBest: (c: any) => void) {
-      if (!currentBest || candidate.priority < currentBest.priority) {
-          setBest(candidate);
-      } else if (candidate.priority === currentBest.priority) {
-          // Tie-breaker: Prefer User Drag Direction
-          if (candidate.direction === this.direction) {
-              setBest(candidate);
-          }
-      }
-  }    
+     if (!currentBest || candidate.priority < currentBest.priority) {
+         setBest(candidate);
+     } else if (candidate.priority === currentBest.priority) {
+         if (candidate.direction === this.direction) setBest(candidate);
+     }
+  }
 
-  public getVisualState(world: any): { type: 'straight' | 'left' | 'right', outDir: 'north' | 'south' | 'east' | 'west', shapeId: string } {
-      // Import at runtime to avoid circular dependencies
-      const { calculateTurnType, determineFlowInputDirection } = require('./ConveyorLogicSystem');
+  public getVisualState(world: any): { 
+      type: 'straight' | 'left' | 'right'; 
+      outDir: 'north' | 'south' | 'east' | 'west'; 
+      shapeId: string 
+  } {
+      // Dynamic require to avoid circular dependency issues at import time
+      const { determineFlowInputDirection, calculateTurnType } = require('./ConveyorLogicSystem');
       
-      let conveyorType: 'straight' | 'left' | 'right' = 'straight';
-      const conveyorOutDir = this.direction; // Always use actual direction
+      // Determine if we have an input that causes a turn
+      const flowIn = determineFlowInputDirection(this.x, this.y, this.direction, world);
+      let type: 'straight' | 'left' | 'right' = 'straight';
       
-      // RULE: Unresolved conveyors always display as straight (grey, non-animated)
-      if (!this.isResolved) {
-          const shapeId = `conveyor-straight-${conveyorOutDir}-v2`;
-          return { type: 'straight', outDir: conveyorOutDir, shapeId };
+      if (flowIn) {
+          type = calculateTurnType(flowIn, this.direction) as 'straight' | 'left' | 'right';
       }
       
-      // Calculate Turn
-      // We assume flow comes FROM the input direction
-      const inputDir = determineFlowInputDirection(this.x, this.y, this.direction, world);
+      // Unique identifier for the mesh shape/rotation
+      // format: conveyor-straight-north, conveyor-left-east, etc.
+      const shapeId = `conveyor-${type}-${this.direction}`;
       
-      if (!inputDir) {
-          // No valid input - display as straight
-          const shapeId = `conveyor-straight-${conveyorOutDir}-v2`;
-          return { type: 'straight', outDir: conveyorOutDir, shapeId };
-      }
-      
-      // RULE: Calculate turn type based on flow input and this.direction
-      conveyorType = calculateTurnType(inputDir, conveyorOutDir);
-      
-      const shapeId = `conveyor-${conveyorType}-${conveyorOutDir}-v2`;
-      return { type: conveyorType, outDir: conveyorOutDir, shapeId };
+      return { 
+          type: type, 
+          outDir: this.direction, 
+          shapeId: shapeId 
+      };
   }
 }

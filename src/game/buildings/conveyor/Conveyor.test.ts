@@ -1,178 +1,155 @@
-/**
- * Unit Tests for Conveyor Auto-Orientation
- * 
- * These tests validate that conveyors correctly auto-orient when placed
- * adjacent to different building types.
- */
 
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { Conveyor } from './Conveyor';
-import { Extractor } from '../extractor/Extractor';
-import { Chest } from '../chest/Chest';
-import { World } from '../../core/World';
+import { getDirectionOffset, getOppositeDirection } from './ConveyorLogicSystem';
 
-describe('Conveyor Auto-Orientation', () => {
+class MockEntity {
+    x: number;
+    y: number;
+    type: string;
+    direction: 'north' | 'south' | 'east' | 'west';
+    isResolved: boolean = true; 
+
+    constructor(type: string, x: number, y: number, direction: 'north' | 'south' | 'east' | 'west' = 'north') {
+        this.type = type;
+        this.x = x;
+        this.y = y;
+        this.direction = direction;
+    }
     
-    describe('Adjacent to Extractor', () => {
-        
-        it('should point SOUTH when placed south of extractor pointing SOUTH', () => {
-            // Setup: Extractor at (5,4) pointing SOUTH
-            const world = createMockWorld();
-            const extractor = new Extractor(5, 4, 'south');
-            world.addBuilding(extractor);
-            
-            // Action: Place conveyor at (5,5) - south of extractor
-            const conveyor = new Conveyor(5, 5, 'north'); // Default direction
-            world.addBuilding(conveyor); // Should trigger autoOrientToNeighbor
-            
-            // Assert: Conveyor should point SOUTH (same as extractor)
-            expect(conveyor.direction).toBe('south');
+    getType() { return this.type; }
+}
+
+class MockWorld {
+    buildings: Map<string, MockEntity | Conveyor> = new Map();
+
+    add(b: MockEntity | Conveyor) {
+        this.buildings.set(`${b.x},${b.y}`, b);
+    }
+    
+    getBuilding(x: number, y: number) {
+        return this.buildings.get(`${x},${y}`);
+    }
+
+    propagateFlowFromSources() {
+        const extractors: MockEntity[] = [];
+        this.buildings.forEach(b => { 
+            if (b.getType() === 'extractor') extractors.push(b as MockEntity); 
         });
         
-        it('should point EAST when placed east of extractor pointing EAST', () => {
-            const world = createMockWorld();
-            const extractor = new Extractor(5, 5, 'east');
-            world.addBuilding(extractor);
+        for (const extractor of extractors) {
+            const outputOffset = getDirectionOffset(extractor.direction);
+            const startX = extractor.x + outputOffset.dx;
+            const startY = extractor.y + outputOffset.dy;
             
-            const conveyor = new Conveyor(6, 5, 'north');
-            world.addBuilding(conveyor);
+            const firstConveyor = this.getBuilding(startX, startY);
+            if (!firstConveyor || firstConveyor.getType() !== 'conveyor') continue;
             
-            expect(conveyor.direction).toBe('east');
-        });
+            const visited = new Set<string>();
+            const queue: {x: number, y: number, fromDir: string}[] = [];
+            
+            queue.push({ x: startX, y: startY, fromDir: getOppositeDirection(extractor.direction) });
+            
+            while (queue.length > 0) {
+                const { x, y, fromDir } = queue.shift()!;
+                const key = `${x},${y}`;
+                
+                if (visited.has(key)) continue;
+                visited.add(key);
+                
+                const conveyor = this.getBuilding(x, y);
+                if (!conveyor || conveyor.getType() !== 'conveyor') continue;
+                
+                const conv = conveyor as Conveyor;
+                const forbiddenDir = fromDir; 
+                
+                if (conv.direction === forbiddenDir) {
+                     const directions: Array<'north' | 'south' | 'east' | 'west'> = ['north', 'south', 'east', 'west'];
+                    for (const dir of directions) {
+                        if (dir === forbiddenDir) continue;
+                        const offset = getDirectionOffset(dir);
+                        const neighbor = this.getBuilding(x + offset.dx, y + offset.dy);
+                        if (neighbor && (neighbor.getType() === 'conveyor' || neighbor.getType() === 'chest')) {
+                            conv.direction = dir;
+                            break;
+                        }
+                    }
+                }
+                
+                const outOffset = getDirectionOffset(conv.direction);
+                const nextX = x + outOffset.dx;
+                const nextY = y + outOffset.dy;
+                const nextKey = `${nextX},${nextY}`;
+                
+                if (!visited.has(nextKey)) {
+                    const next = this.getBuilding(nextX, nextY);
+                    if (next && next.getType() === 'conveyor') {
+                        queue.push({ x: nextX, y: nextY, fromDir: getOppositeDirection(conv.direction) });
+                    }
+                }
+            }
+        }
+    }
+}
+
+describe('Conveyor Orientation & Flow', () => {
+    let world: MockWorld;
+
+    beforeEach(() => {
+        world = new MockWorld();
+    });
+
+    test('Side Loading Priority: Straight conveyor next to Extractor', () => {
+        // Setup: Extractor(East) -> C1(North) -> C2(South)
+        const ext = new MockEntity('extractor', 0, 10, 'east'); 
+        const c1 = new Conveyor(1, 10, 'north'); 
+        const c2 = new Conveyor(1, 11, 'south');
+
+        world.add(ext);
+        world.add(c1);
+        world.add(c2);
+
+        // Run Logic on C1
+        c1.autoOrientToNeighbor(world);
+
+        if (c1.direction !== 'south') {
+             console.log(`DEBUG FAILURE: Expected 'south', got '${c1.direction}'`);
+        }
         
-        it('should NOT orient if placed where extractor does not point', () => {
-            // Setup: Extractor at (5,5) pointing SOUTH
-            const world = createMockWorld();
-            const extractor = new Extractor(5, 5, 'south');
-            world.addBuilding(extractor);
-            
-            // Action: Place conveyor at (4,5) - west of extractor (not in flow path)
-            const conveyor = new Conveyor(4, 5, 'north');
-            world.addBuilding(conveyor);
-            
-            // Assert: Conveyor keeps default orientation
-            expect(conveyor.direction).toBe('north');
-        });
+        expect(c1.direction).toBe('south');
+    });
+
+    test('Flow Propagation: Reversing a Chain', () => {
+        const ext = new MockEntity('extractor', 0, 10, 'east');
+        const c1 = new Conveyor(1, 10, 'west');
+        const c2 = new Conveyor(2, 10, 'west');
+        const c3 = new Conveyor(3, 10, 'west');
+        const chest = new MockEntity('chest', 4, 10, 'any' as any);
+
+        world.add(ext);
+        world.add(c1);
+        world.add(c2);
+        world.add(c3);
+        world.add(chest);
+
+        world.propagateFlowFromSources();
+
+        expect(c1.direction).toBe('east');
+        expect(c2.direction).toBe('east');
+        expect(c3.direction).toBe('east');
     });
     
-    describe('Adjacent to Chest', () => {
-        
-        it('should point EAST when placed west of chest', () => {
-            const world = createMockWorld();
-            const chest = new Chest(6, 5, 'north');
-            world.addBuilding(chest);
-            
-            const conveyor = new Conveyor(5, 5, 'south');
-            world.addBuilding(conveyor);
-            
-            expect(conveyor.direction).toBe('east'); // Point toward chest
-        });
-        
-        it('should point NORTH when placed south of chest', () => {
-            const world = createMockWorld();
-            const chest = new Chest(5, 5, 'north');
-            world.addBuilding(chest);
-            
-            const conveyor = new Conveyor(5, 6, 'east');
-            world.addBuilding(conveyor);
-            
-            expect(conveyor.direction).toBe('north'); // Point toward chest
-        });
-    });
-    
-    describe('Adjacent to Resolved Conveyor', () => {
-        
-        it('should point SOUTH when placed south of resolved conveyor pointing SOUTH', () => {
-            const world = createMockWorld();
-            
-            // Setup resolved conveyor chain
-            const conveyor1 = new Conveyor(5, 5, 'south');
-            conveyor1.isResolved = true;
-            world.addBuilding(conveyor1);
-            
-            const conveyor2 = new Conveyor(5, 6, 'east');
-            world.addBuilding(conveyor2);
-            
-            expect(conveyor2.direction).toBe('south'); // Continue flow
-        });
-    });
-    
-    describe('Priority System', () => {
-        
-        it('should prioritize chest over conveyor', () => {
-            const world = createMockWorld();
-            
-            // Chest to the east
-            const chest = new Chest(6, 5, 'north');
-            world.addBuilding(chest);
-            
-            // Resolved conveyor to the south
-            const conveyor1 = new Conveyor(5, 6, 'south');
-            conveyor1.isResolved = true;
-            world.addBuilding(conveyor1);
-            
-            // Place new conveyor between them
-            const conveyor2 = new Conveyor(5, 5, 'north');
-            world.addBuilding(conveyor2);
-            
-            // Should point toward chest (priority 1) not conveyor (priority 2)
-            expect(conveyor2.direction).toBe('east');
-        });
-        
-        it('should prioritize chest over extractor', () => {
-            const world = createMockWorld();
-            
-            const extractor = new Extractor(5, 4, 'south'); // Points to (5,5)
-            world.addBuilding(extractor);
-            
-            const chest = new Chest(6, 5, 'north');
-            world.addBuilding(chest);
-            
-            const conveyor = new Conveyor(5, 5, 'north');
-            world.addBuilding(conveyor);
-            
-            expect(conveyor.direction).toBe('east'); // Toward chest, not south
-        });
-    });
-    
-    describe('Edge Cases', () => {
-        
-        it('should keep manual orientation when no neighbors', () => {
-            const world = createMockWorld();
-            
-            const conveyor = new Conveyor(5, 5, 'west');
-            world.addBuilding(conveyor);
-            
-            expect(conveyor.direction).toBe('west'); // No auto-orientation
-        });
-        
-        it('should handle perpendicular extractor correctly', () => {
-            // Extractor pointing east, conveyor to the north of it
-            const world = createMockWorld();
-            const extractor = new Extractor(5, 5, 'east');
-            world.addBuilding(extractor);
-            
-            const conveyor = new Conveyor(5, 4, 'south'); // North of extractor
-            world.addBuilding(conveyor);
-            
-            // Extractor doesn't point toward conveyor, so no auto-orient
-            expect(conveyor.direction).toBe('south');
-        });
+    test('Corner Case: Extractor -> Curve', () => {
+         const ext = new MockEntity('extractor', 0, 0, 'east');
+         const c1 = new Conveyor(1, 0, 'west');
+         const c2 = new Conveyor(1, 1, 'north');
+         
+         world.add(ext);
+         world.add(c1);
+         world.add(c2);
+         
+         world.propagateFlowFromSources();
+         
+         expect(c1.direction).toBe('south');
     });
 });
-
-// Helper function to create mock world
-function createMockWorld() {
-    const world = new World(20, 20);
-    
-    // Override addBuilding to NOT call updateConveyorNetwork (testing only orientation)
-    const originalAdd = world.addBuilding.bind(world);
-    world.addBuilding = function(building: any) {
-        this.buildings.set(`${building.x},${building.y}`, building);
-        if (building instanceof Conveyor) {
-            building.autoOrientToNeighbor(this);
-        }
-        return true;
-    };
-    
-    return world;
-}

@@ -1,8 +1,7 @@
 'use client';
 
 import { useGameStore } from '@/game/state/store';
-import { RotateCcw, RotateCw, ChevronUp, ChevronDown } from 'lucide-react';
-import clsx from 'clsx';
+import { RotateCcw, RotateCw } from 'lucide-react';
 
 export default function CameraControls() {
     const cameraAzimuth = useGameStore((state) => state.cameraAzimuth);

@@ -1,10 +1,14 @@
 'use client';
 
-import { useGameStore } from '@/game/state/store';
+import { useGameStore, InventorySlot } from '@/game/state/store';
 import { useState, useEffect } from 'react';
 import { X, ArrowUpCircle, Box, Zap } from 'lucide-react';
 import { Chest } from '@/game/buildings/chest/Chest';
 import { Extractor } from '@/game/buildings/extractor/Extractor';
+import { Hub } from '@/game/buildings/hub/Hub';
+import { BuildingEntity } from '@/game/entities/BuildingEntity';
+import { BuildingUpgrade } from '@/game/buildings/BuildingConfig';
+import { IWorld } from '@/game/entities/types';
 import ModelPreview from './ModelPreview';
 
 export default function BuildingInfoPanel() {
@@ -13,9 +17,9 @@ export default function BuildingInfoPanel() {
     const inventory = useGameStore((state) => state.inventory);
     const removeItem = useGameStore((state) => state.removeItem);
 
-    const [building, setBuilding] = useState<any>(null);
+    const [building, setBuilding] = useState<BuildingEntity | null>(null);
     const [activeTab, setActiveTab] = useState<'overview' | 'upgrade'>('overview');
-    const [ignored, forceUpdate] = useState(0);
+    const [, forceUpdate] = useState(0);
 
     // Poll for building updates
     useEffect(() => {
@@ -23,8 +27,8 @@ export default function BuildingInfoPanel() {
 
         const interval = setInterval(() => {
             const [x, y] = openedEntityKey.split(',').map(Number);
-            const b = (window as any).game?.world.getBuilding(x, y);
-            setBuilding(b);
+            const b = (window as unknown as { game: { world: IWorld } }).game?.world.getBuilding(x, y);
+            setBuilding(b || null);
             forceUpdate(n => n + 1);
         }, 33);
 
@@ -33,10 +37,11 @@ export default function BuildingInfoPanel() {
 
     // Event Listener for Drops on HUD (Chest -> HUD)
     useEffect(() => {
-        const handleInventoryDrop = (e: any) => {
+        const handleInventoryDrop = (e: Event) => {
+            const detail = (e as CustomEvent).detail;
             if (!building || !(building instanceof Chest)) return;
 
-            const { source, sourceIndex, targetIndex, type } = e.detail;
+            const { source, sourceIndex, targetIndex, type } = detail;
 
             // Only handle if this panel is open for the source chest?
             // Actually, if we drag from THIS panel, 'source' is 'chest'. 
@@ -90,7 +95,7 @@ export default function BuildingInfoPanel() {
         return inventory.reduce((total, slot) => slot.type === type ? total + slot.count : total, 0);
     };
 
-    const handleUpgrade = (upgrade: any) => {
+    const handleUpgrade = (upgrade: BuildingUpgrade) => {
         const currentCost = Math.floor(upgrade.baseCost);
         if (getInventoryItemCount('stone') >= currentCost) {
             removeItem('stone', currentCost);
@@ -98,7 +103,7 @@ export default function BuildingInfoPanel() {
         }
     };
 
-    const handleDragStart = (e: React.DragEvent, source: 'chest' | 'inventory', index: number, slot: any) => {
+    const handleDragStart = (e: React.DragEvent, source: 'chest' | 'inventory', index: number, slot: InventorySlot) => {
         if (!slot || !slot.type) {
             e.preventDefault();
             return;
@@ -111,7 +116,7 @@ export default function BuildingInfoPanel() {
 
 
 
-    const handleDrop = (e: React.DragEvent, target: 'chest' | 'inventory', targetIndex: number) => {
+    const handleDrop = (e: React.DragEvent, target: 'chest' | 'inventory', _targetIndex: number) => {
         e.preventDefault();
         const source = e.dataTransfer.getData('source') as 'chest' | 'inventory';
         const sourceIndex = parseInt(e.dataTransfer.getData('index'));
@@ -131,7 +136,7 @@ export default function BuildingInfoPanel() {
             const invSlot = inventory[sourceIndex];
             if (!invSlot.type) return;
 
-            const success = building.addItem(invSlot.type, invSlot.count);
+            const success = (building as Chest).addItem(invSlot.type, invSlot.count);
 
             if (success) {
                 useGameStore.getState().updateInventorySlot(sourceIndex, { type: null, count: 0 });
@@ -154,7 +159,7 @@ export default function BuildingInfoPanel() {
                         <ModelPreview type="building" id={building.getType()} width={48} height={48} static />
                     </div>
                     <div>
-                        <h3 className="font-bold text-lg leading-none capitalize">{config.displayName}</h3>
+                        <h3 className="font-bold text-lg leading-none capitalize">{config.name}</h3>
                         <p className="text-xs text-gray-400 mt-1">
                             {isChest ? `Lv. ${building.maxSlots - 4}` : 'Building'}
                         </p>
@@ -324,9 +329,9 @@ export default function BuildingInfoPanel() {
                                                 <Zap size={10} className="text-green-500" /> Production
                                             </div>
                                             <div className="text-lg font-mono font-bold text-green-400">
-                                                {(building.statsHistory && building.statsHistory.length > 0)
-                                                    ? building.statsHistory[building.statsHistory.length - 1].production.toFixed(2)
-                                                    : (building.powerConfig.rate).toFixed(2)}
+                                                {((building as Hub).statsHistory && (building as Hub).statsHistory.length > 0)
+                                                    ? (building as Hub).statsHistory[(building as Hub).statsHistory.length - 1].production.toFixed(2)
+                                                    : (building.powerConfig?.rate || 0).toFixed(2)}
                                                 <span className="text-[10px] text-gray-500 ml-1">kW</span>
                                             </div>
                                         </div>
@@ -335,8 +340,8 @@ export default function BuildingInfoPanel() {
                                                 <Zap size={10} className="text-red-500" /> Consumption
                                             </div>
                                             <div className="text-lg font-mono font-bold text-red-400">
-                                                {(building.statsHistory && building.statsHistory.length > 0)
-                                                    ? building.statsHistory[building.statsHistory.length - 1].consumption.toFixed(2)
+                                                {((building as Hub).statsHistory && (building as Hub).statsHistory.length > 0)
+                                                    ? (building as Hub).statsHistory[(building as Hub).statsHistory.length - 1].consumption.toFixed(2)
                                                     : (0).toFixed(2)}
                                                 <span className="text-[10px] text-gray-500 ml-1">kW</span>
                                             </div>
@@ -353,12 +358,12 @@ export default function BuildingInfoPanel() {
                                         </div>
 
                                         {(() => {
-                                            const history = building.statsHistory || [];
+                                            const history = (building as Hub).statsHistory || [];
                                             if (history.length < 2) return <div className="text-xs text-gray-600 flex items-center justify-center h-full">Gathering Data...</div>;
 
                                             const maxVal = Math.max(
                                                 10, // Minimum scale
-                                                ...history.map((h: any) => Math.max(h.production, h.consumption))
+                                                ...history.map((h: { production: number, consumption: number }) => Math.max(h.production, h.consumption))
                                             ) * 1.1;
 
                                             const width = 100; // Use percentage for width coords to simplify
@@ -366,7 +371,7 @@ export default function BuildingInfoPanel() {
 
                                             // Create points
                                             const createPoints = (key: 'production' | 'consumption') => {
-                                                return history.map((pt: any, i: number) => {
+                                                return history.map((pt: { production: number, consumption: number }, i: number) => {
                                                     const x = (i / (history.length - 1)) * width;
                                                     const y = height - (pt[key] / maxVal) * height;
                                                     return `${x},${y}`;
@@ -425,7 +430,7 @@ export default function BuildingInfoPanel() {
 
                 {activeTab === 'upgrade' && (
                     <div className="space-y-4">
-                        {upgrades.map((upgrade: any) => {
+                        {upgrades.map((upgrade: BuildingUpgrade) => {
                             const currentCost = upgrade.baseCost;
                             const currentStone = getInventoryItemCount('stone');
                             const canAfford = currentStone >= currentCost;

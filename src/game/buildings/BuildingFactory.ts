@@ -8,7 +8,6 @@ import { ElectricPole } from './electric-pole/ElectricPole';
 import { ElectricPoleVisual } from './electric-pole/ElectricPoleVisual';
 import { Chest } from './chest/Chest';
 import { ChestVisual } from './chest/ChestVisual';
-import { SimpleVisual } from '../visuals/SimpleVisual';
 import { BuildingEntity } from '../entities/BuildingEntity';
 import { ParticleSystem } from '../visuals/ParticleSystem';
 import { VisualEntity } from '../visuals/VisualEntity';
@@ -18,10 +17,12 @@ export interface VisualContext {
     particleSystem: ParticleSystem;
 }
 
+type Direction = 'north' | 'south' | 'east' | 'west';
+
 // Definition of the Registry Entry
 interface BuildingEntry {
-    Logic: any;
-    Visual: any;
+    Logic: new (x: number, y: number, direction?: Direction) => BuildingEntity;
+    Visual: new (building: BuildingEntity, ...args: unknown[]) => VisualEntity; 
     createVisual?: (building: BuildingEntity, context: VisualContext) => VisualEntity;
 }
 
@@ -29,35 +30,40 @@ interface BuildingEntry {
 export const BuildingRegistry: Record<string, BuildingEntry> = {
     'extractor': { 
         Logic: Extractor, 
-        Visual: ExtractorVisual,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Visual: ExtractorVisual as any,
         createVisual: (b, ctx) => new ExtractorVisual(b as Extractor, ctx.particleSystem)
     },
     'conveyor': { 
         Logic: Conveyor, 
-        Visual: ConveyorVisual,
-        createVisual: (b, ctx) => new ConveyorVisual(b as Conveyor)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Visual: ConveyorVisual as any,
+        createVisual: (b, _ctx) => new ConveyorVisual(b as Conveyor)
     },
     'hub': { 
         Logic: Hub, 
-        Visual: HubVisual,
-        createVisual: (b, ctx) => new HubVisual(b as Hub)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Visual: HubVisual as any,
+        createVisual: (b, _ctx) => new HubVisual(b as Hub)
     },
     'electric_pole': { 
         Logic: ElectricPole, 
-        Visual: ElectricPoleVisual,
-        createVisual: (b, ctx) => new ElectricPoleVisual(b as ElectricPole)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Visual: ElectricPoleVisual as any,
+        createVisual: (b, _ctx) => new ElectricPoleVisual(b as ElectricPole)
     },
     'chest': { 
         Logic: Chest, 
-        Visual: ChestVisual,
-        createVisual: (b, ctx) => new ChestVisual(b as Chest)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Visual: ChestVisual as any,
+        createVisual: (b, _ctx) => new ChestVisual(b as Chest)
     },
 };
 
-export function createBuildingLogic(type: string, ...args: any[]): any {
+export function createBuildingLogic(type: string, x: number, y: number, direction: Direction = 'north'): BuildingEntity | null {
     const entry = BuildingRegistry[type];
     if (entry && entry.Logic) {
-        return new entry.Logic(...args);
+        return new entry.Logic(x, y, direction);
     }
     // Fallback? Or Error?
     // console.warn(`Unknown building logic type: ${type}`);

@@ -55,17 +55,6 @@ export function createConveyorModel(type: 'straight' | 'left' | 'right', texture
     } else {
         // CURVE (Default Left Turn geometry, GameApp mirrors for Right)
         
-        const curvePath = new THREE.CurvePath<THREE.Vector3>();
-        const arc = new THREE.EllipseCurve(
-            -0.5, 0.5, // Center
-            0.5, 0.5,  // Radii
-            0, -Math.PI / 2, // Angles
-            true, // Clockwise
-            0
-        );
-        const points = arc.getPoints(12).map(p => new THREE.Vector3(p.x, 0, p.y));
-        const path = new THREE.CatmullRomCurve3(points);
-
         // 1. Belt Logic: Custom BufferGeometry for precise UVs
         const beltGeo = new THREE.BufferGeometry();
         const beltVertices: number[] = [];

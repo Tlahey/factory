@@ -3,7 +3,7 @@ import { createElectricPoleModel } from './ElectricPoleModel';
 import { SimpleVisual } from '../../visuals/SimpleVisual';
 
 export class ElectricPoleVisual extends SimpleVisual {
-    constructor(pole: ElectricPole) {
+    constructor(_pole: ElectricPole) {
         super(createElectricPoleModel());
     }
 }

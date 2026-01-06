@@ -31,6 +31,8 @@ interface ModelPreviewProps {
     seed?: number; // For item variety
 }
 
+import Image from 'next/image';
+
 export default function ModelPreview({
     type,
     id,
@@ -78,7 +80,7 @@ export default function ModelPreview({
                     model = createConveyorModel('straight', texture);
                     model.scale.set(1.5, 1.5, 1.5);
                     model.position.y = -0.1;
-                    (model as any).userData.isConveyor = true;
+                    model.userData.isConveyor = true;
                 } else if (id === 'chest') {
                     model = createChestModel();
                     model.scale.set(1.3, 1.3, 1.3);
@@ -141,27 +143,30 @@ export default function ModelPreview({
 
         // --- STATIC MODE ---
         if (isStatic) {
-            const { scene, camera, model } = setupScene();
+            const { scene, camera } = setupScene();
             const renderer = getSharedRenderer();
 
             // Render to Data URL
             renderer.setSize(width, height);
             renderer.render(scene, camera);
             const url = renderer.domElement.toDataURL();
-            setImageSrc(url);
+            setTimeout(() => {
+                setImageSrc(url);
+            }, 0);
 
             // Cleanup Scene
             scene.traverse((obj) => {
                 if (obj instanceof THREE.Mesh) {
                     obj.geometry.dispose();
                     if (Array.isArray(obj.material)) {
-                        obj.material.forEach((m: any) => {
-                            if (m.map) m.map.dispose();
+                        obj.material.forEach((m: THREE.Material) => {
+                            if ('map' in m && m.map instanceof THREE.Texture) m.map.dispose();
                             m.dispose();
                         });
                     } else {
-                        if ((obj.material as any).map) (obj.material as any).map.dispose();
-                        obj.material.dispose();
+                        const m = obj.material;
+                        if ('map' in m && m.map instanceof THREE.Texture) m.map.dispose();
+                        m.dispose();
                     }
                 }
             });
@@ -174,7 +179,8 @@ export default function ModelPreview({
         // We could use shared renderer with requestAnimationFrame but it complicates multiple dynamic views.
         // Assuming dynamic views are FEW (1-2), explicit renderer is fine.
 
-        if (!containerRef.current) return;
+        const container = containerRef.current;
+        if (!container) return;
 
         const { scene, camera, model } = setupScene();
         sceneRef.current = scene;
@@ -184,8 +190,8 @@ export default function ModelPreview({
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(width, height);
         renderer.setPixelRatio(window.devicePixelRatio);
-        containerRef.current.innerHTML = '';
-        containerRef.current.appendChild(renderer.domElement);
+        container.innerHTML = '';
+        container.appendChild(renderer.domElement);
         rendererRef.current = renderer;
 
         const animate = () => {
@@ -207,35 +213,37 @@ export default function ModelPreview({
         return () => {
             if (frameIdRef.current) cancelAnimationFrame(frameIdRef.current);
             renderer.dispose();
-            if (containerRef.current) containerRef.current.innerHTML = '';
+            if (container) container.innerHTML = '';
 
             scene.traverse((obj) => {
                 if (obj instanceof THREE.Mesh) {
                     obj.geometry.dispose();
                     if (Array.isArray(obj.material)) {
-                        obj.material.forEach((m: any) => {
-                            if (m.map) m.map.dispose();
+                        obj.material.forEach((m: THREE.Material) => {
+                            if ('map' in m && m.map instanceof THREE.Texture) m.map.dispose();
                             m.dispose();
                         });
                     } else {
-                        if ((obj.material as any).map) (obj.material as any).map.dispose();
-                        obj.material.dispose();
+                        const m = obj.material;
+                        if ('map' in m && m.map instanceof THREE.Texture) m.map.dispose();
+                        m.dispose();
                     }
                 }
             });
         };
 
-    }, [type, id, width, height, isStatic, seed, isHovered]); // Added isHovered dep for dynamic
+    }, [type, id, width, height, isStatic, seed, isHovered, rotationSpeed]); // Added isHovered dep for dynamic
 
     if (isStatic) {
         if (imageSrc) {
             return (
-                <img
+                <Image
                     src={imageSrc}
                     width={width}
                     height={height}
                     className="object-contain pointer-events-none"
                     alt={id}
+                    unoptimized
                 />
             );
         }

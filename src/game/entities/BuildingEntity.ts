@@ -1,7 +1,7 @@
 import { Entity } from './Entity';
-import { useGameStore } from '@/game/state/store';
 import { Tile } from '../core/Tile';
 import { getBuildingConfig, BuildingConfig } from '../buildings/BuildingConfig';
+import type { IWorld } from './types';
 
 export interface PowerConfig {
   type: 'consumer' | 'producer' | 'relay';
@@ -43,7 +43,7 @@ export abstract class BuildingEntity extends Entity {
     this.direction = clockwise[this.direction];
   }
 
-  public update(delta: number): void {
+  public update(_delta: number): void {
      if (this.buildingType === 'extractor') {
          // Logic specific to extractor
          // We might want to throttle this so it doesn't run every frame, but every second.
@@ -52,13 +52,13 @@ export abstract class BuildingEntity extends Entity {
   }
   
   // Custom method to be called by FactorySystem for "tick" based logic
-  public tick(delta: number, world?: any): void {
+  public tick(_delta: number, _world?: IWorld): void {
       if (this.buildingType === 'extractor') {
           // This should be handled in Extractor.ts override
       }
   }
 
-  public isConnectedTo(world: any, targetType: string, viaTypes: string[] = ['conveyor']): boolean {
+  public isConnectedTo(world: IWorld, targetType: string, viaTypes: string[] = ['conveyor']): boolean {
       return world.hasPathTo(this.x, this.y, targetType, viaTypes);
   }
 

@@ -17,7 +17,7 @@ export class Hub extends BuildingEntity {
     public statsHistory: { time: number, production: number, consumption: number }[] = [];
 
 
-    public tick(delta: number): void {
+    public tick(_delta: number): void {
         // Variable power generation (Solar Fluctuation)
         if (this.powerConfig) {
             // Base rate is 50. Fluctuate between 40 and 60 slowly?

@@ -1,6 +1,8 @@
 import { Tile } from '../../core/Tile';
 import { BuildingEntity } from '../../entities/BuildingEntity';
-import { useGameStore } from '@/game/state/store';
+import { IWorld } from '../../entities/types';
+import { Conveyor } from '../conveyor/Conveyor';
+import { Chest } from '../chest/Chest';
 
 export class Extractor extends BuildingEntity {
   public active: boolean = false;
@@ -16,7 +18,7 @@ export class Extractor extends BuildingEntity {
     };
   }
   
-  public tick(delta: number, world?: any): void {
+  public tick(delta: number, world?: IWorld): void {
       if (!world) return;
 
       const tile = world.getTile(this.x, this.y);
@@ -72,7 +74,7 @@ export class Extractor extends BuildingEntity {
       }
   }
 
-  private checkOutputClear(world: any): boolean {
+  private checkOutputClear(world: IWorld): boolean {
     let tx = this.x;
     let ty = this.y;
 
@@ -84,12 +86,12 @@ export class Extractor extends BuildingEntity {
     const target = world.getBuilding(tx, ty);
     if (!target) return false;
 
-    if (target.getType() === 'conveyor') {
+    if (target instanceof Conveyor) {
          // Conveyor has space if currentItem is null
-         return !(target as any).currentItem;
-    } else if (target.getType() === 'chest') {
+         return !target.currentItem;
+    } else if (target instanceof Chest) {
          // Chest has space if not full
-         return !(target as any).isFull();
+         return !target.isFull();
     }
     
     return false;
@@ -99,7 +101,7 @@ export class Extractor extends BuildingEntity {
       this.speedMultiplier += 0.5;
   }
 
-  public autoOrient(world: any): void {
+  public autoOrient(world: IWorld): void {
       const dirs: {dx: number, dy: number, dir: 'north' | 'south' | 'east' | 'west'}[] = [
           {dx: 0, dy: -1, dir: 'north'},
           {dx: 0, dy: 1, dir: 'south'},
@@ -116,7 +118,7 @@ export class Extractor extends BuildingEntity {
       }
   }
 
-  private tryOutputResource(world: any): boolean {
+  private tryOutputResource(world: IWorld): boolean {
     let tx = this.x;
     let ty = this.y;
 
@@ -126,18 +128,17 @@ export class Extractor extends BuildingEntity {
     else if (this.direction === 'west') tx -= 1;
 
     const target = world.getBuilding(tx, ty);
-    if (target && target.getType() === 'conveyor') {
-      const conveyor = target as any;
-      if (!conveyor.currentItem) {
-        conveyor.currentItem = 'stone';
+    if (target && target instanceof Conveyor) {
+      if (!target.currentItem) {
+        target.currentItem = 'stone';
         // Generate unique ID for visual persistence
-        conveyor.itemId = Math.floor(Math.random() * 1000000); 
-        conveyor.transportProgress = 0;
+        target.itemId = Math.floor(Math.random() * 1000000); 
+        target.transportProgress = 0;
         return true;
       }
-    } else if (target && target.getType() === 'chest') {
+    } else if (target && target instanceof Chest) {
         // Return result of addItem (true if added, false if full)
-        return (target as any).addItem('stone');
+        return target.addItem('stone');
     }
     return false;
   }

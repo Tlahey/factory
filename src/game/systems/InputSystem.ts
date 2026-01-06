@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { World } from '../core/World';
-import { TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
-import { useGameStore } from '@/game/state/store';
+import { WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
+import { useGameStore } from '../state/store';
 import { calculateConveyorPath, getSegmentDirection } from '../buildings/conveyor/ConveyorPathHelper';
 
 export class InputSystem {
@@ -13,7 +13,7 @@ export class InputSystem {
   private onWorldChange?: () => void;
   private onHover?: (x: number, y: number, isValid?: boolean, ghostBuilding?: string | null) => void;
   private onCableDrag?: (start: {x: number, y: number} | null, end: {x: number, y: number} | null, isValid: boolean) => void;
-  private onDeleteHover?: (target: {type: 'cable' | 'building', id: string, x?: number, y?: number, cable?: any} | null) => void;
+  private onDeleteHover?: (target: {type: 'cable' | 'building', id: string, x?: number, y?: number, cable?: {x1: number, y1: number, x2: number, y2: number}} | null) => void;
   private onConveyorDrag?: (path: {x: number, y: number, isValid: boolean}[]) => void;
 
   // Camera Controls
@@ -21,11 +21,18 @@ export class InputSystem {
   private previousMousePosition = { x: 0, y: 0 };
   private currentRotation: 'north' | 'south' | 'east' | 'west' = 'north';
 
+  // Bound listeners for proper removal
+  private boundOnPointerDown = this.onPointerDown.bind(this);
+  private boundOnPointerMove = this.onPointerMove.bind(this);
+  private boundOnPointerUp = this.onPointerUp.bind(this);
+  private boundOnWheel = this.onWheel.bind(this);
+  private boundOnKeyDown = this.handleKeyDown.bind(this);
+
   constructor(domElement: HTMLElement, camera: THREE.PerspectiveCamera, world: World, 
               onWorldChange?: () => void, 
               onHover?: (x: number, y: number, isValid?: boolean, ghostBuilding?: string | null) => void,
               onCableDrag?: (start: {x: number, y: number} | null, end: {x: number, y: number} | null, isValid: boolean) => void,
-              onDeleteHover?: (target: {type: 'cable' | 'building', id: string, x?: number, y?: number, cable?: any} | null) => void,
+              onDeleteHover?: (target: {type: 'cable' | 'building', id: string, x?: number, y?: number, cable?: {x1: number, y1: number, x2: number, y2: number}} | null) => void,
               onConveyorDrag?: (path: {x: number, y: number, isValid: boolean}[]) => void) {
     this.domElement = domElement;
     this.camera = camera;
@@ -85,8 +92,6 @@ export class InputSystem {
   private azimuth: number;
   private elevation: number;
   
-  private lastViewMode: '2D' | '3D' = '3D';
-  
   // Mouse state
   private mouseDownPosition = { x: 0, y: 0 };
   private isRotating = false;
@@ -100,35 +105,33 @@ export class InputSystem {
   private isDraggingConveyor = false;
 
   private setupInteractions() {
-    this.domElement.addEventListener('pointerdown', this.onPointerDown.bind(this));
-    this.domElement.addEventListener('pointermove', this.onPointerMove.bind(this));
-    this.domElement.addEventListener('pointerup', this.onPointerUp.bind(this));
-    this.domElement.addEventListener('wheel', this.onWheel.bind(this), { passive: false });
-    
-    // Add key listener
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            this.cancelCableDrag();
-            this.cancelConveyorDrag();
-            // Also clear selection?
-            // useGameStore.getState().setSelectedBuilding(null);
-        }
-        if (e.key === 'v') {
-            const current = useGameStore.getState().viewMode;
-            useGameStore.getState().setViewMode(current === '3D' ? '2D' : '3D');
-        }
-        if (e.key === 'r') {
-            this.rotateSelection();
-        }
-        if (e.key === 's') {
-            const current = useGameStore.getState().selectedBuilding;
-            useGameStore.getState().setSelectedBuilding(current === 'select' ? null : 'select');
-        }
-        if (e.key === 'Delete' || e.key === 'Backspace') {
-            const current = useGameStore.getState().selectedBuilding;
-            useGameStore.getState().setSelectedBuilding(current === 'delete' ? null : 'delete');
-        }
-    });
+    this.domElement.addEventListener('pointerdown', this.boundOnPointerDown);
+    this.domElement.addEventListener('pointermove', this.boundOnPointerMove);
+    this.domElement.addEventListener('pointerup', this.boundOnPointerUp);
+    this.domElement.addEventListener('wheel', this.boundOnWheel, { passive: false });
+    window.addEventListener('keydown', this.boundOnKeyDown);
+  }
+
+  private handleKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+        this.cancelCableDrag();
+        this.cancelConveyorDrag();
+    }
+    if (e.key === 'v') {
+        const current = useGameStore.getState().viewMode;
+        useGameStore.getState().setViewMode(current === '3D' ? '2D' : '3D');
+    }
+    if (e.key === 'r') {
+        this.rotateSelection();
+    }
+    if (e.key === 's') {
+        const current = useGameStore.getState().selectedBuilding;
+        useGameStore.getState().setSelectedBuilding(current === 'select' ? null : 'select');
+    }
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+        const current = useGameStore.getState().selectedBuilding;
+        useGameStore.getState().setSelectedBuilding(current === 'delete' ? null : 'delete');
+    }
   }
 
   private rotateSelection() {
@@ -329,7 +332,7 @@ export class InputSystem {
                      const target = new THREE.Vector3();
                      const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0.5);
                      
-                     let hoveredCable: any = null;
+                     let hoveredCable: {x1: number, y1: number, x2: number, y2: number} | null = null;
                      if (this.raycaster.ray.intersectPlane(plane, target)) {
                          const cables = this.world.cables;
                          const THRESHOLD = 0.5; 
@@ -378,7 +381,7 @@ export class InputSystem {
         if (this.isRotating) {
             // Rotate
             const rotateSpeed = 0.01;
-            let newAzimuth = this.targetAzimuth - deltaX * rotateSpeed;
+            const newAzimuth = this.targetAzimuth - deltaX * rotateSpeed;
             let newElevation = this.targetElevation + deltaY * rotateSpeed;
 
             // Clamp Elevation (10 deg to 90 deg)
@@ -631,13 +634,6 @@ export class InputSystem {
                   // Alternative: Iterate World Cables and check distance to click.
                   
                   // Map Grid Click to World Pos?
-                  const clickX = gridX;
-                  const clickY = gridY;
-                  
-                  // Simple distance check: is point (clickX, clickY) close to segment (c.x1,y1 -> c.x2,y2)?
-                  // Actually gridX, gridY are integers. That's too coarse for cable clicking if they span.
-                  // But user clicks on a tile.
-                  // Let's use the Raycaster exact intersection point if possible, but getIntersection returns rounded grid.
                   
                   // Let's re-calculate exact world pos
                   const rect = this.domElement.getBoundingClientRect();
@@ -718,7 +714,7 @@ export class InputSystem {
 
       const dot = A * C + B * D;
       const len_sq = C * C + D * D;
-      let param = -dot / len_sq;
+      const param = -dot / len_sq;
 
       let xx, yy;
 
@@ -750,11 +746,11 @@ export class InputSystem {
       this.updateCameraTransform();
   }
   public dispose() {
-      this.domElement.removeEventListener('pointerdown', this.onPointerDown.bind(this));
-      this.domElement.removeEventListener('pointermove', this.onPointerMove.bind(this));
-      this.domElement.removeEventListener('pointerup', this.onPointerUp.bind(this));
-      this.domElement.removeEventListener('wheel', this.onWheel.bind(this));
-      window.removeEventListener('keydown', (e) => {}); 
+      this.domElement.removeEventListener('pointerdown', this.boundOnPointerDown);
+      this.domElement.removeEventListener('pointermove', this.boundOnPointerMove);
+      this.domElement.removeEventListener('pointerup', this.boundOnPointerUp);
+      this.domElement.removeEventListener('wheel', this.boundOnWheel);
+      window.removeEventListener('keydown', this.boundOnKeyDown);
   }
 }
 

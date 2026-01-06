@@ -8,7 +8,7 @@ export class SimpleVisual implements VisualEntity {
     this.mesh = mesh;
   }
 
-  public update(delta: number, entity?: any): void {
+  public update(_delta: number, _entity?: unknown): void {
     // No-op for static visuals
   }
 

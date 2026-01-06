@@ -1,3 +1,5 @@
+import { IWorld } from '../../entities/types';
+
 /**
  * CONVEYOR LOGIC SYSTEM
  * 
@@ -147,7 +149,7 @@ export function findOutputDestination(
     conveyorX: number,
     conveyorY: number,
     excludeDirection: Direction | null,
-    world: any
+    world: IWorld
 ): Direction | null {
     const directions: Direction[] = ['north', 'south', 'east', 'west'];
     
@@ -198,7 +200,7 @@ export function determineFlowInputDirection(
     conveyorX: number, 
     conveyorY: number, 
     myDirection: 'north' | 'south' | 'east' | 'west',
-    world: any
+    world: IWorld
 ): 'north' | 'south' | 'east' | 'west' | null {
     const directions: Array<'north' | 'south' | 'east' | 'west'> = ['north', 'south', 'east', 'west'];
     // We use the exported functions from this same file to avoid circular require issues
@@ -222,10 +224,19 @@ export function determineFlowInputDirection(
         // Check if neighbor points at us (its output is toward us)
         if (neighborDirection === directionToUs) {
             // Valid input sources: Extractors or Resolved Conveyors
-            if (neighborType === 'extractor' || (neighborType === 'conveyor' && neighbor.isResolved)) {
-                 // Return the direction the flow is TRAVELING (neighborDirection)
-                 // This is the direction items are moving when they enter this conveyor
+            if (neighborType === 'extractor') {
                  return neighborDirection;
+            }
+            
+            if (neighborType === 'conveyor') {
+                 // Check if resolved without casting to any
+                 // We assume if it's a conveyor, it might have isResolved property
+                 // But BuildingEntity doesn't have it.
+                 // We use a safe check.
+                 const isResolved = (neighbor as unknown as { isResolved: boolean }).isResolved;
+                 if (isResolved) {
+                     return neighborDirection;
+                 }
             }
         }
     }

@@ -44,7 +44,7 @@ const STACK_SIZE = 100; // Define a stack size limit for personal inventory
 
 export const useGameStore = create<GameState>()(
   persist(
-    (set, get) => ({
+    (set, _get) => ({
       inventory: Array(INVENTORY_SIZE).fill(null).map(() => ({ type: null, count: 0 })),
       selectedBuilding: null,
       viewMode: '3D',

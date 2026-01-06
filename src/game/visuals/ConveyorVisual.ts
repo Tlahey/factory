@@ -1,1 +1,0 @@
-// Moved to src/game/buildings/conveyor/ConveyorVisual.ts

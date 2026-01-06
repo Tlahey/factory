@@ -176,8 +176,6 @@ export class ConveyorVisual implements VisualEntity {
       
       // Store current position and rotation
       const pos = this.mesh.position.clone();
-      const rot = this.mesh.rotation.clone(); // This might be wrong if we need to re-orient
-      const scale = this.mesh.scale.clone();
       
       const parent = this.mesh.parent;
       if (parent) {

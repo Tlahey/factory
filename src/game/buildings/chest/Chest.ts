@@ -1,7 +1,6 @@
 import { Tile } from '../../core/Tile';
 import { BuildingEntity } from '../../entities/BuildingEntity';
-import { useGameStore } from '@/game/state/store';
-import { STACK_SIZE } from '@/game/constants';
+import { STACK_SIZE } from '../../constants';
 
 export class Chest extends BuildingEntity {
   public slots: { type: string, count: number }[] = [];
@@ -11,8 +10,14 @@ export class Chest extends BuildingEntity {
     super(x, y, 'chest', direction);
   }
 
-  public tick(delta: number): void {
+  public tick(_delta: number): void {
     // Logic to store items
+  }
+
+  public isFull(): boolean {
+      // Simplified check: true if no empty slots available. 
+      // Ideally should check if existing stack can take more, but for generic 'full' check this is safer.
+      return this.slots.length >= this.maxSlots;
   }
 
   // Returns true if item was accepted

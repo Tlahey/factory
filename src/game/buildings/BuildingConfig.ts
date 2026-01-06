@@ -1,9 +1,9 @@
-import { BuildingEntity } from '../entities/BuildingEntity';
 import { CHEST_CONFIG } from './chest/ChestConfig';
 import { CONVEYOR_CONFIG } from './conveyor/ConveyorConfig';
 import { EXTRACTOR_CONFIG } from './extractor/ExtractorConfig';
 import { HUB_CONFIG } from './hub/HubConfig';
 import { ELECTRIC_POLE_CONFIG } from './electric-pole/ElectricPoleConfig';
+import { BuildingEntity } from '../entities/BuildingEntity';
 
 
 export interface BuildingUpgrade {
@@ -12,8 +12,8 @@ export interface BuildingUpgrade {
     description: string;
     baseCost: number;
     costMultiplier: number;
-    onUpgrade: (building: any) => void;
-    getValue: (building: any) => string;
+    onUpgrade: (building: BuildingEntity) => void;
+    getValue: (building: BuildingEntity) => string;
 }
 
 export interface BuildingConfig {

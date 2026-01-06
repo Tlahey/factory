@@ -1,39 +1,17 @@
 'use client';
 
-import { useGameStore } from '@/game/state/store';
-import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Package, X } from 'lucide-react';
+import { useGameStore, InventorySlot } from '@/game/state/store';
+import { useEffect } from 'react';
+import { Package, X } from 'lucide-react';
 import ModelPreview from './ModelPreview';
 
-interface HUDProps {
-    onMenuClick?: () => void;
-}
-
-export default function HUD({ onMenuClick }: HUDProps) {
+export default function HUD() {
     const inventory = useGameStore((state) => state.inventory);
     const isInventoryOpen = useGameStore((state) => state.isInventoryOpen);
-    const [isCollapsed, setIsCollapsed] = useState(false);
-
-    const toggleCollapse = () => setIsCollapsed(!isCollapsed);
 
     // Helper to format count
     const formatCount = (count: number) => {
         return count > 999 ? '999+' : count;
-    };
-
-    // Helper to get initials
-    const getInitials = (name: string) => name.substring(0, 2).toUpperCase();
-
-    // Helper to get color (mock)
-    const getResourceColor = (name: string) => {
-        const colors: Record<string, string> = {
-            stone: 'bg-gray-400',
-            wood: 'bg-amber-600',
-            iron: 'bg-blue-400',
-            copper: 'bg-orange-400',
-            coal: 'bg-slate-800'
-        };
-        return colors[name.toLowerCase()] || 'bg-indigo-500';
     };
 
     useEffect(() => {
@@ -46,7 +24,7 @@ export default function HUD({ onMenuClick }: HUDProps) {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
-    const handleDragStart = (e: React.DragEvent, index: number, slot: any) => {
+    const handleDragStart = (e: React.DragEvent, index: number, slot: InventorySlot) => {
         if (!slot || !slot.type) return;
         e.dataTransfer.setData('source', 'inventory');
         e.dataTransfer.setData('index', index.toString());
@@ -95,13 +73,6 @@ export default function HUD({ onMenuClick }: HUDProps) {
 
     return (
         <>
-            {/* Always Visible Toggle Button */}
-
-
-
-
-            // ... existing code ...
-
             {/* Sliding Panel (Now Floating Grid) */}
             <div
                 className={`

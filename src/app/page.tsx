@@ -49,9 +49,8 @@ export default function Home() {
     showToast('New Game Started!');
   }, [showToast, togglePause]);
 
-  const resetInventory = useGameStore((state: any) => state.resetInventory);
-  const setInventory = useGameStore((state: any) => state.setInventory);
-  const inventory = useGameStore((state: any) => state.inventory);
+  const resetInventory = useGameStore((state) => state.resetInventory);
+  const setInventory = useGameStore((state) => state.setInventory);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -69,10 +68,10 @@ export default function Home() {
       resetInventory();
     };
 
-    const handleLoadInv = (e: any) => {
-      const invData = e.detail;
+    const handleLoadInv = (e: Event) => {
+      const invData = (e as CustomEvent).detail;
       if (invData) {
-        useGameStore.getState().setInventory(invData);
+        setInventory(invData);
       }
     };
 

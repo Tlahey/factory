@@ -1,5 +1,7 @@
 
 import * as THREE from 'three';
+import { IWorld } from '../../entities/types';
+import { BuildingEntity } from '../../entities/BuildingEntity';
 
 export class CableVisual {
     public group: THREE.Group;
@@ -7,7 +9,7 @@ export class CableVisual {
     private texture: THREE.CanvasTexture;
     private material: THREE.MeshLambertMaterial;
 
-    constructor(scene: THREE.Scene, world: any) { // world: World
+    constructor(scene: THREE.Scene, world: IWorld) { 
         this.group = new THREE.Group();
         scene.add(this.group);
 
@@ -61,7 +63,7 @@ export class CableVisual {
         return tex;
     }
 
-    public update(world: any) {
+    public update(world: IWorld) {
         // Clear old meshes
         while(this.group.children.length > 0){ 
             const child = this.group.children[0] as THREE.Mesh;
@@ -71,7 +73,7 @@ export class CableVisual {
 
         if (!world.cables) return;
 
-        world.cables.forEach((c: any) => {
+        world.cables.forEach((c: {x1: number, y1: number, x2: number, y2: number}) => {
             const b1 = world.getBuilding(c.x1, c.y1);
             const b2 = world.getBuilding(c.x2, c.y2);
             
@@ -86,7 +88,7 @@ export class CableVisual {
         });
     }
 
-    private getHeightForBuilding(b: any): number {
+    private getHeightForBuilding(b: BuildingEntity | undefined): number {
         if (!b) return 0.5;
         if (b.getType() === 'hub') return 1.0;
         if (b.getType() === 'electric_pole') return 1.8;
@@ -146,8 +148,8 @@ export class CableVisual {
             if (c instanceof THREE.Mesh) {
                 c.geometry.dispose();
                 // Material handled via shared or cloned
-                if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
-                else c.material.dispose();
+                if (Array.isArray(c.material)) (c.material as THREE.Material[]).forEach(m => m.dispose());
+                else (c.material as THREE.Material).dispose();
             }
         });
         this.texture.dispose();
@@ -161,7 +163,7 @@ export class CableVisual {
         }
     }
 
-    public showPreview(start: {x: number, y: number}, end: {x: number, y: number}, isValid: boolean, world: any) {
+    public showPreview(start: {x: number, y: number}, end: {x: number, y: number}, isValid: boolean, world: IWorld) {
         this.previewMesh.visible = true;
         
         const b1 = world.getBuilding(start.x, start.y);
@@ -194,7 +196,7 @@ export class CableVisual {
         this.previewMesh.visible = false;
     }
 
-    public highlightCable(cable: {x1: number, y1: number, x2: number, y2: number} | null, world: any) {
+    public highlightCable(cable: {x1: number, y1: number, x2: number, y2: number} | null, world: IWorld) {
         if (!cable) {
             this.hidePreview();
             return;

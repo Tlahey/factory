@@ -1,1 +1,0 @@
-// Moved to src/game/buildings/electric-pole/CableVisual.ts

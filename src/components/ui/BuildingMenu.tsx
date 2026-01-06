@@ -1,18 +1,9 @@
 'use client';
 
 import { useGameStore } from '@/game/state/store';
-import { X, Package, Truck, Box, Zap, Activity } from 'lucide-react';
+import { X } from 'lucide-react';
 import ModelPreview from './ModelPreview';
 import { BUILDINGS } from '@/game/buildings/BuildingConfig';
-
-const BUILDING_VISUALS: Record<string, { icon: any, color: string }> = {
-    'hub': { icon: Activity, color: 'text-orange-500' },
-    'extractor': { icon: Package, color: 'text-amber-500' },
-    'conveyor': { icon: Truck, color: 'text-blue-500' },
-    'chest': { icon: Box, color: 'text-yellow-700' },
-    'electric_pole': { icon: Zap, color: 'text-gray-400' },
-    'cable': { icon: Activity, color: 'text-white' },
-};
 
 export default function BuildingMenu() {
     const isBuildingMenuOpen = useGameStore((state) => state.isBuildingMenuOpen);
@@ -68,7 +59,6 @@ export default function BuildingMenu() {
                 <div className="flex-1 p-6 overflow-y-auto">
                     <div className="grid grid-cols-5 gap-4">
                         {Object.values(BUILDINGS).map((b) => {
-                            const visual = BUILDING_VISUALS[b.type] || { icon: Box, color: 'text-gray-500' };
                             const currentCount = buildingCounts[b.type] || 0;
                             const isLimitReached = b.maxCount ? currentCount >= b.maxCount : false;
 

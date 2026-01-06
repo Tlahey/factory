@@ -1,5 +1,5 @@
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { describe, test, expect, beforeEach } from 'vitest';
 import { Conveyor } from './Conveyor';
 import { getDirectionOffset, getOppositeDirection } from './ConveyorLogicSystem';
 
@@ -22,6 +22,7 @@ class MockEntity {
 
 class MockWorld {
     buildings: Map<string, MockEntity | Conveyor> = new Map();
+    cables: {x1: number, y1: number, x2: number, y2: number}[] = [];
 
     add(b: MockEntity | Conveyor) {
         this.buildings.set(`${b.x},${b.y}`, b);
@@ -29,6 +30,17 @@ class MockWorld {
     
     getBuilding(x: number, y: number) {
         return this.buildings.get(`${x},${y}`);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    getTile(_x: number, _y: number): any {
+        // Mock Tile
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return { isStone: () => false, isWater: () => false } as any;
+    }
+
+    hasPathTo(_startX: number, _startY: number, _targetType: string, _viaTypes: string[]): boolean {
+        return false;
     }
 
     propagateFlowFromSources() {
@@ -110,7 +122,8 @@ describe('Conveyor Orientation & Flow', () => {
         world.add(c2);
 
         // Run Logic on C1
-        c1.autoOrientToNeighbor(world);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        c1.autoOrientToNeighbor(world as any);
 
         if (c1.direction !== 'south') {
              console.log(`DEBUG FAILURE: Expected 'south', got '${c1.direction}'`);
@@ -124,7 +137,7 @@ describe('Conveyor Orientation & Flow', () => {
         const c1 = new Conveyor(1, 10, 'west');
         const c2 = new Conveyor(2, 10, 'west');
         const c3 = new Conveyor(3, 10, 'west');
-        const chest = new MockEntity('chest', 4, 10, 'any' as any);
+        const chest = new MockEntity('chest', 4, 10, 'north');
 
         world.add(ext);
         world.add(c1);

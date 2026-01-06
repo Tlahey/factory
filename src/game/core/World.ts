@@ -7,10 +7,16 @@ import { Chest } from '../buildings/chest/Chest';
 import { Hub } from '../buildings/hub/Hub';
 import { ElectricPole } from '../buildings/electric-pole/ElectricPole';
 import { getBuildingConfig } from '../buildings/BuildingConfig';
+import { IWorld, WorldData, SerializedBuilding } from '../entities/types';
+import { getDirectionOffset, getOppositeDirection, Direction } from '../buildings/conveyor/ConveyorLogicSystem';
 
 import { Tile } from './Tile';
 
-export class World {
+interface AutoOrientable {
+    autoOrient(world: IWorld): void;
+}
+
+export class World implements IWorld {
   public grid: Tile[][];
   public buildings: Map<string, BuildingEntity>;
   public cables: {x1: number, y1: number, x2: number, y2: number}[] = [];
@@ -19,111 +25,209 @@ export class World {
     this.grid = this.generateEmptyWorld();
     this.buildings = new Map();
   }
+// ...
+  public getBuilding(x: number, y: number): BuildingEntity | undefined {
+      return this.buildings.get(`${x},${y}`);
+  }
+
+  public getTile(x: number, y: number): Tile {
+      if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) {
+          return new Tile(TileType.EMPTY); // Return dummy out of bounds
+      }
+      return this.grid[y][x];
+  }
+
+  public hasPathTo(startX: number, startY: number, targetType: string, viaTypes: string[] = ['conveyor']): boolean {
+      // Simple BFS to check connectivity
+      const start = this.getBuilding(startX, startY);
+      if (!start) return false;
+
+      const queue: {x: number, y: number}[] = [{x: startX, y: startY}];
+      const visited = new Set<string>();
+      visited.add(`${startX},${startY}`);
+
+      while(queue.length > 0) {
+          const curr = queue.shift()!;
+          const b = this.getBuilding(curr.x, curr.y);
+          if (!b) continue;
+
+          if (b.getType() === targetType) return true;
+
+          // Check neighbors
+          const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+          for (const [dx, dy] of dirs) {
+              const nx = curr.x + dx;
+              const ny = curr.y + dy;
+              const key = `${nx},${ny}`;
+              
+              if (visited.has(key)) continue;
+              
+              const nb = this.getBuilding(nx, ny);
+              if (nb && (viaTypes.includes(nb.getType()) || nb.getType() === targetType)) {
+                  visited.add(key);
+                  queue.push({x: nx, y: ny});
+              }
+          }
+      }
+      return false;
+  }
+
+  public canPlaceBuilding(x: number, y: number, type: string): boolean {
+      if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) return false;
+      
+      const config = getBuildingConfig(type);
+      const width = config?.width || 1;
+      const height = config?.height || 1;
+
+      // Check bounds
+      if (x + width > WORLD_WIDTH || y + height > WORLD_HEIGHT) return false;
+
+      // Check collision
+      for (let dx = 0; dx < width; dx++) {
+          for (let dy = 0; dy < height; dy++) {
+              if (this.buildings.has(`${x + dx},${y + dy}`)) return false;
+              
+              // Tile validity
+              const tile = this.getTile(x + dx, y + dy);
+              // Temporary dummy building for check
+              // We need to check validity without creating instance if possible, 
+              // or create a temp one.
+              // For now, simple checks based on type
+              if (type === 'extractor' && !tile.isStone()) return false;
+              if (type === 'hub' && tile.isWater()) return false;
+              if (type !== 'extractor' && tile.isStone() && type !== 'conveyor') return false; // Most can't be on stone?
+              if (tile.isWater()) return false; // Generally no build on water
+          }
+      }
+      return true;
+  }
+
+  private generateEmptyWorld(): Tile[][] {
+      const grid: Tile[][] = [];
+      for (let y = 0; y < WORLD_HEIGHT; y++) {
+          const row: Tile[] = [];
+          for (let x = 0; x < WORLD_WIDTH; x++) {
+              // Simple generation logic (Grass)
+              let type: TileType = TileType.GRASS;
+              const dist = Math.sqrt((x - WORLD_WIDTH/2)**2 + (y - WORLD_HEIGHT/2)**2);
+              if (dist > WORLD_WIDTH/2 - 2) type = TileType.WATER;
+              
+              // Stone patches
+              if (Math.random() < 0.05 && type !== TileType.WATER) type = TileType.STONE;
+              
+              const tile = new Tile(type);
+              if (type === TileType.STONE) tile.resourceAmount = 1000;
+              row.push(tile);
+          }
+          grid.push(row);
+      }
+      return grid;
+  }
+
+  public updateConveyorNetwork(): void {
+      // 1. Re-orient all conveyors
+      this.buildings.forEach(b => {
+          if (b instanceof Conveyor) {
+              b.isResolved = false; // Reset
+              b.autoOrientToNeighbor(this);
+          }
+      });
+
+      // 2. Resolve Network (Backwards from Chests)
+      const queue: {x: number, y: number}[] = [];
+      
+      // Seed with Chests
+      this.buildings.forEach(b => {
+          if (b instanceof Chest) {
+              queue.push({x: b.x, y: b.y});
+          }
+      });
+
+      // BFS to mark resolved conveyors
+      const processed = new Set<string>();
+      
+      while(queue.length > 0) {
+          const {x, y} = queue.shift()!;
+          const key = `${x},${y}`;
+          if (processed.has(key)) continue;
+          processed.add(key);
+
+          // Find neighbors pointing TO this tile
+          const dirs: {dx: number, dy: number, dir: Direction}[] = [
+              {dx: 0, dy: 1, dir: 'north'}, // Neighbor is South, points North (dy=-1) to us? 
+              // Wait. Neighbor at (x, y+1). If it points North, it points to (x, y).
+              // North offset is (0, -1). 
+              // So if neighbor at (x, y+1) has direction 'north', it targets (x, y).
+              
+              {dx: 0, dy: -1, dir: 'south'}, // Neighbor North, points South
+              {dx: 1, dy: 0, dir: 'west'},   // Neighbor East, points West
+              {dx: -1, dy: 0, dir: 'east'}   // Neighbor West, points East
+          ];
+
+          for (const d of dirs) {
+              const nx = x + d.dx;
+              const ny = y + d.dy;
+              const neighbor = this.getBuilding(nx, ny);
+              
+              if (neighbor && neighbor instanceof Conveyor) {
+                  // Check if it points to us
+                  if (neighbor.direction === d.dir) {
+                      if (!neighbor.isResolved) {
+                          neighbor.isResolved = true;
+                          queue.push({x: nx, y: ny});
+                      }
+                  }
+              }
+          }
+      }
+  }
+
+  public reset(): void {
+      this.buildings.clear();
+      this.cables = [];
+      this.grid = this.generateEmptyWorld();
+  }
 
   public addCable(x1: number, y1: number, x2: number, y2: number): boolean {
-      // Check if already exists (undirected)
-      const exists = this.cables.some(c => 
-          (c.x1 === x1 && c.y1 === y1 && c.x2 === x2 && c.y2 === y2) ||
-          (c.x1 === x2 && c.y1 === y2 && c.x2 === x1 && c.y2 === y1)
-      );
-      if (exists) return false;
-
-      // Max distance check (Euclidean or Manhattan? Plan said validation limits. Let's enforce here or in InputSystem.
-      // World should probably just be storage, but basic validation is good.)
-      // Let's assume validation happens before calling addCable.
-      
       this.cables.push({x1, y1, x2, y2});
       return true;
   }
 
   public removeCable(x1: number, y1: number, x2: number, y2: number): void {
       this.cables = this.cables.filter(c => 
-          !((c.x1 === x1 && c.y1 === y1 && c.x2 === x2 && c.y2 === y2) ||
-            (c.x1 === x2 && c.y1 === y2 && c.x2 === x1 && c.y2 === y1))
+          !(c.x1 === x1 && c.y1 === y1 && c.x2 === x2 && c.y2 === y2) &&
+          !(c.x1 === x2 && c.y1 === y2 && c.x2 === x1 && c.y2 === y1)
       );
   }
 
-  public reset(): void {
-      this.grid = this.generateEmptyWorld();
-      this.buildings.clear();
-      this.cables = [];
-      // Reset store counts
-      useGameStore.setState({ buildingCounts: {} });
-  }
-
-  private generateEmptyWorld(): Tile[][] {
-    const grid: Tile[][] = [];
-    const WATER_BORDER = 5; // Water border thickness
-    const SAND_BORDER = 7;  // Total border thickness including water and sand
-
-    for (let y = 0; y < WORLD_HEIGHT; y++) {
-      const row: Tile[] = [];
-      for (let x = 0; x < WORLD_WIDTH; x++) {
-        const dx = Math.min(x, WORLD_WIDTH - 1 - x);
-        const dy = Math.min(y, WORLD_HEIGHT - 1 - y);
-        const d = Math.min(dx, dy);
-
-        if (d < WATER_BORDER) {
-          row.push(new Tile(TileType.WATER));
-        } else if (d < SAND_BORDER) {
-          row.push(new Tile(TileType.SAND));
-        } else {
-          // Inner world: Simple random generation
-          if (Math.random() < 0.1) {
-            row.push(new Tile(TileType.STONE));
-          } else {
-            row.push(new Tile(TileType.GRASS));
+  public getConnectionsCount(x: number, y: number): number {
+      let count = 0;
+      for (const c of this.cables) {
+          if ((c.x1 === x && c.y1 === y) || (c.x2 === x && c.y2 === y)) {
+              count++;
           }
-        }
       }
-      grid.push(row);
-    }
-    return grid;
+      return count;
   }
 
-  public getTile(x: number, y: number): Tile {
-    if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) {
-      return new Tile(TileType.EMPTY);
-    }
-    return this.grid[y][x];
-  }
+  public removeBuilding(x: number, y: number): boolean {
+      const building = this.getBuilding(x, y);
+      if (!building) return false;
 
-
-  public canPlaceBuilding(x: number, y: number, type: string): boolean {
-     const config = getBuildingConfig(type);
-     
-     if (config?.maxCount) {
-         const current = useGameStore.getState().buildingCounts[type] || 0;
-         if (current >= config.maxCount) return false;
-     }
-
-     const width = config?.width || 1;
-     const height = config?.height || 1;
-
-     for (let dx = 0; dx < width; dx++) {
-         for (let dy = 0; dy < height; dy++) {
-             const checkX = x + dx;
-             const checkY = y + dy;
-             
-             // Check bounds
-             if (checkX >= WORLD_WIDTH || checkY >= WORLD_HEIGHT) return false;
-
-             const key = `${checkX},${checkY}`;
-             if (this.buildings.has(key)) return false; 
-             
-             const tile = this.getTile(checkX, checkY);
-             if (tile.isWater()) return false;
-             
-             // Specific checks (only check origin or all? usually all for terrain)
-             if (type === 'extractor') {
-                 if (!tile.isStone()) return false;
-             } else if (type === 'conveyor' || type === 'chest' || type === 'hub' || type === 'electric_pole') {
-                 if (tile.isStone()) return false;
-             }
-         }
-     }
-     
-     return true;
+      // Remove from all occupied tiles
+      for (let dx = 0; dx < building.width; dx++) {
+          for (let dy = 0; dy < building.height; dy++) {
+              this.buildings.delete(`${building.x + dx},${building.y + dy}`);
+          }
+      }
+      
+      // Update Store
+      useGameStore.getState().updateBuildingCount(building.getType(), -1);
+      
+      // Update Network
+      this.updateConveyorNetwork();
+      
+      return true;
   }
 
   public placeBuilding(x: number, y: number, type: string, direction: 'north' | 'south' | 'east' | 'west' = 'north'): boolean {
@@ -173,16 +277,22 @@ export class World {
     
     // 2. IMPORTANT: Notify ALL identifiable neighbors to re-check their orientation
     // This allows existing conveyors to react when we place a Chest or Extractor next to them
-    const { getDirectionOffset } = require('../buildings/conveyor/ConveyorLogicSystem');
-    const directions = ['north', 'south', 'east', 'west'];
+    const directions: Direction[] = ['north', 'south', 'east', 'west'];
     
     for (const dir of directions) {
         const offset = getDirectionOffset(dir);
-        const neighbor = this.getBuilding(building.x + offset.dx, building.y + offset.dy);
+        const nx = building.x + offset.dx;
+        const ny = building.y + offset.dy;
+        const neighbor = this.getBuilding(nx, ny);
         
-        // If neighbor is a conveyor, tell it to re-orient
-        if (neighbor && neighbor.getType() === 'conveyor') {
-            (neighbor as Conveyor).autoOrientToNeighbor(this);
+        // Update neighbor logic
+        if (neighbor) {
+            if (neighbor.getType() === 'conveyor') {
+                (neighbor as Conveyor).autoOrientToNeighbor(this);
+            } else {
+                // Try to auto-orient other neighbors (e.g. Extractors)
+                this.autoOrientBuilding(nx, ny);
+            }
         }
     }
     
@@ -203,189 +313,19 @@ export class World {
 
     return true;
   }
-
-  public hasPathTo(startX: number, startY: number, targetType: string, viaTypes: string[]): boolean {
-    const startBuilding = this.getBuilding(startX, startY);
-    if (!startBuilding) return false;
-
-    const visited = new Set<string>();
-    const queue: {x: number, y: number}[] = [{x: startX, y: startY}];
-    visited.add(`${startX},${startY}`);
-
-    while (queue.length > 0) {
-      const {x, y} = queue.shift()!;
-      const building = this.getBuilding(x, y);
-      
-      if (building?.getType() === targetType) return true;
-
-      // Directions: Up, Down, Left, Right
-      const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
-      for (const [dx, dy] of dirs) {
-        const nx = x + dx;
-        const ny = y + dy;
-        const nKey = `${nx},${ny}`;
-        
-        if (!visited.has(nKey)) {
-          const nextBuilding = this.getBuilding(nx, ny);
-          if (nextBuilding && (viaTypes.includes(nextBuilding.getType()) || nextBuilding.getType() === targetType)) {
-            visited.add(nKey);
-            queue.push({x: nx, y: ny});
-          }
-        }
-      }
-    }
-
-    return false;
-  }
-
-  public removeBuilding(x: number, y: number): boolean {
-      const b = this.getBuilding(x, y);
-      if (!b) return false;
-
-      // Remove all keys
-      for (let dx = 0; dx < b.width; dx++) {
-          for (let dy = 0; dy < b.height; dy++) {
-              this.buildings.delete(`${b.x + dx},${b.y + dy}`);
-          }
-      }
-
-      const type = b.getType();
-      this.updateConveyorNetwork();
-      useGameStore.getState().updateBuildingCount(type, -1);
-
-      // Remove connected cables
-      this.cables = this.cables.filter(c => {
-          // Check if cable connects to any tile of the building
-          const connectedToStart = c.x1 >= b.x && c.x1 < b.x + b.width && c.y1 >= b.y && c.y1 < b.y + b.height;
-          const connectedToEnd = c.x2 >= b.x && c.x2 < b.x + b.width && c.y2 >= b.y && c.y2 < b.y + b.height;
-          return !connectedToStart && !connectedToEnd;
-      });
-      
-      return true;
-  }
-
-  public getConnectionsCount(x: number, y: number): number {
-      return this.cables.filter(c => 
-          (c.x1 === x && c.y1 === y) || (c.x2 === x && c.y2 === y)
-      ).length;
-  }
-
-  public getBuilding(x: number, y: number): BuildingEntity | undefined {
-      return this.buildings.get(`${x},${y}`);
-  }
-
+// ...
   public autoOrientBuilding(x: number, y: number): void {
       const b = this.getBuilding(x, y);
-      if (b && (b as any).autoOrient) {
-          (b as any).autoOrient(this);
+      if (b && 'autoOrient' in b) {
+          (b as unknown as AutoOrientable).autoOrient(this);
       }
   }
-
-  public updateConveyorNetwork(): void {
-      console.log('--- Start Network Update ---');
-      
-      // 1. Reset all conveyors
-      let convCount = 0;
-      this.buildings.forEach(b => {
-          if (b instanceof Conveyor) {
-              b.isResolved = false;
-              convCount++;
-          }
-      });
-      console.log(`Reset ${convCount} conveyors.`);
-
-      // 2. Pass 1: Forward flow tracking from extractors
-      const queue: {x: number, y: number}[] = [];
-      const visited = new Set<string>();
-
-      // Start from all extractors (sources)
-      // NOTE: Chests are DESTINATIONS by default, not sources (Phase 2 will add output sides)
-      this.buildings.forEach(b => {
-          if (b instanceof Extractor) {
-              queue.push({x: b.x, y: b.y});
-              visited.add(`${b.x},${b.y}`);
-          }
-      });
-      console.log(`Pass 1: Starting forward flow from ${queue.length} extractors.`);
-
-      let resolvedCount = 0;
-
-      while (queue.length > 0) {
-          const {x, y} = queue.shift()!;
-          const current = this.getBuilding(x, y);
-          
-          if (!current) continue;
-          
-          // Determine output direction
-          let outputDir = current.direction;
-          
-          // Calculate target position based on output direction  
-          let tx = x, ty = y;
-          if (outputDir === 'north') ty -= 1;
-          else if (outputDir === 'south') ty += 1;
-          else if (outputDir === 'east') tx += 1;
-          else if (outputDir === 'west') tx -= 1;
-          
-          const target = this.getBuilding(tx, ty);
-          
-          if (target) {
-              if (target instanceof Conveyor && !target.isResolved) {
-                  // Mark this conveyor as resolved (it's reachable from a source)
-                  target.isResolved = true;
-                  resolvedCount++;
-                  visited.add(`${tx},${ty}`);
-                  queue.push({x: tx, y: ty});
-                  console.log(`Pass 1: Resolved Conveyor at ${tx},${ty} (flow from ${x},${y})`);
-              } else if (target instanceof Chest) {
-                  console.log(`Pass 1: Flow reaches Chest at ${tx},${ty} from ${x},${y}`);
-              }
-          }
-      }
-      
-      console.log(`Pass 1 complete. Resolved ${resolvedCount} conveyors from extractors.`);
-      
-      // 3. Pass 2: Resolve conveyors connecting to resolved conveyors or chests
-      // Keep iterating until no new conveyors are resolved
-      let pass2Count = 0;
-      let changed = true;
-      
-      while (changed) {
-          changed = false;
-          
-          this.buildings.forEach(b => {
-              if (b instanceof Conveyor && !b.isResolved) {
-                  // Check if this conveyor points to a resolved conveyor or chest
-                  let tx = b.x, ty = b.y;
-                  if (b.direction === 'north') ty -= 1;
-                  else if (b.direction === 'south') ty += 1;
-                  else if (b.direction === 'east') tx += 1;
-                  else if (b.direction === 'west') tx -= 1;
-                  
-                  const target = this.getBuilding(tx, ty);
-                  
-                  if (target) {
-                      if ((target instanceof Conveyor && target.isResolved) || target instanceof Chest) {
-                          b.isResolved = true;
-                          pass2Count++;
-                          changed = true;
-                          console.log(`Pass 2: Resolved Conveyor at ${b.x},${b.y} (connects to resolved ${tx},${ty})`);
-                      }
-                  }
-              }
-          });
-      }
-      
-      console.log(`Pass 2 complete. Resolved ${pass2Count} additional conveyors.`);
-      console.log(`Total resolved: ${resolvedCount + pass2Count} conveyors.`);
-  }
-
+// ...
   /**
    * Propagate flow direction from all sources (Extractors) through the conveyor network.
    * This ensures all conveyors point AWAY from the source, creating a consistent flow.
    */
   public propagateFlowFromSources(): void {
-      const { getDirectionOffset, getOppositeDirection } = require('../buildings/conveyor/ConveyorLogicSystem');
-      
       // Find all extractors (sources)
       const extractors: Extractor[] = [];
       this.buildings.forEach(b => {
@@ -405,7 +345,7 @@ export class World {
           
           // BFS to propagate direction
           const visited = new Set<string>();
-          const queue: {x: number, y: number, fromDir: 'north' | 'south' | 'east' | 'west'}[] = [];
+          const queue: {x: number, y: number, fromDir: Direction}[] = [];
           
           // The first conveyor receives flow from the extractor's direction
           // It should NOT point back toward the extractor
@@ -427,7 +367,7 @@ export class World {
               // If conveyor points back toward the source, find a better direction
               if (conv.direction === forbiddenDir) {
                   // Find first valid alternative (any adjacent conveyor or chest)
-                  const directions: Array<'north' | 'south' | 'east' | 'west'> = ['north', 'south', 'east', 'west'];
+                  const directions: Direction[] = ['north', 'south', 'east', 'west'];
                   
                   for (const dir of directions) {
                       if (dir === forbiddenDir) continue;
@@ -475,7 +415,7 @@ export class World {
 
   // --- Serialization ---
 
-  public serialize(): any {
+  public serialize(): WorldData {
       return {
           grid: this.grid.map(row => row.map(tile => ({
               type: tile.type,
@@ -519,15 +459,17 @@ export class World {
       };
   }
 
-  public deserialize(data: any): void {
+  public deserialize(data: unknown): void {
       if (!data) return;
+      
+      const worldData = data as WorldData;
 
       // 1. Restore Grid
-      if (data.grid) {
+      if (worldData.grid) {
           for (let y = 0; y < WORLD_HEIGHT; y++) {
               for (let x = 0; x < WORLD_WIDTH; x++) {
-                  if (data.grid[y] && data.grid[y][x]) {
-                       const tData = data.grid[y][x];
+                  if (worldData.grid[y] && worldData.grid[y][x]) {
+                       const tData = worldData.grid[y][x];
                        this.grid[y][x].type = tData.type;
                        this.grid[y][x].resourceAmount = tData.resourceAmount;
                   }
@@ -536,19 +478,21 @@ export class World {
       }
 
       // 2. Restore Buildings
-      this.cables = (data.cables || []).map((c: any) => ({...c}));
+      this.cables = (worldData.cables || []).map(c => ({...c}));
       this.buildings.clear();
-      if (data.buildings && Array.isArray(data.buildings)) {
-          console.log(`Deserializing ${data.buildings.length} buildings...`);
-          data.buildings.forEach((bData: any) => {
-               this.placeBuilding(bData.x, bData.y, bData.type, bData.direction);
+      if (worldData.buildings && Array.isArray(worldData.buildings)) {
+          console.log(`Deserializing ${worldData.buildings.length} buildings...`);
+          worldData.buildings.forEach((bData: SerializedBuilding) => {
+               // Cast direction to valid type
+               const dir = bData.direction as 'north' | 'south' | 'east' | 'west';
+               this.placeBuilding(bData.x, bData.y, bData.type, dir);
                
                // Restore internal state
                const building = this.getBuilding(bData.x, bData.y);
                if (building) {
                    if (building instanceof Conveyor) {
-                       building.currentItem = bData.currentItem;
-                       building.itemId = bData.itemId;
+                       building.currentItem = bData.currentItem || null;
+                       building.itemId = bData.itemId || null;
                        building.transportProgress = bData.transportProgress || 0;
                    } else if (building instanceof Chest) {
                        if (bData.slots) building.slots = bData.slots;

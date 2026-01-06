@@ -1,1 +1,0 @@
-// Moved to src/game/buildings/extractor/ExtractorVisual.ts

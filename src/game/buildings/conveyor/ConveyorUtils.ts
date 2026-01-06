@@ -30,7 +30,6 @@ export class ConveyorUtils {
             
             let lx = 0;
             let lz = 0;
-            const p = progress - 0.5; // -0.5 to 0.5 range computation
             
             // Note: Standard progress 0 is ENTRY, 1 is EXIT.
             // Entry edge depends on direction.
@@ -228,7 +227,6 @@ export class ConveyorUtils {
             
             // Check sweep direction
             const delta = endAng - startAng;
-            const isIncreasing = delta > 0;
             
             // Derivative of Circle (radius r):
             // x = r * cos(a), z = r * sin(a)

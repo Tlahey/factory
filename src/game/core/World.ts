@@ -103,25 +103,35 @@ export class World implements IWorld {
   }
 
   private generateEmptyWorld(): Tile[][] {
-      const grid: Tile[][] = [];
-      for (let y = 0; y < WORLD_HEIGHT; y++) {
-          const row: Tile[] = [];
-          for (let x = 0; x < WORLD_WIDTH; x++) {
-              // Simple generation logic (Grass)
-              let type: TileType = TileType.GRASS;
-              const dist = Math.sqrt((x - WORLD_WIDTH/2)**2 + (y - WORLD_HEIGHT/2)**2);
-              if (dist > WORLD_WIDTH/2 - 2) type = TileType.WATER;
-              
-              // Stone patches
-              if (Math.random() < 0.05 && type !== TileType.WATER) type = TileType.STONE;
-              
-              const tile = new Tile(type);
-              if (type === TileType.STONE) tile.resourceAmount = 1000;
-              row.push(tile);
+    const grid: Tile[][] = [];
+    const WATER_BORDER = 5; // Water border thickness
+    const SAND_BORDER = 7; // Total border thickness including water and sand
+
+    for (let y = 0; y < WORLD_HEIGHT; y++) {
+      const row: Tile[] = [];
+      for (let x = 0; x < WORLD_WIDTH; x++) {
+        const dx = Math.min(x, WORLD_WIDTH - 1 - x);
+        const dy = Math.min(y, WORLD_HEIGHT - 1 - y);
+        const d = Math.min(dx, dy);
+
+        if (d < WATER_BORDER) {
+          row.push(new Tile(TileType.WATER));
+        } else if (d < SAND_BORDER) {
+          row.push(new Tile(TileType.SAND));
+        } else {
+          // Inner world: Simple random generation
+          if (Math.random() < 0.1) {
+            const tile = new Tile(TileType.STONE);
+            tile.resourceAmount = 1000;
+            row.push(tile);
+          } else {
+            row.push(new Tile(TileType.GRASS));
           }
-          grid.push(row);
+        }
       }
-      return grid;
+      grid.push(row);
+    }
+    return grid;
   }
 
   public updateConveyorNetwork(): void {

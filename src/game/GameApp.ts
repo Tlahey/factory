@@ -936,7 +936,7 @@ export class GameApp {
         const { x, y } = obj.userData;
         const tile = this.world.getTile(x, y);
         if (tile) {
-          const targetScale = 0.3 + (tile.resourceAmount / 100) * 0.7;
+          const targetScale = 0.3 + (tile.resourceAmount / 1000) * 0.7;
           obj.scale.set(targetScale, targetScale, targetScale);
         }
       }

@@ -150,8 +150,7 @@ export class Conveyor extends BuildingEntity {
         // The propagation will fix its direction afterward.
         let priority = PRIO_CONVEYOR_OUT;
 
-        // CRITICAL FIX: If neighbor points AT us, it is an INPUT. Do not output to it.
-        // This prevents head-to-head locking (-> <-).
+        // Small penalty if neighbor points at us (potential conflict, but still valid)
         if (neighborDir === dirToUs) {
           priority += 0.5; // 2.5 - less preferred but still better than Extractor (4)
         }

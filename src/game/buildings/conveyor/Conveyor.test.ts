@@ -165,4 +165,23 @@ describe('Conveyor Orientation & Flow', () => {
          
          expect(c1.direction).toBe('south');
     });
+
+    test('Crash Safety: Conflicting Conveyors (Head-to-Head)', () => {
+        // Setup: C1(East) -> C2(West). They point at each other.
+        // This scenario previously caused issues. We ensure it doesn't crash/stack overflow.
+        const c1 = new Conveyor(0, 0, 'east');
+        const c2 = new Conveyor(1, 0, 'west');
+        
+        world.add(c1);
+        world.add(c2);
+        
+        // Trigger updates
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        c1.autoOrientToNeighbor(world as any);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        c2.autoOrientToNeighbor(world as any);
+        
+        // Expect no crash. Directions might be anything, but we check execution finishes.
+        expect(true).toBe(true);
+    });
 });

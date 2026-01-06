@@ -151,61 +151,62 @@ export class World implements IWorld {
   }
 
   public updateConveyorNetwork(): void {
-    // 1. Re-orient all conveyors
-    this.buildings.forEach((b) => {
-      if (b instanceof Conveyor) {
-        b.isResolved = false; // Reset
-        b.autoOrientToNeighbor(this);
-      }
-    });
+    const runPass = () => {
+      // Re-orient
+      this.buildings.forEach((b) => {
+        if (b instanceof Conveyor) {
+          b.autoOrientToNeighbor(this);
+        }
+      });
 
-    // 2. Resolve Network (Backwards from Chests)
-    const queue: { x: number; y: number }[] = [];
+      // Resolve (Backwards from Chests)
+      const queue: { x: number; y: number }[] = [];
+      this.buildings.forEach((b) => {
+        if (b instanceof Chest) queue.push({ x: b.x, y: b.y });
+      });
 
-    // Seed with Chests
-    this.buildings.forEach((b) => {
-      if (b instanceof Chest) {
-        queue.push({ x: b.x, y: b.y });
-      }
-    });
+      const processed = new Set<string>();
+      while (queue.length > 0) {
+        const { x, y } = queue.shift()!;
+        const key = `${x},${y}`;
+        if (processed.has(key)) continue;
+        processed.add(key);
 
-    // BFS to mark resolved conveyors
-    const processed = new Set<string>();
+        const dirs: { dx: number; dy: number; dir: Direction }[] = [
+          { dx: 0, dy: 1, dir: 'north' },
+          { dx: 0, dy: -1, dir: 'south' },
+          { dx: 1, dy: 0, dir: 'west' },
+          { dx: -1, dy: 0, dir: 'east' },
+        ];
 
-    while (queue.length > 0) {
-      const { x, y } = queue.shift()!;
-      const key = `${x},${y}`;
-      if (processed.has(key)) continue;
-      processed.add(key);
+        for (const d of dirs) {
+          const nx = x + d.dx;
+          const ny = y + d.dy;
+          const neighbor = this.getBuilding(nx, ny);
 
-      // Find neighbors pointing TO this tile
-      const dirs: { dx: number; dy: number; dir: Direction }[] = [
-        { dx: 0, dy: 1, dir: 'north' }, // Neighbor is South, points North (dy=-1) to us?
-        // Wait. Neighbor at (x, y+1). If it points North, it points to (x, y).
-        // North offset is (0, -1).
-        // So if neighbor at (x, y+1) has direction 'north', it targets (x, y).
-
-        { dx: 0, dy: -1, dir: 'south' }, // Neighbor North, points South
-        { dx: 1, dy: 0, dir: 'west' }, // Neighbor East, points West
-        { dx: -1, dy: 0, dir: 'east' }, // Neighbor West, points East
-      ];
-
-      for (const d of dirs) {
-        const nx = x + d.dx;
-        const ny = y + d.dy;
-        const neighbor = this.getBuilding(nx, ny);
-
-        if (neighbor && neighbor instanceof Conveyor) {
-          // Check if it points to us
-          if (neighbor.direction === d.dir) {
-            if (!neighbor.isResolved) {
-              neighbor.isResolved = true;
-              queue.push({ x: nx, y: ny });
+          if (neighbor && neighbor instanceof Conveyor) {
+            if (neighbor.direction === d.dir) {
+              if (!neighbor.isResolved) {
+                neighbor.isResolved = true;
+                queue.push({ x: nx, y: ny });
+              }
             }
           }
         }
       }
-    }
+    };
+
+    // 1. Reset
+    this.buildings.forEach((b) => {
+      if (b instanceof Conveyor) b.isResolved = false;
+    });
+
+    // 2. Pass 1 (Establish basic resolution)
+    runPass();
+
+    // 3. Pass 2 (Optimize orientation towards resolved paths)
+    // We do NOT reset isResolved here, so autoOrient uses the info from Pass 1
+    runPass();
   }
 
   public reset(): void {

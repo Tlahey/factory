@@ -14,13 +14,13 @@ export class ConveyorVisual implements VisualEntity {
   private itemContainer: THREE.Group; // Wrapper for Transform/Scale correction
   private itemMesh: THREE.Group;
   private lastItemId: number | null = null;
-  private lastResolved: boolean = false;
-
-  private type: 'straight' | 'left' | 'right';
+  private lastDirection: string;
 
   constructor(conveyor: Conveyor) {
     this.type = conveyor.visualType;
     this.lastResolved = conveyor.isResolved;
+    this.lastDirection = conveyor.direction;
+    // ... rest of constructor unchanged
 
     const texture = createConveyorTexture();
     this.mesh = createConveyorModel(this.type, texture);
@@ -115,8 +115,14 @@ export class ConveyorVisual implements VisualEntity {
 
   public update(delta: number, conveyor: Conveyor): void {
     // 1. Check for State Changes
-    if (conveyor.visualType !== this.type) {
-      this.updateType(conveyor.visualType, conveyor.direction);
+    if (conveyor.visualType !== this.type || conveyor.direction !== this.lastDirection) {
+      if (conveyor.visualType !== this.type) {
+        this.updateType(conveyor.visualType, conveyor.direction);
+      } else {
+        // Just direction changed, re-orient without rebuilding
+        this.setOrientation(this.type, conveyor.direction);
+      }
+      this.lastDirection = conveyor.direction;
     }
 
     if (conveyor.isResolved !== this.lastResolved) {
@@ -186,6 +192,7 @@ export class ConveyorVisual implements VisualEntity {
       `Conveyor type changed from ${this.type} to ${newType}, rebuilding mesh`
     );
     this.type = newType;
+    this.lastDirection = outDir;
 
     // Store current position and rotation
     const pos = this.mesh.position.clone();

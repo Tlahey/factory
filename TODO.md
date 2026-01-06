@@ -1,3 +1,10 @@
+- Ajouter le système d'input/ output pour les batiments
+  - Foreuse à une sortie (output) qui envoie les ressources extraites aux convoyeurs
+  - Le container a une entrée (input) qui reçoit les ressources des convoyeurs et une sortie (output) qui permet de récupérer les ressources stockées dans le container (la sortie est toujours à l'oposé de l'entrée)
+  - NB: dans le futur, les batiments pourrant avoir plusieurs entrées (qui seront toutes côté à côte sur le batiment) et toujours une seule sortie (à l'opposé des entrées)
+  - On matérialisera les entrées par une flèche verte et les sorties par une flèche rouge sur le batiment.
+  - Tout convoyeur qui n'est pas lié à une entrée ou une sortie d'un batiment ne fonctionnera pas
+  
 - Ajouter le clic droit pour faire une rotation de 45 degrès de la pièce sélectionnée
 
 - Il est possible de drag and drop pour supprimer les éléments avec la l'icone de la poubelle

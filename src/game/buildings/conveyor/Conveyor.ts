@@ -150,14 +150,15 @@ export class Conveyor extends BuildingEntity {
         // The propagation will fix its direction afterward.
         let priority = PRIO_CONVEYOR_OUT;
 
-        // Small penalty if neighbor points at us (potential conflict, but still valid)
-        if (neighborDir === dirToUs) {
-          priority += 0.5; // 2.5 - less preferred but still better than Extractor (4)
+        // Prefer resolved conveyors (connected to chest)
+        if ((neighbor as Conveyor).isResolved) {
+          priority -= 0.6; // 1.4 - Better than unresolved (2), worse than Chest (1)
         }
 
-        // Bonus if we are ALREADY pointing at it (Keep existing links)
-        if (this.direction === checkDir) {
-          priority -= 0.1;
+        // CRITICAL FIX: If neighbor points AT us, it is an INPUT. Do not output to it.
+        // This prevents head-to-head locking (-> <-).
+        if (neighborDir === dirToUs) {
+          priority += 0.5;
         }
 
         const candidate: Candidate = {

@@ -89,7 +89,7 @@ export class Conveyor extends BuildingEntity {
   }
 
   public isValidPlacement(tile: Tile): boolean {
-    return !tile.isStone();
+    return !tile.isStone() && !tile.isWater();
   }
 
   /**

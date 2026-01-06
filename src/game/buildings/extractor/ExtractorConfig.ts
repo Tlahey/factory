@@ -7,6 +7,11 @@ export const EXTRACTOR_CONFIG: BuildingConfig = {
     cost: 10,
     hasMenu: true,
     description: 'Extracts resources from the ground. Requires Energy.',
+    io: {
+        hasInput: false,
+        hasOutput: true,
+        showArrow: true
+    },
     maxCount: 3,
     upgrades: [
         {

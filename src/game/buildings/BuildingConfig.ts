@@ -26,6 +26,12 @@ export interface BuildingConfig {
     width?: number;
     height?: number;
     upgrades?: BuildingUpgrade[];
+    io?: {
+        hasInput: boolean;
+        hasOutput: boolean;
+        // Helper to show flow direction visually
+        showArrow?: boolean;
+    };
 }
 
 export const BUILDINGS: Record<string, BuildingConfig> = {

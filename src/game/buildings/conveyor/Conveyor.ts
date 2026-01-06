@@ -1,6 +1,6 @@
 import { Tile } from '../../core/Tile';
 import { BuildingEntity } from '../../entities/BuildingEntity';
-import { getDirectionOffset, getOppositeDirection } from './ConveyorLogicSystem';
+import { getDirectionOffset, getOppositeDirection, determineFlowInputDirection, calculateTurnType } from './ConveyorLogicSystem';
 
 export class Conveyor extends BuildingEntity {
   constructor(x: number, y: number, direction: 'north' | 'south' | 'east' | 'west' = 'north') {
@@ -11,9 +11,14 @@ export class Conveyor extends BuildingEntity {
   public itemId: number | null = null; // Unique ID for tracking mesh
   public transportProgress: number = 0;
   public isResolved: boolean = false; // True only if connected to a valid destination (chest)
+  public visualType: 'straight' | 'left' | 'right' = 'straight';
   private readonly TRANSPORT_SPEED = 1.0; // Tiles per second
 
   public tick(delta: number, world?: any): void {
+    if (world) {
+        this.updateVisualState(world);
+    }
+
     if (!this.currentItem || !this.isResolved) return;
 
     this.transportProgress += this.TRANSPORT_SPEED * delta;
@@ -215,30 +220,13 @@ export class Conveyor extends BuildingEntity {
      }
   }
 
-  public getVisualState(world: any): { 
-      type: 'straight' | 'left' | 'right'; 
-      outDir: 'north' | 'south' | 'east' | 'west'; 
-      shapeId: string 
-  } {
-      // Dynamic require to avoid circular dependency issues at import time
-      const { determineFlowInputDirection, calculateTurnType } = require('./ConveyorLogicSystem');
-      
-      // Determine if we have an input that causes a turn
+  public updateVisualState(world: any): void {
       const flowIn = determineFlowInputDirection(this.x, this.y, this.direction, world);
       let type: 'straight' | 'left' | 'right' = 'straight';
       
       if (flowIn) {
           type = calculateTurnType(flowIn, this.direction) as 'straight' | 'left' | 'right';
       }
-      
-      // Unique identifier for the mesh shape/rotation
-      // format: conveyor-straight-north, conveyor-left-east, etc.
-      const shapeId = `conveyor-${type}-${this.direction}`;
-      
-      return { 
-          type: type, 
-          outDir: this.direction, 
-          shapeId: shapeId 
-      };
+      this.visualType = type;
   }
 }

@@ -6,7 +6,7 @@ import { WORLD_HEIGHT, WORLD_WIDTH } from './constants';
 import { FactorySystem } from './systems/FactorySystem';
 import { PowerSystem } from './systems/PowerSystem';
 import { InputSystem } from './systems/InputSystem';
-import { CableVisual } from './visuals/CableVisual';
+import { CableVisual } from './buildings/electric-pole/CableVisual';
 import { getGrassGeometry } from './environment/grass/GrassGeometry';
 import { createGrassMaterial } from './environment/grass/GrassMaterial';
 import { createGrassTexture } from './environment/grass/GrassTexture';
@@ -22,14 +22,12 @@ import { createElectricPoleModel } from './buildings/electric-pole/ElectricPoleM
 import { InventorySlot } from './state/store';
 
 import { VisualEntity } from './visuals/VisualEntity';
-import { ExtractorVisual } from './visuals/ExtractorVisual';
-import { ConveyorVisual } from './visuals/ConveyorVisual';
-import { SimpleVisual } from './visuals/SimpleVisual';
 import { ParticleSystem } from './visuals/ParticleSystem';
 import { PlacementVisuals } from './visuals/PlacementVisuals'; 
 import { SelectionIndicator } from './visuals/SelectionIndicator';
 import { Extractor } from './buildings/extractor/Extractor';
 import { Conveyor } from './buildings/conveyor/Conveyor';
+import { createBuildingVisual, VisualContext } from './buildings/BuildingFactory';
 
 export class GameApp {
   private renderer: THREE.WebGLRenderer;
@@ -628,81 +626,35 @@ export class GameApp {
     }
 
     // 2. Add/Update buildings
+    const context: VisualContext = { particleSystem: this.particleSystem };
+
     this.world.buildings.forEach((building, key) => {
         // Only render at the origin tile
         if (key !== `${building.x},${building.y}`) return;
 
         let visual = this.visuals.get(key);
-        let shapeId = '';
-        
-        // Resolve Shape ID & properties
-        let conveyorType: 'straight' | 'left' | 'right' = 'straight';
-        let conveyorOutDir = building.direction;
-        let isConveyorResolved = false;
-
-        if (building instanceof Conveyor) {
-            const state = building.getVisualState(this.world);
-            conveyorType = state.type;
-            conveyorOutDir = state.outDir;
-            shapeId = state.shapeId;
-            isConveyorResolved = building.isResolved;
-        } else {
-             shapeId = `${building.getType()}-${building.direction}`;
-        }
-
-        // Check for Updates (mismatch shapeId or existing visual type)
-        if (visual && visual.mesh.userData.shapeId !== shapeId) {
-            this.scene.remove(visual.mesh);
-            visual.dispose();
-            this.visuals.delete(key);
-            visual = undefined;
-        }
 
         // Create Visual if needed
         if (!visual) {
-            let mesh: THREE.Object3D;
-            
-            if (building instanceof Extractor) {
-                visual = new ExtractorVisual(this.particleSystem);
-                mesh = visual.mesh;
-            } else if (building instanceof Conveyor) {
-                // Pass resolved type and direction to Visual
-                visual = new ConveyorVisual(building, conveyorType, conveyorOutDir, isConveyorResolved);
-                mesh = visual.mesh;
-            } else if (building.getType() === 'chest') {
-                mesh = createChestModel();
-                mesh.name = 'chest';
-                visual = new SimpleVisual(mesh);
-            } else if (building.getType() === 'hub') {
-                mesh = createHubModel();
-                visual = new SimpleVisual(mesh);
-            } else if (building.getType() === 'electric_pole') {
-                mesh = createElectricPoleModel();
-                visual = new SimpleVisual(mesh);
-            } else {
-                // Fallback for generic
-                const geometry = new THREE.BoxGeometry(0.8, building.getHeight(), 0.8);
-                const material = new THREE.MeshLambertMaterial({ color: building.getColor() });
-                mesh = new THREE.Mesh(geometry, material);
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
-                visual = new SimpleVisual(mesh);
+            try {
+                visual = createBuildingVisual(building.getType(), building, context);
+                
+                // Common Positioning
+                visual.mesh.position.set(building.x, 0, building.y);
+
+                // Apply generic rotation for non-conveyors (ConveyorVisual handles its own)
+                if (building.getType() !== 'conveyor') {
+                    if (building.direction === 'east') visual.mesh.rotation.y = -Math.PI / 2;
+                    else if (building.direction === 'west') visual.mesh.rotation.y = Math.PI / 2;
+                    else if (building.direction === 'south') visual.mesh.rotation.y = Math.PI;
+                    else if (building.direction === 'north') visual.mesh.rotation.y = 0; 
+                }
+
+                this.scene.add(visual.mesh);
+                this.visuals.set(key, visual);
+            } catch(e) {
+                console.warn(`Failed to create visual for ${building.getType()}`, e);
             }
-
-            // Common Positioning
-            mesh.position.set(building.x, 0, building.y);
-            mesh.userData.shapeId = shapeId;
-
-            // Apply generic rotation for non-conveyors (ConveyorVisual handles its own)
-            if (!(building instanceof Conveyor)) {
-                if (building.direction === 'east') mesh.rotation.y = -Math.PI / 2;
-                if (building.direction === 'west') mesh.rotation.y = Math.PI / 2;
-                if (building.direction === 'south') mesh.rotation.y = Math.PI;
-                if (building.direction === 'north') mesh.rotation.y = 0; 
-            }
-
-            this.scene.add(mesh);
-            this.visuals.set(key, visual);
         }
     });
     
@@ -879,14 +831,6 @@ export class GameApp {
     this.visuals.forEach((visual, key) => {
         const building = this.world.buildings.get(key);
         if (building) {
-            // Update resolution status for conveyors
-            if (building instanceof Conveyor && visual instanceof ConveyorVisual) {
-                visual.setResolved(building.isResolved);
-                
-                // Check if visual type needs to change (e.g., new neighbor placed)
-                const visualState = building.getVisualState(this.world);
-                visual.updateType(visualState.type, this.scene);
-            }
             visual.update(delta, building);
         }
     });

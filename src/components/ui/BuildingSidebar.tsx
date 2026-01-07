@@ -3,12 +3,14 @@
 import { useGameStore } from '@/game/state/store';
 import clsx from 'clsx';
 import ModelPreview from './ModelPreview';
+import { getBuildingConfig } from '@/game/buildings/BuildingConfig';
 
 export default function BuildingSidebar() {
     const selectedBuilding = useGameStore((state) => state.selectedBuilding);
     const setSelectedBuilding = useGameStore((state) => state.setSelectedBuilding);
     const hotbar = useGameStore((state) => state.hotbar);
     const setHotbarSlot = useGameStore((state) => state.setHotbarSlot);
+    const buildingCounts = useGameStore((state) => state.buildingCounts);
 
     const handleDrop = (e: React.DragEvent, index: number) => {
         e.preventDefault();
@@ -46,6 +48,27 @@ export default function BuildingSidebar() {
             {hotbar.map((buildingId, index) => {
                 const isSelected = !!buildingId && selectedBuilding === buildingId;
 
+                // Get Count Info
+                let countDisplay = null;
+                if (buildingId) {
+                    const config = getBuildingConfig(buildingId);
+
+                    if (config?.maxCount) {
+                        const current = buildingCounts[buildingId] || 0;
+                        const isLimitReached = current >= config.maxCount;
+                        countDisplay = (
+                            <div className={clsx(
+                                "absolute -top-2 -right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md border shadow-sm z-20",
+                                isLimitReached
+                                    ? "bg-red-900/90 text-red-200 border-red-500/50"
+                                    : "bg-gray-800/90 text-gray-300 border-white/20"
+                            )}>
+                                {current}/{config.maxCount}
+                            </div>
+                        );
+                    }
+                }
+
                 return (
                     <div
                         key={index}
@@ -55,6 +78,8 @@ export default function BuildingSidebar() {
                     >
                         {/* Slot Number */}
                         <span className="absolute left-1 top-1 text-[10px] text-gray-500 font-mono z-10">{index + 1}</span>
+
+                        {countDisplay}
 
                         <button
                             draggable={!!buildingId}

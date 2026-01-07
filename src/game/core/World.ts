@@ -113,7 +113,16 @@ export class World implements IWorld {
   public canPlaceBuilding(x: number, y: number, type: string): boolean {
     if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) return false;
 
+    // Check Max Count Limits
     const config = getBuildingConfig(type);
+    if (config?.maxCount) {
+      let count = 0;
+      this.buildings.forEach((b) => {
+        if (b.getType() === type) count++;
+      });
+      if (count >= config.maxCount) return false;
+    }
+
     const width = config?.width || 1;
     const height = config?.height || 1;
 
@@ -303,19 +312,6 @@ export class World implements IWorld {
     if (!skipValidation) {
       // Validate first
       if (!this.canPlaceBuilding(x, y, type)) return false;
-
-      // Check Limits
-      const config = getBuildingConfig(type);
-      if (config?.maxCount) {
-        let count = 0;
-        this.buildings.forEach((b) => {
-          if (b.getType() === type) count++;
-        });
-        if (count >= config.maxCount) {
-          console.warn(`Limit reached for ${type}: ${config.maxCount}`);
-          return false;
-        }
-      }
     }
 
     // ... imports

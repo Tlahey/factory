@@ -37,6 +37,7 @@ interface GameState {
   // Building Limits
   buildingCounts: Record<string, number>;
   updateBuildingCount: (type: string, delta: number) => void;
+  reset: () => void;
 }
 
 const INVENTORY_SIZE = 10;
@@ -154,6 +155,13 @@ export const useGameStore = create<GameState>()(
             [type]: Math.max(0, current + delta),
           }
         };
+      }),
+      reset: () => set({
+        inventory: Array(INVENTORY_SIZE).fill(null).map(() => ({ type: null, count: 0 })),
+        selectedBuilding: null,
+        buildingCounts: {},
+        hotbar: ['extractor', 'conveyor', 'chest', 'hub', 'electric_pole', 'cable', null, null, null],
+        openedEntityKey: null,
       }),
     }),
     {

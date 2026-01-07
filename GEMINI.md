@@ -34,5 +34,5 @@ To add a new building (e.g., "SolarPanel"):
 - **Persistence**: Ensure new state data is correctly saved/loaded if necessary.
 - **UI**: Buildings with `hasMenu: true` must have their `upgrades` defined in their config to automatically appear in the info panel.
 - **Development**: Keep it simple. Don't create huge files, prefer to split logic into smaller files and folders. Use naming conventions to make it easy to understand what each file does.
-- **Testing**: Before considering a solution complete, ensure unit tests are created and passing. Run tests to validate there are no regressions.
+- **Testing**: Before considering a solution complete, ensure unit tests are created and passing. Run tests to validate there are no regressions. **Automatic Test Generation**: Always generate tests for new features to ensure stability and prevent regressions.
 - **Linting**: We must strictly validate the linter before merging. `lint-staged` is used to ensure code quality.

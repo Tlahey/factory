@@ -38,17 +38,22 @@ export class ExtractorVisual implements VisualEntity {
     }
 
     // 3-State Logic
-    // 1. Not Linked (No Power Source) -> RED
+    // 1. No Power Source -> RED
     if (!entity.hasPowerSource) {
       statusMat.color.setHex(0xff0000);
       this.statusLight.scale.setScalar(1.0);
     }
-    // 2. Linked but Low Energy OR Linked & Full Energy but Idle -> ORANGE
-    else if (entity.powerStatus === 'warn' || !entity.active) {
+    // 2. Low Power (Working Slow) -> ORANGE PULSING
+    else if (entity.powerStatus === 'warn' && entity.active) {
+      statusMat.color.setHex(0xffaa00);
+      this.statusLight.scale.setScalar(1.0 + Math.sin(time * 5) * 0.15);
+    }
+    // 3. Idle / Blocked -> ORANGE STATIC
+    else if (!entity.active) {
       statusMat.color.setHex(0xffaa00);
       this.statusLight.scale.setScalar(1.0);
     }
-    // 3. Linked & Active -> GREEN
+    // 4. Fully Powered & Active -> GREEN PULSING
     else {
       statusMat.color.setHex(0x00ff00);
       this.statusLight.scale.setScalar(1.0 + Math.sin(time * 10) * 0.2);
@@ -57,10 +62,12 @@ export class ExtractorVisual implements VisualEntity {
     if (!entity.active) return;
 
     if (this.drillMesh) {
-      this.drillMesh.rotation.y += delta * 15;
+      const speed = 15 * (entity.visualSatisfaction || 0);
+      this.drillMesh.rotation.y += delta * speed;
     }
     if (this.drillContainer) {
-      this.drillContainer.position.y = 1.2 + Math.sin(time * 3) * 0.4;
+      const pulseSpeed = 3 * (entity.visualSatisfaction || 0);
+      this.drillContainer.position.y = 1.2 + Math.sin(time * pulseSpeed) * 0.4;
     }
 
     if (Math.random() < 0.3) {

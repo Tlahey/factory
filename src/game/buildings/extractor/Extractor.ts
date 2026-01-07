@@ -12,6 +12,10 @@ export class Extractor extends BuildingEntity {
 
   public speedMultiplier: number = 1.0;
   private accumTime: number = 0;
+
+  // Stability Timers
+  private blockStabilityTimer: number = 0;
+  private readonly STABILITY_THRESHOLD = 0.5; // Seconds to wait before switching to 'blocked'
   
   constructor(x: number, y: number, direction: 'north' | 'south' | 'east' | 'west' = 'north') {
     super(x, y, 'extractor', direction);
@@ -31,39 +35,58 @@ export class Extractor extends BuildingEntity {
       const interval = 1.0 / this.speedMultiplier;
       const isReadyToOutput = this.accumTime >= interval;
       
-      // Only "Demand" power if:
-      // 1. We have resources
-      // 2. AND (We are still processing OR We can output)
-      // If we are ready to output but cannot, THEN we stop demanding (Idle/Blocked)
-      this.hasDemand = hasResources && (!isReadyToOutput || canOutput);
-  
-      // If we don't have demand (e.g. Blocked), we don't tick accumTime (pause processing)
-      // But wait, if !isReadyToOutput, we DO have demand. 
-      // If isReadyToOutput and !canOutput, hasDemand is false. We stop power.
-      // This allows us to "Process" -> "Wait if blocked" -> "Process".
-  
-      // If we don't have demand (e.g. Blocked), we don't tick accumTime (pause processing)
-    // We ALSO don't tick if we have no power (but we still Demand it so grid knows we need it)
+      // STABLE DEMAND: We demand power as long as we have resources to work on.
+      this.hasDemand = hasResources;
+
+      // Determine "Logical" Status
+      let logicalStatus: typeof this.operationStatus = 'working';
+      if (!hasResources) {
+          logicalStatus = 'no_resources';
+      } else if (isReadyToOutput && !canOutput) {
+          logicalStatus = 'blocked';
+      } else if (!this.hasPowerSource) {
+          logicalStatus = 'no_power';
+      }
+
+      // Status Debouncing:
+      // If we want to switch to 'blocked', we wait for the threshold.
+      // If we want to switch to anything else (working, no_power, etc), we do it instantly.
+      if (logicalStatus === 'blocked') {
+          this.blockStabilityTimer += delta;
+      } else {
+          this.blockStabilityTimer = 0;
+      }
+
+      const oldStatus = this.operationStatus;
+      if (logicalStatus !== 'blocked' || this.blockStabilityTimer >= this.STABILITY_THRESHOLD) {
+          this.operationStatus = logicalStatus;
+      } else {
+          // If we are waiting for timer, we stay in 'working' if we were there
+          if (this.operationStatus === 'working' || this.operationStatus === 'idle') {
+              this.operationStatus = 'working';
+          }
+      }
+
+      if (this.operationStatus !== oldStatus) {
+          console.log(`[Extractor] machine at ${this.x},${this.y} status change: ${oldStatus} -> ${this.operationStatus} (Timer: ${this.blockStabilityTimer.toFixed(2)})`);
+      }
 
     // 2. Check Power Status
-    const isPowered = this.powerStatus === 'active';
+    const powerFactor = this.hasPowerSource ? this.powerSatisfaction : 0;
+    const oldActive = this.active;
 
-    if (this.hasDemand && isPowered) {
-         this.accumTime += delta;
-    }
-    
-    if (!isPowered) {
-        this.active = false;
-        return;
+    // ACTIVE flag logic with slightly different hysteresis (stays true if waiting for block threshold)
+    if (this.operationStatus === 'working' && powerFactor > 0) {
+         this.accumTime += delta * powerFactor;
+         this.active = true;
+    } else {
+         // Machine only stops animating if it's truly blocked (timer passed) or no power/res
+         this.active = (this.operationStatus === 'working' && powerFactor > 0);
     }
 
-    // Double check demand logic
-    if (!this.hasDemand) {
-        this.active = false;
-        return;
+    if (this.active !== oldActive) {
+        console.log(`[Extractor] machine at ${this.x},${this.y} active flag change: ${oldActive} -> ${this.active} (Factor: ${powerFactor.toFixed(3)}, Status: ${this.operationStatus})`);
     }
-  
-      this.active = true;
   
       // Check output only if ready
       if (this.accumTime >= interval) {

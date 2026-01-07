@@ -204,11 +204,10 @@ export default function BuildingInfoPanel() {
       <div className="flex border-b border-white/10">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`flex-1 p-3 text-sm font-medium transition-colors relative ${
-            activeTab === 'overview'
-              ? 'text-white'
-              : 'text-gray-500 hover:text-gray-300'
-          }`}
+          className={`flex-1 p-3 text-sm font-medium transition-colors relative ${activeTab === 'overview'
+            ? 'text-white'
+            : 'text-gray-500 hover:text-gray-300'
+            }`}
         >
           Overview
           {activeTab === 'overview' && (
@@ -218,11 +217,10 @@ export default function BuildingInfoPanel() {
         {upgrades.length > 0 && (
           <button
             onClick={() => setActiveTab('upgrade')}
-            className={`flex-1 p-3 text-sm font-medium transition-colors relative ${
-              activeTab === 'upgrade'
-                ? 'text-white'
-                : 'text-gray-500 hover:text-gray-300'
-            }`}
+            className={`flex-1 p-3 text-sm font-medium transition-colors relative ${activeTab === 'upgrade'
+              ? 'text-white'
+              : 'text-gray-500 hover:text-gray-300'
+              }`}
           >
             Upgrades
             {activeTab === 'upgrade' && (
@@ -302,27 +300,42 @@ export default function BuildingInfoPanel() {
                         color =
                           'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]';
                       }
-                      // 2. Active
+                      // 2. Blocked
+                      else if (building.operationStatus === 'blocked') {
+                        status = 'BLOCKED / FULL';
+                        color =
+                          'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]';
+                      }
+                      // 3. No Resources
+                      else if (building.operationStatus === 'no_resources') {
+                        status = 'NO RESOURCES';
+                        color =
+                          'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]';
+                      }
+                      // 4. Low Power
+                      else if (building.powerStatus === 'warn') {
+                        status = 'LOW POWER';
+                        color =
+                          'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]';
+                      }
+                      // 5. Active
                       else if (building.active) {
                         status = 'OPERATIONAL';
                         color =
                           'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]';
                       }
-                      // 3. Linked but Warn OR Idle
+                      // 6. Idle
                       else {
-                        // Could distinguish Low Power vs Idle text if desired, but User grouped them as Orange.
-                        status =
-                          building.powerStatus === 'warn'
-                            ? 'LOW POWER'
-                            : 'IDLE';
+                        status = 'IDLE';
                         color =
-                          'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]';
+                          'bg-gray-500 shadow-[0_0_10px_rgba(107,114,128,0.5)]';
                       }
 
                       return (
                         <>
                           <div
-                            className={`w-3 h-3 rounded-full animate-pulse ${color}`}
+                            className={`w-3 h-3 rounded-full ${building.active ? 'animate-pulse' : ''
+                              } ${color}`}
                           />
                           <span className="text-sm font-bold tracking-tight text-white/90">
                             {status}
@@ -355,11 +368,18 @@ export default function BuildingInfoPanel() {
                         <Zap size={10} className="text-red-500" /> Energy
                         Consumption
                       </div>
-                      <div className="text-lg font-mono font-bold text-red-400">
-                        {parseFloat(
-                          String(building.powerConfig?.rate || 0)
-                        ).toFixed(2)}{' '}
-                        <span className="text-[10px] text-gray-500">kW</span>
+                      <div className="text-right">
+                        <div className="text-lg font-mono font-bold text-red-400">
+                          {parseFloat(
+                            String(building.powerConfig?.rate || 0)
+                          ).toFixed(2)}{' '}
+                          <span className="text-[10px] text-gray-500">kW</span>
+                        </div>
+                        {building.visualSatisfaction < 0.98 && (
+                          <div className="text-[10px] font-bold text-yellow-500">
+                            {(building.visualSatisfaction * 100).toFixed(0)}% Satisfaction
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -409,10 +429,10 @@ export default function BuildingInfoPanel() {
                       </div>
                       <div className="text-lg font-mono font-bold text-green-400">
                         {(building as Hub).statsHistory &&
-                        (building as Hub).statsHistory.length > 0
+                          (building as Hub).statsHistory.length > 0
                           ? (building as Hub).statsHistory[
-                              (building as Hub).statsHistory.length - 1
-                            ].production.toFixed(2)
+                            (building as Hub).statsHistory.length - 1
+                          ].production.toFixed(2)
                           : (building.powerConfig?.rate || 0).toFixed(2)}
                         <span className="text-[10px] text-gray-500 ml-1">
                           kW
@@ -425,10 +445,10 @@ export default function BuildingInfoPanel() {
                       </div>
                       <div className="text-lg font-mono font-bold text-red-400">
                         {(building as Hub).statsHistory &&
-                        (building as Hub).statsHistory.length > 0
+                          (building as Hub).statsHistory.length > 0
                           ? (building as Hub).statsHistory[
-                              (building as Hub).statsHistory.length - 1
-                            ].consumption.toFixed(2)
+                            (building as Hub).statsHistory.length - 1
+                          ].consumption.toFixed(2)
                           : (0).toFixed(2)}
                         <span className="text-[10px] text-gray-500 ml-1">
                           kW
@@ -575,11 +595,10 @@ export default function BuildingInfoPanel() {
                     className={`
                                             w-full py-2 px-4 rounded-lg font-bold flex items-center justify-center gap-2
                                             transition-all
-                                            ${
-                                              canAfford
-                                                ? 'bg-indigo-500 hover:bg-indigo-400 text-white shadow-lg shadow-indigo-500/20'
-                                                : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                                            }
+                                            ${canAfford
+                        ? 'bg-indigo-500 hover:bg-indigo-400 text-white shadow-lg shadow-indigo-500/20'
+                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                      }
                                         `}
                   >
                     <ArrowUpCircle size={16} />

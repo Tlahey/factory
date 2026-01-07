@@ -104,8 +104,23 @@ export class PowerSystem {
             const hasSource = grid.producers.length > 0;
 
             grid.nodes.forEach(b => {
-                b.powerStatus = status;
+                // Hysteresis logic: 
+                // To go ACTIVE: need 99%
+                // To go WARN: need to drop below 95%
+                if (b.powerStatus === 'active') {
+                    if (grid.satisfaction < 0.95) {
+                        b.powerStatus = 'warn';
+                        console.log(`[PowerSystem] Building at ${b.x},${b.y} status change: ACTIVE -> WARN (Satisf: ${grid.satisfaction.toFixed(3)})`);
+                    }
+                } else {
+                    if (grid.satisfaction >= 0.99) {
+                        b.powerStatus = 'active';
+                        console.log(`[PowerSystem] Building at ${b.x},${b.y} status change: WARN -> ACTIVE (Satisf: ${grid.satisfaction.toFixed(3)})`);
+                    }
+                }
+                
                 b.hasPowerSource = hasSource;
+                b.powerSatisfaction = grid.satisfaction; // Store for proportional logic
                 
                 // Consumers calculate specific satisfied amount
                 if (b.powerConfig?.type === 'consumer') {
@@ -114,6 +129,7 @@ export class PowerSystem {
                 // Producers always active (unless fuel logic added later)
                 if (b.powerConfig?.type === 'producer') {
                     b.powerStatus = 'active'; 
+                    b.powerSatisfaction = 1.0;
                 }
             });
         });

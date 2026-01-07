@@ -22,8 +22,11 @@ export abstract class BuildingEntity extends Entity {
   // Real-time tracking for UI
   public currentPowerDraw: number = 0;
   public currentPowerSatisfied: number = 0;
+  public powerSatisfaction: number = 1.0; // 0..1 factor
+  public visualSatisfaction: number = 1.0; // Smoothed for UI
   public currentGridId: number = -1;
   public hasPowerSource: boolean = false; // Connected to at least one producer?
+  public operationStatus: 'working' | 'blocked' | 'no_resources' | 'no_power' | 'idle' = 'idle';
   
   public hasDemand: boolean = true; // By default true, can be toggled by logic (e.g. idle/blocked)
 
@@ -43,7 +46,11 @@ export abstract class BuildingEntity extends Entity {
     this.direction = clockwise[this.direction];
   }
 
-  public update(_delta: number): void {
+  public update(delta: number): void {
+     // Smooth visual satisfaction
+     const target = this.powerSatisfaction;
+     this.visualSatisfaction = this.visualSatisfaction + (target - this.visualSatisfaction) * Math.min(1.0, delta * 5); // 5 is the smoothing speed
+     
      if (this.buildingType === 'extractor') {
          // Logic specific to extractor
          // We might want to throttle this so it doesn't run every frame, but every second.

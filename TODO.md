@@ -1,13 +1,11 @@
 # Bugs
 
-- La roche a n'a plus une quantité limité de ressource. Il faut remettre cette fonctionnalité. Chaque roche doit avoir 100 de quantité dans un premier temps avant d'être épuisée.
-- La taille de la roche s'épuise pendant qu'elle est extraite pour qu'elle disparaisse de la carte ensuite.
-
-- La foreuse à un problème avec l'électricité, par moment il y a un effet ON / OFF et de clignottemnent. Il faut corriger ce bug.
 
 - Quand un container est plein, la foreuse continue d'extraire les ressources et les fait disparaitre. Il faut que la foreuse s'arrête automatiquement quand le container qui est lié est plein.
 
 # Features
+
+- Ajouter dans la configuration de la foreuse une gestion du rate de la foreuse. Par exemple, on pourra améliorer la foreuse pour augmenter sa vitesse de production.
 
 - Ajouter le système d'input/ output pour les batiments
   - Foreuse à une sortie (output) qui envoie les ressources extraites aux convoyeurs

@@ -1,5 +1,5 @@
 import { Tile } from '../../core/Tile';
-import { BuildingEntity } from '../../entities/BuildingEntity';
+import { BuildingEntity, Direction4 } from '../../entities/BuildingEntity';
 import { IWorld } from '../../entities/types';
 import { Conveyor } from '../conveyor/Conveyor';
 import { Chest } from '../chest/Chest';
@@ -18,7 +18,7 @@ export class Extractor extends BuildingEntity implements IExtractable, IPowered,
   private blockStabilityTimer: number = 0;
   private readonly STABILITY_THRESHOLD = 1.5; // Seconds to wait before switching to 'blocked'
   
-  constructor(x: number, y: number, direction: 'north' | 'south' | 'east' | 'west' = 'north') {
+  constructor(x: number, y: number, direction: Direction4 = 'north') {
     super(x, y, 'extractor', direction);
   }
   

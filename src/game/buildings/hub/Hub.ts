@@ -55,6 +55,16 @@ export class Hub extends BuildingEntity implements IPowered, IIOBuilding {
     }
 
     // --- IIOBuilding ---
+    public getInputPosition(): { x: number, y: number } | null {
+        // Hub doesn't have a specific input position
+        return null;
+    }
+
+    public getOutputPosition(): { x: number, y: number } | null {
+        // Hub doesn't have a specific output position
+        return null;
+    }
+
     public canInput(): boolean {
         return true; // Hub can receive items
     }

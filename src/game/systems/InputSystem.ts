@@ -3,6 +3,7 @@ import { World } from '../core/World';
 import { WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
 import { useGameStore } from '../state/store';
 import { calculateConveyorPath, getSegmentDirection } from '../buildings/conveyor/ConveyorPathHelper';
+import { Direction4 } from '../entities/BuildingEntity';
 
 export class InputSystem {
   private domElement: HTMLElement;
@@ -19,7 +20,7 @@ export class InputSystem {
   // Camera Controls
   private isDragging = false;
   private previousMousePosition = { x: 0, y: 0 };
-  private currentRotation: 'north' | 'south' | 'east' | 'west' = 'north';
+  private currentRotation: Direction4 = 'north';
 
   // Bound listeners for proper removal
   private boundOnPointerDown = this.onPointerDown.bind(this);
@@ -134,14 +135,14 @@ export class InputSystem {
     }
   }
 
-  private rotateSelection() {
-    const clockwise: Record<string, 'north' | 'south' | 'east' | 'west'> = {
-      'north': 'east',
-      'east': 'south',
-      'south': 'west',
-      'west': 'north'
-    };
-    this.currentRotation = clockwise[this.currentRotation];
+  private rotateSelection(clockwise: boolean = true) {
+    const clockwiseOrder: Direction4[] = ['north', 'east', 'south', 'west'];
+    const currentIndex = clockwiseOrder.indexOf(this.currentRotation);
+    if (clockwise) {
+      this.currentRotation = clockwiseOrder[(currentIndex + 1) % 4];
+    } else {
+      this.currentRotation = clockwiseOrder[(currentIndex + 3) % 4]; // -1 mod 4
+    }
   }
 
   public update(dt: number) {
@@ -738,7 +739,19 @@ export class InputSystem {
 
   private onWheel(event: WheelEvent) {
       event.preventDefault();
-      // Zoom
+      
+      // Check if a building is selected for placement (not select/delete/cable modes)
+      const { selectedBuilding } = useGameStore.getState();
+      if (selectedBuilding && selectedBuilding !== 'select' && selectedBuilding !== 'delete' && selectedBuilding !== 'cable') {
+        // Rotate building ghost instead of zooming
+        // deltaY < 0 = scroll up = clockwise
+        // deltaY > 0 = scroll down = counter-clockwise
+        const clockwise = event.deltaY < 0;
+        this.rotateSelection(clockwise);
+        return;
+      }
+      
+      // Default: Zoom
       const zoomSpeed = 0.001;
       const zoomDelta = event.deltaY * zoomSpeed * this.radius;
       

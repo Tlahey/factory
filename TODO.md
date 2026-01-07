@@ -3,7 +3,9 @@
 
 # Features
 
-- Ajouter le clic droit pour faire une rotation de 45 degrès de la pièce sélectionnée
+- Ajouter une rotation de 45 degrès de la pièce sélectionnée. La rotation se fait au scroll de la souris en haut rotation dans le sens horaire, scroll bas rotation dans le sens anti-horaire.
+  - La rotation fonctionne avec tous les buildings
+  - La rotation est stockée dans le fichier de la map
 
 - Ajouter le système d'input/ output pour les batiments
   - Foreuse à une sortie (output) qui envoie les ressources extraites aux convoyeurs

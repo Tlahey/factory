@@ -6,6 +6,15 @@ import { createConveyorModel } from '../buildings/conveyor/ConveyorGeometry';
 import { detectConveyorType, getSegmentDirection } from '../buildings/conveyor/ConveyorPathHelper';
 import { createHubModel } from '../buildings/hub/HubModel';
 import { createElectricPoleModel } from '../buildings/electric-pole/ElectricPoleModel';
+import { Direction4 } from '../entities/BuildingEntity';
+
+// 4-direction rotation mapping
+const directionToRotation: Record<Direction4, number> = {
+  'north': 0,
+  'east': -Math.PI / 2,
+  'south': Math.PI,
+  'west': Math.PI / 2,
+};
 
 export class PlacementVisuals {
   private scene: THREE.Scene;
@@ -30,7 +39,7 @@ export class PlacementVisuals {
       return mesh;
   }
 
-  public update(x: number, y: number, isValid: boolean = true, ghostType: string | null = null) {
+  public update(x: number, y: number, isValid: boolean = true, ghostType: string | null = null, rotation: Direction4 = 'north') {
       if (x < 0 || y < 0) {
           this.cursorMesh.visible = false;
           if (this.ghostMesh) this.ghostMesh.visible = false;
@@ -75,7 +84,7 @@ export class PlacementVisuals {
                   if (ghostType === 'electric_pole') {
                        geometry.scale(0.2, 2, 0.2);
                   }
-                  const material = new THREE.MeshBasicMaterial({ color: 0xffffff }); // Will be replaced by ghostMat
+                  const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
                   this.ghostMesh = new THREE.Mesh(geometry, material);
                   this.ghostType = ghostType;
                   this.scene.add(this.ghostMesh);
@@ -85,6 +94,9 @@ export class PlacementVisuals {
           if (this.ghostMesh) {
               this.ghostMesh.visible = true;
               this.ghostMesh.position.set(x, 0, y);
+              
+              // Apply rotation for all buildings (including conveyor preview)
+              this.ghostMesh.rotation.y = directionToRotation[rotation] ?? 0;
               
               // Apply Ghost Material
               const ghostColor = isValid ? 0xffffff : 0xff0000;
@@ -137,12 +149,10 @@ export class PlacementVisuals {
       }
       
       // Create mesh with correct type
-      // Create mesh with correct type
       const mesh = createConveyorModel(conveyorType, texture);
       mesh.position.set(segment.x, 0, segment.y);
       
-      // Calculate rotation based on output direction (where this segment points to)
-      // or maintain input direction if it's the last segment
+      // Calculate rotation based on output direction
       const direction = getSegmentDirection(
         segment.x, segment.y,
         next ? next.x : null, next ? next.y : null,
@@ -162,8 +172,7 @@ export class PlacementVisuals {
       
       let rot = getRot(direction);
       
-      // Adjust rotation for turn pieces (same logic as ConveyorVisual)
-      // Note: Turn pieces are only identified if both prev and next exist
+      // Adjust rotation for turn pieces
       if (conveyorType === 'left') {
         rot -= Math.PI / 2;
       } else if (conveyorType === 'right') {
@@ -224,7 +233,6 @@ export class PlacementVisuals {
   public dispose() {
       if (this.cursorMesh) {
           this.scene.remove(this.cursorMesh);
-          // dispose geometry/material?
       }
       if (this.ghostMesh) {
           this.scene.remove(this.ghostMesh);

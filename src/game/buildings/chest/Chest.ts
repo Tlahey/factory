@@ -1,5 +1,5 @@
 import { Tile } from '../../core/Tile';
-import { BuildingEntity } from '../../entities/BuildingEntity';
+import { BuildingEntity, Direction4 } from '../../entities/BuildingEntity';
 import { STACK_SIZE } from '../../constants';
 import { IIOBuilding, IStorage, ChestConfigType } from '../BuildingConfig';
 
@@ -10,7 +10,7 @@ export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   constructor(
     x: number,
     y: number,
-    direction: 'north' | 'south' | 'east' | 'west' = 'north'
+    direction: Direction4 = 'north'
   ) {
     super(x, y, 'chest', direction);
   }

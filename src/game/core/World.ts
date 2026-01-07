@@ -1,6 +1,6 @@
 import { TileType, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
 import { useGameStore } from '../state/store';
-import { BuildingEntity } from '../entities/BuildingEntity';
+import { BuildingEntity, Direction4 } from '../entities/BuildingEntity';
 import { Extractor } from '../buildings/extractor/Extractor';
 import { Conveyor } from '../buildings/conveyor/Conveyor';
 import { Chest } from '../buildings/chest/Chest';
@@ -294,7 +294,7 @@ export class World implements IWorld {
     x: number,
     y: number,
     type: string,
-    direction: 'north' | 'south' | 'east' | 'west' = 'north',
+    direction: Direction4 = 'north',
     skipValidation: boolean = false
   ): boolean {
     const key = `${x},${y}`;
@@ -570,8 +570,8 @@ export class World implements IWorld {
     if (worldData.buildings && Array.isArray(worldData.buildings)) {
       console.log(`Deserializing ${worldData.buildings.length} buildings...`);
       worldData.buildings.forEach((bData: SerializedBuilding) => {
-        // Cast direction to valid type
-        const dir = bData.direction as 'north' | 'south' | 'east' | 'west';
+        // Cast direction to Direction8 (handles both old 4-dir and new 8-dir saves)
+        const dir = bData.direction as Direction4;
         this.placeBuilding(bData.x, bData.y, bData.type, dir, true);
 
         // Restore internal state

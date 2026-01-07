@@ -3,6 +3,19 @@ import { Conveyor } from './Conveyor';
 import { Chest } from '../chest/Chest';
 import { IWorld } from '../../entities/types';
 
+// Mock Chest that allows setting maxSlots for testing
+class MockChest extends Chest {
+    private _maxSlots: number = 5;
+    
+    public override get maxSlots(): number {
+        return this._maxSlots;
+    }
+    
+    public setMaxSlots(value: number): void {
+        this._maxSlots = value;
+    }
+}
+
 class MockWorld implements IWorld {
     buildings: Map<string, any> = new Map();
     cables: {x1: number, y1: number, x2: number, y2: number}[] = [];
@@ -25,7 +38,7 @@ class MockWorld implements IWorld {
 describe('Conveyor - Full Chest Reproduction', () => {
     let world: MockWorld;
     let conveyor: Conveyor;
-    let chest: Chest;
+    let chest: MockChest;
 
     beforeEach(() => {
         world = new MockWorld();
@@ -35,8 +48,8 @@ describe('Conveyor - Full Chest Reproduction', () => {
         conveyor.itemId = 123;
         conveyor.transportProgress = 0.9;
         
-        chest = new Chest(1, 0);
-        chest.maxSlots = 1;
+        chest = new MockChest(1, 0);
+        chest.setMaxSlots(1);
         
         world.addBuilding(conveyor);
         world.addBuilding(chest);

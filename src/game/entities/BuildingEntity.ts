@@ -3,9 +3,11 @@ import { Tile } from '../core/Tile';
 import { getBuildingConfig, BuildingConfig, PowerConfig } from '../buildings/BuildingConfig';
 import type { IWorld } from './types';
 
+export type Direction4 = 'north' | 'south' | 'east' | 'west';
+
 export abstract class BuildingEntity extends Entity {
   public buildingType: string;
-  public direction: 'north' | 'south' | 'east' | 'west' = 'north';
+  public direction: Direction4 = 'north';
   
   public width: number = 1;
   public height: number = 1;
@@ -25,14 +27,14 @@ export abstract class BuildingEntity extends Entity {
   
   public hasDemand: boolean = true; // By default true, can be toggled by logic (e.g. idle/blocked)
 
-  constructor(x: number, y: number, buildingType: string, direction: 'north' | 'south' | 'east' | 'west' = 'north') {
+  constructor(x: number, y: number, buildingType: string, direction: Direction4 = 'north') {
     super(x, y, 'building');
     this.buildingType = buildingType;
     this.direction = direction;
   }
 
   public rotate(): void {
-    const clockwise: Record<string, 'north' | 'south' | 'east' | 'west'> = {
+    const clockwise: Record<Direction4, Direction4> = {
       'north': 'east',
       'east': 'south',
       'south': 'west',

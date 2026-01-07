@@ -1,5 +1,6 @@
 # Bugs
 
+- Aucun éléments ne peut être placé sur les ressources sauf la foreuse. Corrige ça et ajoute des tests
 
 # Features
 

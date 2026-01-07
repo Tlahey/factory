@@ -120,8 +120,8 @@ export class GameApp {
         this.syncBuildings();
         this.powerSystem.rebuildNetworks();
       },
-      (x, y, isValid, ghostBuilding) => {
-        this.placementVisuals.update(x, y, isValid, ghostBuilding); // DELEGATED
+      (x, y, isValid, ghostBuilding, rotation) => {
+        this.placementVisuals.update(x, y, isValid ?? true, ghostBuilding ?? null, rotation ?? 'north');
       },
       (start, end, isValid) => {
         if (start && end) {

@@ -12,7 +12,7 @@ export class InputSystem {
   private raycaster: THREE.Raycaster;
   private mouse: THREE.Vector2;
   private onWorldChange?: () => void;
-  private onHover?: (x: number, y: number, isValid?: boolean, ghostBuilding?: string | null) => void;
+  private onHover?: (x: number, y: number, isValid?: boolean, ghostBuilding?: string | null, rotation?: Direction4) => void;
   private onCableDrag?: (start: {x: number, y: number} | null, end: {x: number, y: number} | null, isValid: boolean) => void;
   private onDeleteHover?: (target: {type: 'cable' | 'building', id: string, x?: number, y?: number, cable?: {x1: number, y1: number, x2: number, y2: number}} | null) => void;
   private onConveyorDrag?: (path: {x: number, y: number, isValid: boolean}[]) => void;
@@ -31,7 +31,7 @@ export class InputSystem {
 
   constructor(domElement: HTMLElement, camera: THREE.PerspectiveCamera, world: World, 
               onWorldChange?: () => void, 
-              onHover?: (x: number, y: number, isValid?: boolean, ghostBuilding?: string | null) => void,
+              onHover?: (x: number, y: number, isValid?: boolean, ghostBuilding?: string | null, rotation?: Direction4) => void,
               onCableDrag?: (start: {x: number, y: number} | null, end: {x: number, y: number} | null, isValid: boolean) => void,
               onDeleteHover?: (target: {type: 'cable' | 'building', id: string, x?: number, y?: number, cable?: {x1: number, y1: number, x2: number, y2: number}} | null) => void,
               onConveyorDrag?: (path: {x: number, y: number, isValid: boolean}[]) => void) {
@@ -104,6 +104,9 @@ export class InputSystem {
   // Conveyor Drag State
   private conveyorDragStart: { x: number, y: number } | null = null;
   private isDraggingConveyor = false;
+
+  // Last hover position for rotation updates
+  private lastHoverPosition: { x: number, y: number, isValid: boolean, ghost: string | null } | null = null;
 
   private setupInteractions() {
     this.domElement.addEventListener('pointerdown', this.boundOnPointerDown);
@@ -356,17 +359,18 @@ export class InputSystem {
                          }
                      }
                      
-                     this.onHover(intersection.x, intersection.y, true, 'delete'); 
+                      this.onHover(intersection.x, intersection.y, true, 'delete', this.currentRotation); 
                  } else if (selectedBuilding && selectedBuilding !== 'select' && selectedBuilding !== 'cable') {
-                     isValid = this.world.canPlaceBuilding(intersection.x, intersection.y, selectedBuilding);
-                     ghost = selectedBuilding;
-                     this.onHover(intersection.x, intersection.y, isValid, ghost);
+                      isValid = this.world.canPlaceBuilding(intersection.x, intersection.y, selectedBuilding);
+                      ghost = selectedBuilding;
+                      this.lastHoverPosition = { x: intersection.x, y: intersection.y, isValid, ghost };
+                      this.onHover(intersection.x, intersection.y, isValid, ghost, this.currentRotation);
                  } else {
-                      this.onHover(intersection.x, intersection.y, true, null);
+                       this.onHover(intersection.x, intersection.y, true, null, this.currentRotation);
                       if (this.onDeleteHover) this.onDeleteHover(null); 
                  }
              } else {
-                  this.onHover(-1, -1);
+                   this.onHover(-1, -1, false, null, this.currentRotation);
                   if (this.onDeleteHover) this.onDeleteHover(null);
              }
         }
@@ -748,6 +752,11 @@ export class InputSystem {
         // deltaY > 0 = scroll down = counter-clockwise
         const clockwise = event.deltaY < 0;
         this.rotateSelection(clockwise);
+        // Recall onHover to update ghost rotation
+        if (this.lastHoverPosition && this.onHover) {
+          const { x, y, isValid, ghost } = this.lastHoverPosition;
+          this.onHover(x, y, isValid, ghost, this.currentRotation);
+        }
         return;
       }
       

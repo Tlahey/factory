@@ -87,15 +87,14 @@ function getEdgePosition(direction: Direction, distance: number): { x: number, z
 /**
  * Calculate the actual world direction from a relative side and building direction
  */
-function getSideDirection(side: 'front' | 'back' | 'left' | 'right', buildingDir: Direction): Direction {
-    const clockwiseOrder: Direction[] = ['north', 'east', 'south', 'west'];
-    const currentIndex = clockwiseOrder.indexOf(buildingDir);
-    
+function getSideDirection(side: 'front' | 'back' | 'left' | 'right'): Direction {
+    // Return relative direction assuming building faces 'north'
+    // Rotation is handled by the parent mesh
     switch (side) {
-        case 'front': return buildingDir;
-        case 'back': return clockwiseOrder[(currentIndex + 2) % 4];
-        case 'right': return clockwiseOrder[(currentIndex + 1) % 4];
-        case 'left': return clockwiseOrder[(currentIndex + 3) % 4];
+        case 'front': return 'north';
+        case 'back': return 'south';
+        case 'right': return 'east';
+        case 'left': return 'west';
     }
 }
 
@@ -112,7 +111,7 @@ export function createIOArrows(building: BuildingEntity & IIOBuilding): THREE.Gr
     // Create INPUT arrow (green, pointing toward building)
     if (io.hasInput) {
         const inputSide = io.inputSide || 'front';
-        const inputDir = getSideDirection(inputSide, building.direction as Direction);
+        const inputDir = getSideDirection(inputSide);
         
         const inputArrow = createArrowMesh(INPUT_COLOR, true); // points inward
         const rotation = getDirectionRotation(inputDir);
@@ -128,7 +127,7 @@ export function createIOArrows(building: BuildingEntity & IIOBuilding): THREE.Gr
     // Create OUTPUT arrow (red, pointing away from building)
     if (io.hasOutput) {
         const outputSide = io.outputSide || 'front';
-        const outputDir = getSideDirection(outputSide, building.direction as Direction);
+        const outputDir = getSideDirection(outputSide);
         
         const outputArrow = createArrowMesh(OUTPUT_COLOR, false); // points outward
         const rotation = getDirectionRotation(outputDir);
@@ -154,7 +153,7 @@ export function updateIOArrows(arrowGroup: THREE.Group, building: BuildingEntity
     const inputArrow = arrowGroup.getObjectByName('input_arrow');
     if (inputArrow && io.hasInput) {
         const inputSide = io.inputSide || 'front';
-        const inputDir = getSideDirection(inputSide, building.direction as Direction);
+        const inputDir = getSideDirection(inputSide);
         const rotation = getDirectionRotation(inputDir);
         const pos = getEdgePosition(inputDir, 0.55);
         
@@ -166,7 +165,7 @@ export function updateIOArrows(arrowGroup: THREE.Group, building: BuildingEntity
     const outputArrow = arrowGroup.getObjectByName('output_arrow');
     if (outputArrow && io.hasOutput) {
         const outputSide = io.outputSide || 'front';
-        const outputDir = getSideDirection(outputSide, building.direction as Direction);
+        const outputDir = getSideDirection(outputSide);
         const rotation = getDirectionRotation(outputDir);
         const pos = getEdgePosition(outputDir, 0.35);
         

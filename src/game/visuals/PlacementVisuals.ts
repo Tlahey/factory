@@ -7,6 +7,7 @@ import { detectConveyorType, getSegmentDirection } from '../buildings/conveyor/C
 import { createHubModel } from '../buildings/hub/HubModel';
 import { createElectricPoleModel } from '../buildings/electric-pole/ElectricPoleModel';
 import { Direction4 } from '../entities/BuildingEntity';
+import { getBuildingConfig, IOConfig, Direction } from '../buildings/BuildingConfig';
 
 // 4-direction rotation mapping
 const directionToRotation: Record<Direction4, number> = {
@@ -16,11 +17,74 @@ const directionToRotation: Record<Direction4, number> = {
   'west': Math.PI / 2,
 };
 
+// IO Arrow constants
+const ARROW_HEAD_SIZE = 0.15;
+const ARROW_SHAFT_LENGTH = 0.2;
+const ARROW_SHAFT_RADIUS = 0.04;
+const ARROW_HEIGHT = 0.5;
+const INPUT_COLOR = 0x00ff00;  // Green
+const OUTPUT_COLOR = 0xff0000; // Red
+
+function createArrowMesh(color: number, pointsInward: boolean): THREE.Group {
+    const arrowGroup = new THREE.Group();
+    const material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 });
+    
+    const headGeometry = new THREE.ConeGeometry(ARROW_HEAD_SIZE, ARROW_HEAD_SIZE * 1.8, 8);
+    const head = new THREE.Mesh(headGeometry, material);
+    const shaftGeometry = new THREE.CylinderGeometry(ARROW_SHAFT_RADIUS, ARROW_SHAFT_RADIUS, ARROW_SHAFT_LENGTH, 8);
+    const shaft = new THREE.Mesh(shaftGeometry, material);
+    
+    head.rotation.x = Math.PI / 2;
+    shaft.rotation.x = Math.PI / 2;
+    
+    if (pointsInward) {
+        head.rotation.x = -Math.PI / 2;
+        head.position.z = -ARROW_HEAD_SIZE * 0.8;
+        shaft.position.z = ARROW_SHAFT_LENGTH / 2 + ARROW_HEAD_SIZE * 0.2;
+    } else {
+        head.position.z = ARROW_HEAD_SIZE * 0.8;
+        shaft.position.z = -(ARROW_SHAFT_LENGTH / 2 + ARROW_HEAD_SIZE * 0.2);
+    }
+    
+    arrowGroup.add(head);
+    arrowGroup.add(shaft);
+    return arrowGroup;
+}
+
+function getDirectionRotation(direction: Direction): number {
+    switch (direction) {
+        case 'north': return Math.PI;
+        case 'south': return 0;
+        case 'east': return -Math.PI / 2;
+        case 'west': return Math.PI / 2;
+    }
+}
+
+function getEdgePosition(direction: Direction, distance: number): { x: number, z: number } {
+    switch (direction) {
+        case 'north': return { x: 0, z: -distance };
+        case 'south': return { x: 0, z: distance };
+        case 'east': return { x: distance, z: 0 };
+        case 'west': return { x: -distance, z: 0 };
+    }
+}
+
+function getSideDirection(side: 'front' | 'back' | 'left' | 'right'): Direction {
+    // Returns the direction for the given side when building faces 'north'
+    switch (side) {
+        case 'front': return 'north';
+        case 'back': return 'south';
+        case 'right': return 'east';
+        case 'left': return 'west';
+    }
+}
+
 export class PlacementVisuals {
   private scene: THREE.Scene;
   private cursorMesh: THREE.LineSegments;
   private ghostMesh: THREE.Object3D | null = null;
   private ghostType: string | null = null;
+  private ioArrowGroup: THREE.Group | null = null;
   
   // Conveyor drag preview
   private conveyorDragMeshes: THREE.Object3D[] = [];
@@ -39,10 +103,61 @@ export class PlacementVisuals {
       return mesh;
   }
 
+  // Create IO arrows for building type - ALWAYS in 'north' orientation
+  // The arrows will be added to the ghost mesh and inherit its rotation
+  private createIOArrows(buildingType: string): THREE.Group | null {
+      const config = getBuildingConfig(buildingType);
+      if (!config) return null;
+      
+      const io = (config as { io?: IOConfig }).io;
+      if (!io || !io.showArrow) return null;
+      
+      const group = new THREE.Group();
+      group.name = 'ghost_io_arrows';
+      
+      // Create INPUT arrow (green, pointing toward building)
+      // Always position for 'north' orientation - ghost mesh rotation handles the rest
+      if (io.hasInput) {
+          const inputSide = io.inputSide || 'front';
+          const inputDir = getSideDirection(inputSide);
+          
+          const inputArrow = createArrowMesh(INPUT_COLOR, true);
+          const rot = getDirectionRotation(inputDir);
+          const pos = getEdgePosition(inputDir, 0.55);
+          
+          inputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
+          inputArrow.rotation.y = rot;
+          inputArrow.name = 'input_arrow';
+          
+          group.add(inputArrow);
+      }
+      
+      // Create OUTPUT arrow (red, pointing away from building)
+      if (io.hasOutput) {
+          const outputSide = io.outputSide || 'front';
+          const outputDir = getSideDirection(outputSide);
+          
+          const outputArrow = createArrowMesh(OUTPUT_COLOR, false);
+          const rot = getDirectionRotation(outputDir);
+          const pos = getEdgePosition(outputDir, 0.55);
+          
+          outputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
+          outputArrow.rotation.y = rot;
+          outputArrow.name = 'output_arrow';
+          
+          group.add(outputArrow);
+      }
+      
+      return group.children.length > 0 ? group : null;
+  }
+
+  // updateIOArrows is no longer needed - arrows inherit ghost mesh rotation
+
   public update(x: number, y: number, isValid: boolean = true, ghostType: string | null = null, rotation: Direction4 = 'north') {
       if (x < 0 || y < 0) {
           this.cursorMesh.visible = false;
           if (this.ghostMesh) this.ghostMesh.visible = false;
+          if (this.ioArrowGroup) this.ioArrowGroup.visible = false;
           return;
       }
       
@@ -55,9 +170,14 @@ export class PlacementVisuals {
       // Handle Ghost
       if (ghostType) {
           if (this.ghostType !== ghostType) {
+              // Remove old ghost
               if (this.ghostMesh) {
                   this.scene.remove(this.ghostMesh);
                   this.ghostMesh = null;
+              }
+              if (this.ioArrowGroup) {
+                  this.scene.remove(this.ioArrowGroup);
+                  this.ioArrowGroup = null;
               }
               
               let mesh: THREE.Object3D | null = null;
@@ -78,6 +198,13 @@ export class PlacementVisuals {
                   this.ghostMesh = mesh;
                   this.ghostType = ghostType;
                   this.scene.add(this.ghostMesh);
+                  
+                  // Create IO arrows and add them as children of ghost mesh
+                  // This way they inherit the ghost's rotation automatically
+                  this.ioArrowGroup = this.createIOArrows(ghostType);
+                  if (this.ioArrowGroup) {
+                      this.ghostMesh.add(this.ioArrowGroup);
+                  }
               } else {
                   // Fallback Generic Box
                   const geometry = new THREE.BoxGeometry(0.8, 1, 0.8);
@@ -98,6 +225,9 @@ export class PlacementVisuals {
               // Apply rotation for all buildings (including conveyor preview)
               this.ghostMesh.rotation.y = directionToRotation[rotation] ?? 0;
               
+              // IO arrows are children of ghostMesh and inherit its rotation automatically
+              // No separate positioning needed
+              
               // Apply Ghost Material
               const ghostColor = isValid ? 0xffffff : 0xff0000;
               const ghostMat = new THREE.MeshStandardMaterial({
@@ -116,6 +246,7 @@ export class PlacementVisuals {
           }
       } else {
           if (this.ghostMesh) this.ghostMesh.visible = false;
+          if (this.ioArrowGroup) this.ioArrowGroup.visible = false;
       }
   }
 
@@ -206,6 +337,9 @@ export class PlacementVisuals {
     if (this.ghostMesh) {
       this.ghostMesh.visible = false;
     }
+    if (this.ioArrowGroup) {
+      this.ioArrowGroup.visible = false;
+    }
     this.cursorMesh.visible = false;
   }
 
@@ -236,6 +370,9 @@ export class PlacementVisuals {
       }
       if (this.ghostMesh) {
           this.scene.remove(this.ghostMesh);
+      }
+      if (this.ioArrowGroup) {
+          this.scene.remove(this.ioArrowGroup);
       }
       this.clearConveyorDragPreview();
   }

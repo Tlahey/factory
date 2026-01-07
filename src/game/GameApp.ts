@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createRockModel } from './environment/rock/RockModel';
+import { ResourceTile } from './core/ResourceTile';
 import { useGameStore } from './state/store';
 import { World } from './core/World';
 import { WORLD_HEIGHT, WORLD_WIDTH } from './constants';
@@ -882,6 +883,7 @@ export class GameApp {
     }
 
     const delta = this.clock.getDelta();
+    this.world.tick(delta);
     this.factorySystem.update(delta);
     this.powerSystem.update(delta);
 
@@ -936,8 +938,11 @@ export class GameApp {
         const { x, y } = obj.userData;
         const tile = this.world.getTile(x, y);
         if (tile) {
-          const targetScale = 0.3 + (tile.resourceAmount / 1000) * 0.7;
+          const targetScale = tile.getVisualScale();
           obj.scale.set(targetScale, targetScale, targetScale);
+          obj.visible = tile.isVisualVisible();
+        } else {
+          obj.visible = false;
         }
       }
     });

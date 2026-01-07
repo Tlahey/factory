@@ -1,37 +1,42 @@
 import { TileType } from '../constants';
+import { IWorld } from '../entities/types';
 
-export class Tile {
-  constructor(public type: TileType = TileType.EMPTY, public resourceAmount: number = 100) {}
+export abstract class Tile {
+  constructor() {}
 
-  public getType(): TileType {
-    return this.type;
+  public abstract getType(): TileType;
+
+  // Visual logic delegated to subclasses
+  public getVisualScale(): number {
+    return 1.0;
+  }
+
+  public isVisualVisible(): boolean {
+    return false;
+  }
+
+  // Logic update, returns a new Tile if it transforms
+  public onTick(x: number, y: number, world: IWorld): Tile {
+    return this;
   }
 
   public isEmpty(): boolean {
-    return this.type === TileType.EMPTY;
+    return this.getType() === TileType.EMPTY;
   }
 
   public isWater(): boolean {
-    return this.type === TileType.WATER;
+    return this.getType() === TileType.WATER;
   }
 
   public isStone(): boolean {
-      return this.type === TileType.STONE;
+    return this.getType() === TileType.STONE;
   }
 
   public isSand(): boolean {
-      return this.type === TileType.SAND;
+    return this.getType() === TileType.SAND;
   }
 
   public isGrass(): boolean {
-      return this.type === TileType.GRASS;
-  }
-
-
-
-  public deplete(amount: number): void {
-    if (this.isStone()) {
-      this.resourceAmount = Math.max(0, this.resourceAmount - amount);
-    }
+    return this.getType() === TileType.GRASS;
   }
 }

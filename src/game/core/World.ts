@@ -16,6 +16,8 @@ import {
 } from '../buildings/conveyor/ConveyorLogicSystem';
 
 import { Tile } from './Tile';
+import { ResourceTile } from './ResourceTile';
+import { TileFactory } from '../TileFactory';
 
 interface AutoOrientable {
   autoOrient(world: IWorld): void;
@@ -35,11 +37,29 @@ export class World implements IWorld {
     return this.buildings.get(`${x},${y}`);
   }
 
+  public tick(delta: number): void {
+    for (let y = 0; y < WORLD_HEIGHT; y++) {
+      for (let x = 0; x < WORLD_WIDTH; x++) {
+        const currentTile = this.grid[y][x];
+        const newTile = currentTile.onTick(x, y, this);
+        if (newTile !== currentTile) {
+          this.grid[y][x] = newTile;
+        }
+      }
+    }
+  }
+
   public getTile(x: number, y: number): Tile {
     if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) {
-      return new Tile(TileType.EMPTY); // Return dummy out of bounds
+      return TileFactory.createTile(TileType.EMPTY); // Return dummy out of bounds
     }
     return this.grid[y][x];
+  }
+
+  public setTile(x: number, y: number, tile: Tile): void {
+    if (x >= 0 && x < WORLD_WIDTH && y >= 0 && y < WORLD_HEIGHT) {
+      this.grid[y][x] = tile;
+    }
   }
 
   public hasPathTo(
@@ -131,17 +151,15 @@ export class World implements IWorld {
         const d = Math.min(dx, dy);
 
         if (d < WATER_BORDER) {
-          row.push(new Tile(TileType.WATER));
+          row.push(TileFactory.createTile(TileType.WATER));
         } else if (d < SAND_BORDER) {
-          row.push(new Tile(TileType.SAND));
+          row.push(TileFactory.createTile(TileType.SAND));
         } else {
           // Inner world: Simple random generation
           if (Math.random() < 0.1) {
-            const tile = new Tile(TileType.STONE);
-            tile.resourceAmount = 1000;
-            row.push(tile);
+            row.push(TileFactory.createTile(TileType.STONE));
           } else {
-            row.push(new Tile(TileType.GRASS));
+            row.push(TileFactory.createTile(TileType.GRASS));
           }
         }
       }
@@ -467,8 +485,8 @@ export class World implements IWorld {
     return {
       grid: this.grid.map((row) =>
         row.map((tile) => ({
-          type: tile.type,
-          resourceAmount: tile.resourceAmount,
+          type: tile.getType(),
+          resourceAmount: tile instanceof ResourceTile ? tile.resourceAmount : 0,
         }))
       ),
       buildings: Array.from(this.buildings.values()).map((b) => {
@@ -520,8 +538,7 @@ export class World implements IWorld {
         for (let x = 0; x < WORLD_WIDTH; x++) {
           if (worldData.grid[y] && worldData.grid[y][x]) {
             const tData = worldData.grid[y][x];
-            this.grid[y][x].type = tData.type;
-            this.grid[y][x].resourceAmount = tData.resourceAmount;
+            this.grid[y][x] = TileFactory.createTile(tData.type, tData.resourceAmount);
           }
         }
       }

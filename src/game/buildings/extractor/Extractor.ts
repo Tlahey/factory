@@ -3,6 +3,9 @@ import { BuildingEntity } from '../../entities/BuildingEntity';
 import { IWorld } from '../../entities/types';
 import { Conveyor } from '../conveyor/Conveyor';
 import { Chest } from '../chest/Chest';
+import { TileFactory } from '../../TileFactory';
+import { TileType } from '../../constants';
+import { ResourceTile } from '../../core/ResourceTile';
 
 export class Extractor extends BuildingEntity {
   public active: boolean = false;
@@ -22,7 +25,7 @@ export class Extractor extends BuildingEntity {
       if (!world) return;
 
       const tile = world.getTile(this.x, this.y);
-      const hasResources = tile.isStone() && tile.resourceAmount > 0;
+      const hasResources = tile instanceof ResourceTile && tile.resourceAmount > 0;
       
       const canOutput = this.checkOutputClear(world); 
       const interval = 1.0 / this.speedMultiplier;
@@ -65,7 +68,9 @@ export class Extractor extends BuildingEntity {
       // Check output only if ready
       if (this.accumTime >= interval) {
           if (this.tryOutputResource(world)) {
-              tile.deplete(1);
+              if (tile instanceof ResourceTile) {
+                 tile.deplete(1);
+              }
               this.accumTime -= interval;
           } else {
               // Should be caught by hasDemand logic above, but for safety:

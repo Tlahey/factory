@@ -42,7 +42,7 @@ export class Extractor extends BuildingEntity {
       let logicalStatus: typeof this.operationStatus = 'working';
       if (!hasResources) {
           logicalStatus = 'no_resources';
-      } else if (isReadyToOutput && !canOutput) {
+      } else if (!canOutput) {
           logicalStatus = 'blocked';
       } else if (!this.hasPowerSource) {
           logicalStatus = 'no_power';

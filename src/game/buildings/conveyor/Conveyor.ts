@@ -69,10 +69,11 @@ export class Conveyor extends BuildingEntity {
           this.transportProgress = 0;
         }
       } else if (targetBuilding instanceof Chest) {
-        targetBuilding.addItem(this.currentItem!);
-        this.currentItem = null;
-        this.itemId = null;
-        this.transportProgress = 0;
+        if (targetBuilding.addItem(this.currentItem!)) {
+          this.currentItem = null;
+          this.itemId = null;
+          this.transportProgress = 0;
+        }
       }
     }
 

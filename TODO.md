@@ -7,6 +7,8 @@
 
 - Ajouter dans la configuration de la foreuse une gestion du rate de la foreuse. Par exemple, on pourra améliorer la foreuse pour augmenter sa vitesse de production.
 
+- Ajouter une vitesse pour les convoyeurs. Par défaut un covoyeur va à une vitesse de 10 tiles par minutes. Par exemple, on pourra améliorer la vitesse des convoyeurs pour qu'ils puissent transporter plus de ressources par minute.
+
 - Ajouter le système d'input/ output pour les batiments
   - Foreuse à une sortie (output) qui envoie les ressources extraites aux convoyeurs
   - Le container a une entrée (input) qui reçoit les ressources des convoyeurs et une sortie (output) qui permet de récupérer les ressources stockées dans le container (la sortie est toujours à l'oposé de l'entrée)

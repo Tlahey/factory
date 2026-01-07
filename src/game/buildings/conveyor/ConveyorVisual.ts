@@ -12,6 +12,8 @@ export class ConveyorVisual implements VisualEntity {
   public mesh: THREE.Object3D;
   private beltMaterial: THREE.MeshLambertMaterial | null = null;
   private itemContainer: THREE.Group; // Wrapper for Transform/Scale correction
+  public type: 'straight' | 'left' | 'right';
+  private lastResolved: boolean;
   private itemMesh: THREE.Group;
   private lastItemId: number | null = null;
   private lastDirection: string;
@@ -115,7 +117,10 @@ export class ConveyorVisual implements VisualEntity {
 
   public update(delta: number, conveyor: Conveyor): void {
     // 1. Check for State Changes
-    if (conveyor.visualType !== this.type || conveyor.direction !== this.lastDirection) {
+    if (
+      conveyor.visualType !== this.type ||
+      conveyor.direction !== this.lastDirection
+    ) {
       if (conveyor.visualType !== this.type) {
         this.updateType(conveyor.visualType, conveyor.direction);
       } else {

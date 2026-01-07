@@ -163,12 +163,11 @@ export class GameApp {
     );
 
     const originalPlace = this.world.placeBuilding.bind(this.world);
-    this.world.placeBuilding = (x, y, type, direction) => {
-      const res = originalPlace(x, y, type, direction);
+    this.world.placeBuilding = (x, y, type, direction, skipValidation = false) => {
+      const res = originalPlace(x, y, type, direction, skipValidation);
       if (res) {
         this.syncBuildings();
         this.powerSystem.rebuildNetworks();
-        // Worker sync if needed
       }
       return res;
     };

@@ -280,24 +280,27 @@ export class World implements IWorld {
     x: number,
     y: number,
     type: string,
-    direction: 'north' | 'south' | 'east' | 'west' = 'north'
+    direction: 'north' | 'south' | 'east' | 'west' = 'north',
+    skipValidation: boolean = false
   ): boolean {
     const key = `${x},${y}`;
     if (this.buildings.has(key)) return false; // Already occupied
 
-    // Validate first
-    if (!this.canPlaceBuilding(x, y, type)) return false;
+    if (!skipValidation) {
+      // Validate first
+      if (!this.canPlaceBuilding(x, y, type)) return false;
 
-    // Check Limits
-    const config = getBuildingConfig(type);
-    if (config?.maxCount) {
-      let count = 0;
-      this.buildings.forEach((b) => {
-        if (b.getType() === type) count++;
-      });
-      if (count >= config.maxCount) {
-        console.warn(`Limit reached for ${type}: ${config.maxCount}`);
-        return false;
+      // Check Limits
+      const config = getBuildingConfig(type);
+      if (config?.maxCount) {
+        let count = 0;
+        this.buildings.forEach((b) => {
+          if (b.getType() === type) count++;
+        });
+        if (count >= config.maxCount) {
+          console.warn(`Limit reached for ${type}: ${config.maxCount}`);
+          return false;
+        }
       }
     }
 
@@ -482,6 +485,9 @@ export class World implements IWorld {
   // --- Serialization ---
 
   public serialize(): WorldData {
+    // Collect unique buildings to avoid duplicates for multi-tile structures
+    const uniqueBuildings = Array.from(new Set(this.buildings.values()));
+
     return {
       grid: this.grid.map((row) =>
         row.map((tile) => ({
@@ -489,7 +495,7 @@ export class World implements IWorld {
           resourceAmount: tile instanceof ResourceTile ? tile.resourceAmount : 0,
         }))
       ),
-      buildings: Array.from(this.buildings.values()).map((b) => {
+      buildings: uniqueBuildings.map((b) => {
         const base = {
           x: b.x,
           y: b.y,
@@ -552,7 +558,7 @@ export class World implements IWorld {
       worldData.buildings.forEach((bData: SerializedBuilding) => {
         // Cast direction to valid type
         const dir = bData.direction as 'north' | 'south' | 'east' | 'west';
-        this.placeBuilding(bData.x, bData.y, bData.type, dir);
+        this.placeBuilding(bData.x, bData.y, bData.type, dir, true);
 
         // Restore internal state
         const building = this.getBuilding(bData.x, bData.y);

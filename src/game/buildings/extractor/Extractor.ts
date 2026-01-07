@@ -146,6 +146,34 @@ export class Extractor extends BuildingEntity implements IExtractable, IPowered,
   }
 
   // --- IIOBuilding ---
+  public getInputPosition(): { x: number, y: number } | null {
+    // Extractor has no input
+    return null;
+  }
+
+  public getOutputPosition(): { x: number, y: number } | null {
+    if (!this.io.hasOutput) return null;
+    // Output is in the direction the extractor faces (front)
+    const offset = this.getIOOffset('front');
+    return { x: this.x + offset.dx, y: this.y + offset.dy };
+  }
+
+  private getIOOffset(side: 'front' | 'back' | 'left' | 'right'): { dx: number, dy: number } {
+    const clockwiseOrder: Array<'north' | 'east' | 'south' | 'west'> = ['north', 'east', 'south', 'west'];
+    const currentIndex = clockwiseOrder.indexOf(this.direction);
+    let targetDir: 'north' | 'east' | 'south' | 'west';
+    
+    switch (side) {
+      case 'front': targetDir = this.direction; break;
+      case 'back': targetDir = clockwiseOrder[(currentIndex + 2) % 4]; break;
+      case 'right': targetDir = clockwiseOrder[(currentIndex + 1) % 4]; break;
+      case 'left': targetDir = clockwiseOrder[(currentIndex + 3) % 4]; break;
+    }
+    
+    const offsets = { 'north': { dx: 0, dy: -1 }, 'south': { dx: 0, dy: 1 }, 'east': { dx: 1, dy: 0 }, 'west': { dx: -1, dy: 0 } };
+    return offsets[targetDir];
+  }
+
   public canInput(): boolean {
     return false;
   }

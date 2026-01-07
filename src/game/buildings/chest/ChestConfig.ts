@@ -12,7 +12,9 @@ export const CHEST_CONFIG: ChestConfigType = {
     io: {
         hasInput: true,
         hasOutput: true,
-        showArrow: true
+        showArrow: true,
+        inputSide: 'front',  // Input where chest faces
+        outputSide: 'back'   // Output opposite to input
     },
     maxCount: 1,
     maxSlots: 5,

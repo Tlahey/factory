@@ -3,11 +3,7 @@
 
 # Features
 
-- Ajouter dans la configuration de la foreuse une gestion du rate de la foreuse. Par exemple, on pourra améliorer la foreuse pour augmenter sa vitesse de production.
-
-- Les resources doivent avoir un ratio de production qui influe sur les extracteur. Par exemple les roches ont aléatoirement un extraction en *0.5 ou *1. D'autres ressources par la suite pourront avoir du 1.5 etc ...
-
-- Ajouter une vitesse pour les convoyeurs. Par défaut un covoyeur va à une vitesse de 10 tiles par minutes. Par exemple, on pourra améliorer la vitesse des convoyeurs pour qu'ils puissent transporter plus de ressources par minute.
+- Ajouter le clic droit pour faire une rotation de 45 degrès de la pièce sélectionnée
 
 - Ajouter le système d'input/ output pour les batiments
   - Foreuse à une sortie (output) qui envoie les ressources extraites aux convoyeurs
@@ -15,6 +11,14 @@
   - NB: dans le futur, les batiments pourrant avoir plusieurs entrées (qui seront toutes côté à côte sur le batiment) et toujours une seule sortie (à l'opposé des entrées)
   - On matérialisera les entrées par une flèche verte et les sorties par une flèche rouge sur le batiment.
   - Tout convoyeur qui n'est pas lié à une entrée ou une sortie d'un batiment ne fonctionnera pas
+
+- Ajouter dans la configuration de la foreuse une gestion du rate de la foreuse. Par exemple, on pourra améliorer la foreuse pour augmenter sa vitesse de production.
+
+- Les resources doivent avoir un ratio de production qui influe sur les extracteur. Par exemple les roches ont aléatoirement un extraction en *0.5 ou *1. D'autres ressources par la suite pourront avoir du 1.5 etc ...
+
+- Ajouter une vitesse pour les convoyeurs. Par défaut un covoyeur va à une vitesse de 10 tiles par minutes. Par exemple, on pourra améliorer la vitesse des convoyeurs pour qu'ils puissent transporter plus de ressources par minute.
+
+
 
 - Au départ le container doit être forcément placé a côté du hub. On ne peut pas le déplacer ailleurs avant d'avoir débloqué une amélioration dans l'arbre de compétence.
 
@@ -26,8 +30,6 @@
   - Les informations doivent être généré avec un fichier i18n pour pouvoir être traduit facilement dans toutes les autres langues avec une locale.
   - On développement un système SOLID autour des langues pour qu'on puisse ajouter un fichier JSON de langue facilement.
   - Il faut aussi afficher les informations du batiment quand on clique dessus dans la map (en plus de l'UI actuelle)
-
-- Ajouter le clic droit pour faire une rotation de 45 degrès de la pièce sélectionnée
 
 - Il est possible de drag and drop pour supprimer les éléments avec la l'icone de la poubelle
 

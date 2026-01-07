@@ -58,15 +58,72 @@ export interface IPowered {
     updatePowerStatus(satisfaction: number, hasSource: boolean, gridId: number): void;
 }
 
+/**
+ * Side relative to building's facing direction
+ * - 'front': Direction the building faces
+ * - 'back': Opposite of front
+ * - 'left': 90° counter-clockwise from front
+ * - 'right': 90° clockwise from front
+ */
+export type IOSide = 'front' | 'back' | 'left' | 'right';
+
+export interface IOConfig {
+    hasInput: boolean;
+    hasOutput: boolean;
+    showArrow?: boolean;
+    /** Side where input port is located (relative to building direction) */
+    inputSide?: IOSide;
+    /** Side where output port is located (relative to building direction) */
+    outputSide?: IOSide;
+}
+
 export interface IIOBuilding {
-    io: {
-        hasInput: boolean;
-        hasOutput: boolean;
-        showArrow?: boolean;
-    };
+    io: IOConfig;
+    /** Get world position of input port, or null if no input */
+    getInputPosition(): { x: number, y: number } | null;
+    /** Get world position of output port, or null if no output */
+    getOutputPosition(): { x: number, y: number } | null;
     canInput(fromX: number, fromY: number): boolean;
     canOutput(world: IWorld): boolean;
     tryOutput(world: IWorld): boolean;
+}
+
+export type Direction = 'north' | 'south' | 'east' | 'west';
+
+/**
+ * Convert a relative IOSide to an absolute world direction based on the building's facing direction.
+ * 
+ * @param side - The relative side ('front', 'back', 'left', 'right')
+ * @param buildingDirection - The direction the building is facing
+ * @returns The absolute world direction
+ */
+export function getDirectionFromSide(side: IOSide, buildingDirection: Direction): Direction {
+    const clockwiseOrder: Direction[] = ['north', 'east', 'south', 'west'];
+    const currentIndex = clockwiseOrder.indexOf(buildingDirection);
+    
+    switch (side) {
+        case 'front':
+            return buildingDirection;
+        case 'back':
+            return clockwiseOrder[(currentIndex + 2) % 4];
+        case 'right':
+            return clockwiseOrder[(currentIndex + 1) % 4];
+        case 'left':
+            return clockwiseOrder[(currentIndex + 3) % 4];
+    }
+}
+
+/**
+ * Get the position offset for a given direction
+ */
+export function getDirectionOffset(dir: Direction): { dx: number; dy: number } {
+    const offsets: Record<Direction, { dx: number; dy: number }> = {
+        'north': { dx: 0, dy: -1 },
+        'south': { dx: 0, dy: 1 },
+        'east': { dx: 1, dy: 0 },
+        'west': { dx: -1, dy: 0 }
+    };
+    return offsets[dir];
 }
 
 export interface IStorage {

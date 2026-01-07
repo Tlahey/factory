@@ -3,6 +3,7 @@ import { VisualEntity } from '../../visuals/VisualEntity';
 import { Extractor } from './Extractor';
 import { createExtractorModel } from './ExtractorModel';
 import { ParticleSystem } from '../../visuals/ParticleSystem';
+import { createIOArrows, updateIOArrows } from '../../visuals/IOArrowHelper';
 
 export class ExtractorVisual implements VisualEntity {
   public mesh: THREE.Object3D;
@@ -10,10 +11,13 @@ export class ExtractorVisual implements VisualEntity {
   private drillContainer: THREE.Object3D | undefined;
   private statusLight: THREE.Mesh;
   private particleSystem: ParticleSystem;
+  private ioArrows: THREE.Group;
+  private lastDirection: string;
 
   constructor(extractor: Extractor, particleSystem: ParticleSystem) {
     this.mesh = createExtractorModel();
     this.mesh.name = 'extractor';
+    this.lastDirection = extractor.direction;
 
     this.drillMesh = this.mesh.getObjectByName('drill_mesh');
     this.drillContainer = this.mesh.getObjectByName('drill_container');
@@ -25,10 +29,20 @@ export class ExtractorVisual implements VisualEntity {
     this.statusLight = new THREE.Mesh(lightGeo, lightMat);
     this.statusLight.position.set(0.3, 1.8, 0.3); // Top corner
     this.mesh.add(this.statusLight);
+
+    // IO Arrows
+    this.ioArrows = createIOArrows(extractor);
+    this.mesh.add(this.ioArrows);
   }
 
   public update(delta: number, entity: Extractor): void {
     const time = performance.now() / 1000;
+
+    // Update IO arrows if direction changed
+    if (entity.direction !== this.lastDirection) {
+      updateIOArrows(this.ioArrows, entity);
+      this.lastDirection = entity.direction;
+    }
 
     // Update Status Light
     const statusMat = this.statusLight?.material as THREE.MeshBasicMaterial;

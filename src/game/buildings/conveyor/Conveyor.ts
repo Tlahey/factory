@@ -96,6 +96,21 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
   }
 
   // --- IIOBuilding ---
+  public getInputPosition(): { x: number, y: number } | null {
+    if (!this.io.hasInput) return null;
+    // Conveyor input is from the back (opposite of direction)
+    const oppositeDir = getOppositeDirection(this.direction);
+    const offset = getDirectionOffset(oppositeDir);
+    return { x: this.x + offset.dx, y: this.y + offset.dy };
+  }
+
+  public getOutputPosition(): { x: number, y: number } | null {
+    if (!this.io.hasOutput) return null;
+    // Conveyor output is in its direction (front)
+    const offset = getDirectionOffset(this.direction);
+    return { x: this.x + offset.dx, y: this.y + offset.dy };
+  }
+
   public canInput(fromX: number, fromY: number): boolean {
     const dx = fromX - this.x;
     const dy = fromY - this.y;

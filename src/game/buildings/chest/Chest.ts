@@ -72,8 +72,42 @@ export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   }
 
   // --- IIOBuilding ---
-  public canInput(): boolean {
-      return !this.isFull();
+  public getInputPosition(): { x: number, y: number } | null {
+    if (!this.io.hasInput) return null;
+    // Input is on front of chest (direction it faces)
+    const offset = this.getIOOffset('front');
+    return { x: this.x + offset.dx, y: this.y + offset.dy };
+  }
+
+  public getOutputPosition(): { x: number, y: number } | null {
+    if (!this.io.hasOutput) return null;
+    // Output is on back of chest (opposite of direction it faces)
+    const offset = this.getIOOffset('back');
+    return { x: this.x + offset.dx, y: this.y + offset.dy };
+  }
+
+  private getIOOffset(side: 'front' | 'back' | 'left' | 'right'): { dx: number, dy: number } {
+    const clockwiseOrder: Array<'north' | 'east' | 'south' | 'west'> = ['north', 'east', 'south', 'west'];
+    const currentIndex = clockwiseOrder.indexOf(this.direction);
+    let targetDir: 'north' | 'east' | 'south' | 'west';
+    
+    switch (side) {
+      case 'front': targetDir = this.direction; break;
+      case 'back': targetDir = clockwiseOrder[(currentIndex + 2) % 4]; break;
+      case 'right': targetDir = clockwiseOrder[(currentIndex + 1) % 4]; break;
+      case 'left': targetDir = clockwiseOrder[(currentIndex + 3) % 4]; break;
+    }
+    
+    const offsets = { 'north': { dx: 0, dy: -1 }, 'south': { dx: 0, dy: 1 }, 'east': { dx: 1, dy: 0 }, 'west': { dx: -1, dy: 0 } };
+    return offsets[targetDir];
+  }
+
+  public canInput(fromX: number, fromY: number): boolean {
+    if (this.isFull()) return false;
+    // Validate that input comes from correct position
+    const inputPos = this.getInputPosition();
+    if (!inputPos) return false;
+    return fromX === inputPos.x && fromY === inputPos.y;
   }
 
   public canOutput(): boolean {

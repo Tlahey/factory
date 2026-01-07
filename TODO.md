@@ -1,12 +1,11 @@
 # Bugs
 
-- Quand un container est plein, la foreuse continue d'extraire les ressources et les fait disparaitre. Il faut que la foreuse s'arrête automatiquement quand le container qui est lié est plein.
-
-- Quand on supprime un élément qui est lié à un cable, le ou les cables qui sont liés à ce batiment doivent être supprimés.
 
 # Features
 
 - Ajouter dans la configuration de la foreuse une gestion du rate de la foreuse. Par exemple, on pourra améliorer la foreuse pour augmenter sa vitesse de production.
+
+- Les resources doivent avoir un ratio de production qui influe sur les extracteur. Par exemple les roches ont aléatoirement un extraction en *0.5 ou *1. D'autres ressources par la suite pourront avoir du 1.5 etc ...
 
 - Ajouter une vitesse pour les convoyeurs. Par défaut un covoyeur va à une vitesse de 10 tiles par minutes. Par exemple, on pourra améliorer la vitesse des convoyeurs pour qu'ils puissent transporter plus de ressources par minute.
 

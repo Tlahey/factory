@@ -260,6 +260,20 @@ export class World implements IWorld {
     const building = this.getBuilding(x, y);
     if (!building) return false;
 
+    // Remove cables connected to ANY tile of this building
+    const occupiedTiles = new Set<string>();
+    for (let dx = 0; dx < building.width; dx++) {
+      for (let dy = 0; dy < building.height; dy++) {
+        occupiedTiles.add(`${building.x + dx},${building.y + dy}`);
+      }
+    }
+
+    this.cables = this.cables.filter(
+      (c) =>
+        !occupiedTiles.has(`${c.x1},${c.y1}`) &&
+        !occupiedTiles.has(`${c.x2},${c.y2}`)
+    );
+
     // Remove from all occupied tiles
     for (let dx = 0; dx < building.width; dx++) {
       for (let dy = 0; dy < building.height; dy++) {

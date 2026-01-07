@@ -8,13 +8,14 @@ import {
 } from './ConveyorLogicSystem';
 import { IWorld } from '../../entities/types';
 import { Chest } from '../chest/Chest';
+import { IIOBuilding, ConveyorConfigType, PowerConfig } from '../BuildingConfig';
 
 interface Candidate {
   direction: 'north' | 'south' | 'east' | 'west';
   priority: number;
 }
 
-export class Conveyor extends BuildingEntity {
+export class Conveyor extends BuildingEntity implements IIOBuilding {
   constructor(
     x: number,
     y: number,
@@ -79,6 +80,56 @@ export class Conveyor extends BuildingEntity {
 
     // Clamp progress
     if (this.transportProgress > 1) this.transportProgress = 1;
+  }
+
+  // --- Traits Implementation ---
+
+  public get io() {
+    return (this.getConfig() as ConveyorConfigType).io;
+  }
+
+  public get powerConfig(): PowerConfig | undefined {
+    return undefined;
+  }
+
+  // --- IIOBuilding ---
+  public canInput(fromX: number, fromY: number): boolean {
+    const dx = fromX - this.x;
+    const dy = fromY - this.y;
+    
+    // Conveyor only accepts input from the opposite of its direction
+    // Unless it's a side-load? Currently, let's keep it simple: only back-load.
+    const oppositeDir = getOppositeDirection(this.direction);
+    const offset = getDirectionOffset(oppositeDir);
+    
+    return dx === offset.dx && dy === offset.dy && !this.currentItem;
+  }
+
+  public canOutput(world: IWorld): boolean {
+    let tx = this.x;
+    let ty = this.y;
+    if (this.direction === 'north') ty -= 1;
+    else if (this.direction === 'south') ty += 1;
+    else if (this.direction === 'east') tx += 1;
+    else if (this.direction === 'west') tx -= 1;
+
+    const target = world.getBuilding(tx, ty);
+    if (!target) return false;
+
+    if (target instanceof Conveyor) {
+        return target.isResolved && !target.currentItem;
+    }
+
+    if ('canInput' in target && typeof (target as any).canInput === 'function') {
+        return (target as unknown as IIOBuilding).canInput(this.x, this.y);
+    }
+    
+    return false;
+  }
+
+  public tryOutput(world: IWorld): boolean {
+    this.moveItem(world);
+    return this.currentItem === null; // Success if item moved
   }
 
   public autoOrient(_world: IWorld): void {

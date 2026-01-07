@@ -6,7 +6,7 @@ import { Conveyor } from '../buildings/conveyor/Conveyor';
 import { Chest } from '../buildings/chest/Chest';
 import { Hub } from '../buildings/hub/Hub';
 import { ElectricPole } from '../buildings/electric-pole/ElectricPole';
-import { getBuildingConfig } from '../buildings/BuildingConfig';
+import { getBuildingConfig, ChestConfigType } from '../buildings/BuildingConfig';
 import { createBuildingLogic } from '../buildings/BuildingFactory';
 import { IWorld, WorldData, SerializedBuilding } from '../entities/types';
 import {
@@ -516,7 +516,7 @@ export class World implements IWorld {
           return {
             ...base,
             slots: b.slots,
-            maxSlots: b.maxSlots,
+            bonusSlots: b.bonusSlots,
           };
         }
 
@@ -569,7 +569,12 @@ export class World implements IWorld {
             building.transportProgress = bData.transportProgress || 0;
           } else if (building instanceof Chest) {
             if (bData.slots) building.slots = bData.slots;
-            if (bData.maxSlots) building.maxSlots = bData.maxSlots;
+            if (bData.bonusSlots !== undefined) building.bonusSlots = bData.bonusSlots;
+            else if (bData.maxSlots) {
+                // Backward compatibility: calculate bonus from old total
+                const base = (getBuildingConfig('chest') as ChestConfigType)?.maxSlots || 5;
+                building.bonusSlots = Math.max(0, bData.maxSlots - base);
+            }
           } else if (building instanceof Extractor) {
             if (bData.speedMultiplier)
               building.speedMultiplier = bData.speedMultiplier;

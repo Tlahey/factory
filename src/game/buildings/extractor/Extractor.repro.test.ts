@@ -52,7 +52,7 @@ describe('Extractor - Container Full Reproduction', () => {
         extractor.powerSatisfaction = 1.0;
         
         chest = new Chest(1, 0); // At (1,0)
-        chest.maxSlots = 1; // Small for testing
+        chest.bonusSlots = -4; // Base is 5, so 5-4 = 1 slot total
         
         tile = new MockStoneTile(100);
         world.setTile(0, 0, tile);

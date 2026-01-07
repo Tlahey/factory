@@ -1,13 +1,7 @@
 import { Entity } from './Entity';
 import { Tile } from '../core/Tile';
-import { getBuildingConfig, BuildingConfig } from '../buildings/BuildingConfig';
+import { getBuildingConfig, BuildingConfig, PowerConfig } from '../buildings/BuildingConfig';
 import type { IWorld } from './types';
-
-export interface PowerConfig {
-  type: 'consumer' | 'producer' | 'relay';
-  rate: number; // Consumption or Generation
-  range?: number; // For poles
-}
 
 export abstract class BuildingEntity extends Entity {
   public buildingType: string;
@@ -16,7 +10,8 @@ export abstract class BuildingEntity extends Entity {
   public width: number = 1;
   public height: number = 1;
 
-  public powerConfig?: PowerConfig;
+  public abstract get powerConfig(): PowerConfig | undefined;
+  
   public powerStatus: 'active' | 'warn' | 'idle' = 'idle'; // 'warn' = no power
   
   // Real-time tracking for UI

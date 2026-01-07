@@ -37,6 +37,7 @@ export interface SerializedBuilding {
     transportProgress?: number;
     slots?: { type: string, count: number }[];
     maxSlots?: number;
+    bonusSlots?: number;
     speedMultiplier?: number;
 }
 

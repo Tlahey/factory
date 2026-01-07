@@ -6,8 +6,9 @@ import { Chest } from '../chest/Chest';
 import { TileFactory } from '../../TileFactory';
 import { TileType } from '../../constants';
 import { ResourceTile } from '../../core/ResourceTile';
+import { IExtractable, IPowered, IIOBuilding, ExtractorConfigType, PowerConfig } from '../BuildingConfig';
 
-export class Extractor extends BuildingEntity {
+export class Extractor extends BuildingEntity implements IExtractable, IPowered, IIOBuilding {
   public active: boolean = false;
 
   public speedMultiplier: number = 1.0;
@@ -19,10 +20,6 @@ export class Extractor extends BuildingEntity {
   
   constructor(x: number, y: number, direction: 'north' | 'south' | 'east' | 'west' = 'north') {
     super(x, y, 'extractor', direction);
-    this.powerConfig = {
-        type: 'consumer',
-        rate: 20 // Consumes 20 units
-    };
   }
   
   public tick(delta: number, world?: IWorld): void {
@@ -30,9 +27,8 @@ export class Extractor extends BuildingEntity {
 
       const tile = world.getTile(this.x, this.y);
       const hasResources = tile instanceof ResourceTile && tile.resourceAmount > 0;
-      
-      const canOutput = this.checkOutputClear(world); 
-      const interval = 1.0 / this.speedMultiplier;
+      const canOutput = this.canOutput(world); 
+      const interval = this.getExtractionInterval();
       const isReadyToOutput = this.accumTime >= interval;
       
       // STABLE DEMAND: We demand power as long as we have resources to work on.
@@ -90,16 +86,76 @@ export class Extractor extends BuildingEntity {
   
       // Check output only if ready
       if (this.accumTime >= interval) {
-          if (this.tryOutputResource(world)) {
+          if (this.tryOutput(world)) {
               if (tile instanceof ResourceTile) {
                  tile.deplete(1);
               }
               this.accumTime -= interval;
-          } else {
-              // Should be caught by hasDemand logic above, but for safety:
-              // If output failed unexpectedly
           }
       }
+  }
+
+  // --- Trait Properties ---
+
+  public get extractionRate(): number {
+    return (this.getConfig() as ExtractorConfigType)?.extractionRate ?? 1.0;
+  }
+
+  public get io() {
+    return (this.getConfig() as ExtractorConfigType).io;
+  }
+
+  public get powerConfig(): PowerConfig {
+    return (this.getConfig() as ExtractorConfigType).powerConfig;
+  }
+
+  // --- IExtractable ---
+  public getExtractionRate(): number {
+    return this.extractionRate * this.speedMultiplier;
+  }
+
+  public getExtractionInterval(): number {
+    return 1.0 / this.getExtractionRate();
+  }
+
+  // --- IPowered ---
+  public getPowerDemand(): number {
+    if (!this.powerConfig || this.operationStatus === 'no_resources') return 0;
+    return this.powerConfig.rate;
+  }
+
+  public getPowerGeneration(): number {
+    return 0;
+  }
+
+  public updatePowerStatus(satisfaction: number, hasSource: boolean, gridId: number): void {
+    this.powerSatisfaction = satisfaction;
+    this.hasPowerSource = hasSource;
+    this.currentGridId = gridId;
+
+    if (this.powerStatus === 'active') {
+        if (satisfaction < 0.95) this.powerStatus = 'warn';
+    } else {
+        if (satisfaction >= 0.99) this.powerStatus = 'active';
+    }
+
+    if (this.powerConfig) {
+        this.currentPowerDraw = this.getPowerDemand();
+        this.currentPowerSatisfied = this.currentPowerDraw * satisfaction;
+    }
+  }
+
+  // --- IIOBuilding ---
+  public canInput(): boolean {
+    return false;
+  }
+
+  public canOutput(world: IWorld): boolean {
+    return this.checkOutputClear(world);
+  }
+
+  public tryOutput(world: IWorld): boolean {
+    return this.tryOutputResource(world);
   }
 
   private checkOutputClear(world: IWorld): boolean {

@@ -1,7 +1,8 @@
 # Bugs
 
-
 - Quand un container est plein, la foreuse continue d'extraire les ressources et les fait disparaitre. Il faut que la foreuse s'arrête automatiquement quand le container qui est lié est plein.
+
+- Quand on supprime un élément qui est lié à un cable, le ou les cables qui sont liés à ce batiment doivent être supprimés.
 
 # Features
 

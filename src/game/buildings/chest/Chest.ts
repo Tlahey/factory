@@ -1,10 +1,11 @@
 import { Tile } from '../../core/Tile';
 import { BuildingEntity } from '../../entities/BuildingEntity';
 import { STACK_SIZE } from '../../constants';
+import { IIOBuilding, IStorage, ChestConfigType } from '../BuildingConfig';
 
-export class Chest extends BuildingEntity {
+export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   public slots: { type: string; count: number }[] = [];
-  public maxSlots: number = 5;
+  public bonusSlots: number = 0;
 
   constructor(
     x: number,
@@ -19,9 +20,21 @@ export class Chest extends BuildingEntity {
   }
 
   public isFull(): boolean {
-    // Simplified check: true if no empty slots available.
-    // Ideally should check if existing stack can take more, but for generic 'full' check this is safer.
     return this.slots.length >= this.maxSlots;
+  }
+
+  // --- Traits Implementation ---
+  
+  public get maxSlots(): number {
+    return ((this.getConfig() as ChestConfigType)?.maxSlots ?? 5) + this.bonusSlots;
+  }
+
+  public get io() {
+    return (this.getConfig() as ChestConfigType).io;
+  }
+
+  public get powerConfig() {
+      return undefined;
   }
 
   // Returns true if item was accepted
@@ -58,6 +71,19 @@ export class Chest extends BuildingEntity {
     // For simple boolean check, let's say true if we added anything.
   }
 
+  // --- IIOBuilding ---
+  public canInput(): boolean {
+      return !this.isFull();
+  }
+
+  public canOutput(): boolean {
+      return false; // For now Chests don't output by themselves
+  }
+
+  public tryOutput(): boolean {
+      return false;
+  }
+
   public removeSlot(index: number): void {
     if (index >= 0 && index < this.slots.length) {
       this.slots.splice(index, 1);
@@ -65,7 +91,7 @@ export class Chest extends BuildingEntity {
   }
 
   public upgradeCapacity(): void {
-    this.maxSlots += 1;
+    this.bonusSlots += 1;
   }
 
   public getColor(): number {

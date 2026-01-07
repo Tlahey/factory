@@ -1,9 +1,14 @@
-import type { BuildingConfig } from '../BuildingConfig';
+import type { ConveyorConfigType } from '../BuildingConfig';
 
-export const CONVEYOR_CONFIG: BuildingConfig = {
+export const CONVEYOR_CONFIG: ConveyorConfigType = {
     name: 'Conveyor Belt',
     type: 'conveyor',
     cost: 2,
     hasMenu: false,
-    description: 'Transports items.'
+    description: 'Transports items.',
+    io: {
+        hasInput: true,
+        hasOutput: true,
+        showArrow: false
+    }
 };

@@ -2,13 +2,14 @@
 import { World } from '../core/World';
 import { BuildingEntity } from '../entities/BuildingEntity';
 import { Hub } from '../buildings/hub/Hub';
+import { IPowered } from '../buildings/BuildingConfig';
 
 interface PowerGrid {
     id: number;
-    producers: BuildingEntity[];
-    consumers: BuildingEntity[];
+    producers: (BuildingEntity & IPowered)[];
+    consumers: (BuildingEntity & IPowered)[];
     nodes: BuildingEntity[]; // All connected buildings including relays
-    batteries: BuildingEntity[]; 
+    batteries: (BuildingEntity & IPowered)[]; 
     totalGen: number;
     totalDemand: number;
     satisfaction: number; // 0..1
@@ -64,27 +65,18 @@ export class PowerSystem {
 
             // 1. Calculate Generation
             grid.producers.forEach(b => {
-               if (b.powerConfig) {
-                   grid.totalGen += b.powerConfig.rate; 
-                   // Update entity visual state
-                   b.currentPowerSatisfied = b.powerConfig.rate; 
-                   b.currentGridId = grid.id;
-               }
+                const gen = b.getPowerGeneration();
+                grid.totalGen += gen;
+                b.currentPowerSatisfied = gen;
+                b.currentGridId = grid.id;
             });
 
             // 2. Calculate Demand
             grid.consumers.forEach(b => {
-                if (b.powerConfig) {
-                    // Only count if building *needs* power (is trying to work)
-                    if (b.hasDemand) {
-                        grid.totalDemand += b.powerConfig.rate;
-                        b.currentPowerDraw = b.powerConfig.rate;
-                    } else {
-                        // Consumes nothing
-                        b.currentPowerDraw = 0;
-                    }
-                    b.currentGridId = grid.id;
-                }
+                const demand = b.getPowerDemand();
+                grid.totalDemand += demand;
+                b.currentPowerDraw = demand;
+                b.currentGridId = grid.id;
             });
 
             // 3. Balance
@@ -104,32 +96,16 @@ export class PowerSystem {
             const hasSource = grid.producers.length > 0;
 
             grid.nodes.forEach(b => {
-                // Hysteresis logic: 
-                // To go ACTIVE: need 99%
-                // To go WARN: need to drop below 95%
-                if (b.powerStatus === 'active') {
-                    if (grid.satisfaction < 0.95) {
-                        b.powerStatus = 'warn';
-                        console.log(`[PowerSystem] Building at ${b.x},${b.y} status change: ACTIVE -> WARN (Satisf: ${grid.satisfaction.toFixed(3)})`);
-                    }
+                const satisfaction = grid.satisfaction;
+                const hasSource = grid.producers.length > 0;
+
+                if ('updatePowerStatus' in b && typeof (b as any).updatePowerStatus === 'function') {
+                    (b as unknown as IPowered).updatePowerStatus(satisfaction, hasSource, grid.id);
                 } else {
-                    if (grid.satisfaction >= 0.99) {
-                        b.powerStatus = 'active';
-                        console.log(`[PowerSystem] Building at ${b.x},${b.y} status change: WARN -> ACTIVE (Satisf: ${grid.satisfaction.toFixed(3)})`);
-                    }
-                }
-                
-                b.hasPowerSource = hasSource;
-                b.powerSatisfaction = grid.satisfaction; // Store for proportional logic
-                
-                // Consumers calculate specific satisfied amount
-                if (b.powerConfig?.type === 'consumer') {
-                    b.currentPowerSatisfied = b.currentPowerDraw * grid.satisfaction;
-                }
-                // Producers always active (unless fuel logic added later)
-                if (b.powerConfig?.type === 'producer') {
-                    b.powerStatus = 'active'; 
-                    b.powerSatisfaction = 1.0;
+                   // Fallback for non-IPowered buildings if needed
+                   b.hasPowerSource = hasSource;
+                   b.powerSatisfaction = satisfaction;
+                   b.currentGridId = grid.id;
                 }
             });
         });
@@ -197,8 +173,14 @@ export class PowerSystem {
                         processedBuildings.add(node);
                         grid.nodes.push(node); // Add to general nodes list
 
-                        if (node.powerConfig?.type === 'producer') grid.producers.push(node);
-                        else if (node.powerConfig?.type === 'consumer') grid.consumers.push(node);
+                        if ('getPowerGeneration' in node && 'getPowerDemand' in node) {
+                            const pNode = node as unknown as (BuildingEntity & IPowered);
+                            if (node.powerConfig?.type === 'producer') grid.producers.push(pNode);
+                            else if (node.powerConfig?.type === 'consumer') grid.consumers.push(pNode);
+                            else if (node.powerConfig?.type === 'relay') {
+                                // Relay just stays in grid.nodes which is already added
+                            }
+                        }
                         
                         // Add neighbors of ALL tiles of this building
                         for (let dx = 0; dx < (node.width || 1); dx++) {

@@ -1,10 +1,32 @@
+# Bugs
+
+- La roche a n'a plus une quantité limité de ressource. Il faut remettre cette fonctionnalité. Chaque roche doit avoir 100 de quantité dans un premier temps avant d'être épuisée.
+- La taille de la roche s'épuise pendant qu'elle est extraite pour qu'elle disparaisse de la carte ensuite.
+
+- La foreuse à un problème avec l'électricité, par moment il y a un effet ON / OFF et de clignottemnent. Il faut corriger ce bug.
+
+- Quand un container est plein, la foreuse continue d'extraire les ressources et les fait disparaitre. Il faut que la foreuse s'arrête automatiquement quand le container qui est lié est plein.
+
+# Features
+
 - Ajouter le système d'input/ output pour les batiments
   - Foreuse à une sortie (output) qui envoie les ressources extraites aux convoyeurs
   - Le container a une entrée (input) qui reçoit les ressources des convoyeurs et une sortie (output) qui permet de récupérer les ressources stockées dans le container (la sortie est toujours à l'oposé de l'entrée)
   - NB: dans le futur, les batiments pourrant avoir plusieurs entrées (qui seront toutes côté à côte sur le batiment) et toujours une seule sortie (à l'opposé des entrées)
   - On matérialisera les entrées par une flèche verte et les sorties par une flèche rouge sur le batiment.
   - Tout convoyeur qui n'est pas lié à une entrée ou une sortie d'un batiment ne fonctionnera pas
-  
+
+- Au départ le container doit être forcément placé a côté du hub. On ne peut pas le déplacer ailleurs avant d'avoir débloqué une amélioration dans l'arbre de compétence.
+
+- On démarre la partie avec le hub placé au milieu de la carte. Il ne doit pas avoir de roche a proximité immédiate du hub pour forcer le joueur à explorer la carte.
+  - Il n'est pas possible de supprimer ou déplacer le hub, il doit aussi disparaitre de la liste des buildings constructibles.
+
+- Sur le menu build, il faudrait avoir une section à droite qui au hover d'un batiment affiche ses caractéristiques (coût en ressources, description du batiment, s'il a une sortie ou une entrée, le nombre de batiments qu'on possède au total, production par seconde, etc)
+  - Actuellement un nouvel utilisateur n'est pas capable de savoir ce que fait chaque batiment avant de le construire. Il faut lui donner plus d'informations avant qu'il ne construise un batiment et surtout comment il fonctionne (foreuse doit être liée à un convoyeur, etc)
+  - Les informations doivent être généré avec un fichier i18n pour pouvoir être traduit facilement dans toutes les autres langues avec une locale.
+  - On développement un système SOLID autour des langues pour qu'on puisse ajouter un fichier JSON de langue facilement.
+  - Il faut aussi afficher les informations du batiment quand on clique dessus dans la map (en plus de l'UI actuelle)
+
 - Ajouter le clic droit pour faire une rotation de 45 degrès de la pièce sélectionnée
 
 - Il est possible de drag and drop pour supprimer les éléments avec la l'icone de la poubelle
@@ -13,13 +35,13 @@
 
 - Le hub doit avoir un arbre de compétences et un shop
   - L'arbre de compétences permet de stocker plus d'éléments / de débloquer de nouveaux éléments. Il faut forcément que les éléments précédent soient débloqués pour débloquer les suivants.
-  Les éléments qui ne sont pas encore déblocable sont caché à l'utilisateur. Donc on ne voit que les éléments qui sont actuellement débloquable. La configuration de l'arbre de compétence doit être dans un fichier JSON ou autre (graph ?) pour qu'il soit simple de le modifier.
+    Les éléments qui ne sont pas encore déblocable sont caché à l'utilisateur. Donc on ne voit que les éléments qui sont actuellement débloquable. La configuration de l'arbre de compétence doit être dans un fichier JSON ou autre (graph ?) pour qu'il soit simple de le modifier.
   - Le shop permet d'acheter des éléments avec les ressources collectées en jeu. Par exemple, au départ on a une seule foreuse, par la suite, avec les améliorations il sera possible d'en stocker plus, et on pourra en acheter d'autres dans le shop.
 
 - Implémenter un building battery qui stocke l'énergie produite par les panneaux solaires et les éoliennes. Cette énergie pourra être utilisée par d'autres bâtiments pour fonctionner plus efficacement.
   - Au click sur la battery, on affiche son taux de charge (en pourcentage) et la quantité d'énergie stockée (en unités d'énergie Kw). Cette batterie pourra être améliorée dans l'arbre de compétences pour augmenter sa capacité de stockage et son taux de charge/décharge.
-  - Il faut obligatoirement que la battery soit reliée à au moins un panneau solaire ou une éolienne pour fonctionner. 
-  - La battery peut avoir un disjoncteur qui permet de couper l'alimentation des bâtiments qui y sont reliés. 
+  - Il faut obligatoirement que la battery soit reliée à au moins un panneau solaire ou une éolienne pour fonctionner.
+  - La battery peut avoir un disjoncteur qui permet de couper l'alimentation des bâtiments qui y sont reliés.
 
 - Implémenté un fourneau. Le fourneau permet de transformer les minerais bruts en lingots. Par exemple, le minerai de fer peut être transformé en lingot de fer. Le fourneau consomme de l'énergie pour fonctionner, et sa vitesse de production peut être améliorée dans l'arbre de compétences. (augmente la vitesse de transformation des minerais en lingots)
   - Le fourneau doit avoir une entrée et une sortie pour les minerais et les lingots respectivement.
@@ -39,7 +61,6 @@
   - L'éolienne doit avoir une animation qui montre les pales en rotation, avec la vitesse de rotation variant en fonction de la vitesse du vent.
   - L'éolienne doit avoir une interface utilisateur qui affiche la quantité d'énergie produite en temps réel.
   - Il doit être possible d'améliorer l'éolienne dans l'arbre de compétences pour augmenter sa production d'énergie et sa résistance aux conditions météorologiques extrêmes.
-  
 - Implémenter un système météorologique dynamique qui affecte la production d'énergie des panneaux
   solaires et des éoliennes. Par exemple, les jours nuageux réduisent la production des panneaux solaires, tandis que les jours venteux augmentent la production des éoliennes.
   - Le système météorologique doit inclure différents types de conditions météorologiques, telles que le soleil, les nuages, la pluie et le vent.

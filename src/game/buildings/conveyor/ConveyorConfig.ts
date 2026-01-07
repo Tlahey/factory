@@ -10,5 +10,6 @@ export const CONVEYOR_CONFIG: ConveyorConfigType = {
         hasInput: true,
         hasOutput: true,
         showArrow: false
-    }
+    },
+    speed: 60 // items per minute
 };

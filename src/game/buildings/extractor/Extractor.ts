@@ -111,7 +111,7 @@ export class Extractor extends BuildingEntity implements IExtractable, IPowered,
 
   // --- IExtractable ---
   public getExtractionRate(): number {
-    return this.extractionRate * this.speedMultiplier;
+    return (this.extractionRate / 60) * this.speedMultiplier;
   }
 
   public getExtractionInterval(): number {

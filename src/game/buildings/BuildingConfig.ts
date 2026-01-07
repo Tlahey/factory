@@ -75,9 +75,13 @@ export interface IStorage {
     addItem(type: string, amount: number): boolean;
 }
 
+export interface ITransportable {
+    speed: number;
+}
+
 // Specialized Config Types
 export type ExtractorConfigType = BaseBuildingConfig & ConfigOf<IExtractable> & ConfigOf<IPowered> & ConfigOf<IIOBuilding> & { upgrades: BuildingUpgrade[] };
-export type ConveyorConfigType = BaseBuildingConfig & ConfigOf<IIOBuilding>;
+export type ConveyorConfigType = BaseBuildingConfig & ConfigOf<IIOBuilding> & ConfigOf<ITransportable>;
 export type ChestConfigType = BaseBuildingConfig & ConfigOf<IStorage> & ConfigOf<IIOBuilding> & { upgrades: BuildingUpgrade[] };
 export type HubConfigType = BaseBuildingConfig & ConfigOf<IPowered> & ConfigOf<IIOBuilding> & { upgrades: BuildingUpgrade[] };
 export type ElectricPoleConfigType = BaseBuildingConfig & ConfigOf<IPowered>;

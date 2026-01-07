@@ -29,7 +29,10 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
   public transportProgress: number = 0;
   public isResolved: boolean = false; // True only if connected to a valid destination (chest)
   public visualType: 'straight' | 'left' | 'right' = 'straight';
-  private readonly TRANSPORT_SPEED = 1.0; // Tiles per second
+
+  public get transportSpeed(): number {
+    return ((this.getConfig() as ConveyorConfigType).speed ?? 60) / 60; // tiles per second
+  }
 
   public tick(delta: number, world?: IWorld): void {
     if (world) {
@@ -38,7 +41,7 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
 
     if (!this.currentItem || !this.isResolved) return;
 
-    this.transportProgress += this.TRANSPORT_SPEED * delta;
+    this.transportProgress += this.transportSpeed * delta;
 
     if (this.transportProgress >= 1) {
       if (world) this.moveItem(world);

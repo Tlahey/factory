@@ -15,7 +15,7 @@ export const EXTRACTOR_CONFIG: ExtractorConfigType = {
         showArrow: true
     },
     maxCount: 3,
-    extractionRate: 1.0,
+    extractionRate: 60, // items per minute
     powerConfig: {
         type: 'consumer',
         rate: 20

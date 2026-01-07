@@ -95,7 +95,7 @@ export default function BuildingInfoPanel() {
   };
 
   const isChest = building instanceof Chest;
-  const upgrades = config.upgrades || [];
+  const upgrades = ('upgrades' in config ? config.upgrades : []) as BuildingUpgrade[];
 
   // Helper to calc total items for upgrade check
   const getInventoryItemCount = (type: string) => {
@@ -351,7 +351,7 @@ export default function BuildingInfoPanel() {
                         <Zap size={10} className="text-yellow-500" /> Rate
                       </div>
                       <div className="text-lg font-mono font-bold text-white">
-                        {(building.speedMultiplier * 60).toFixed(0)}{' '}
+                        {(building.getExtractionRate() * 60).toFixed(1)}{' '}
                         <span className="text-[10px] text-gray-500">/min</span>
                       </div>
                     </div>
@@ -392,7 +392,7 @@ export default function BuildingInfoPanel() {
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs p-2 rounded hover:bg-white/5 transition-colors">
                       <span className="text-gray-400">Baseline Rate</span>
-                      <span className="text-white font-mono">60/min</span>
+                      <span className="text-white font-mono">{building.extractionRate.toFixed(1)}/min</span>
                     </div>
                     <div className="flex justify-between text-xs p-2 rounded hover:bg-white/5 transition-colors">
                       <span className="text-gray-400">Efficiency</span>

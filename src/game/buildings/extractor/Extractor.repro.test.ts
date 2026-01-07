@@ -68,10 +68,8 @@ describe('Extractor - Container Full Reproduction', () => {
 
         // Tick extractor multiple times to reach extraction interval
         // Extractor speed is 1.0, interval 1.0s.
-        extractor.tick(0.5, world);
-        expect(tile.resourceAmount).toBe(100); // Not ready yet
-        
-        extractor.tick(0.6, world); // Total 1.1s > 1.0s interval
+        extractor.tick(1.0, world); 
+        extractor.tick(1.0, world); // Total 2.0s > 1.5s threshold
         
         expect(tile.resourceAmount).toBe(100); // Should STILL be 100 because chest is full
         expect(extractor.operationStatus).toBe('blocked');
@@ -84,5 +82,14 @@ describe('Extractor - Container Full Reproduction', () => {
         expect(tile.resourceAmount).toBe(99); 
         expect(chest.slots[0].count).toBe(1);
         expect(extractor.operationStatus).toBe('working');
+    });
+
+    test('should NOT output item when tile is empty', () => {
+        tile.resourceAmount = 0; // Deplete manually
+        extractor.tick(1.1, world);
+        
+        // Check if anything was added to the chest
+        expect(chest.slots.length).toBe(0);
+        expect(extractor.operationStatus).toBe('no_resources');
     });
 });

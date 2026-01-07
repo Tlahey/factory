@@ -21,18 +21,6 @@ export const EXTRACTOR_CONFIG: ExtractorConfigType = {
         rate: 20
     },
     upgrades: [
-        {
-            id: 'speed',
-            name: 'Overclock Speed',
-            description: 'Increase extraction speed by 50%.',
-            baseCost: 50,
-            costMultiplier: 1.5,
-            onUpgrade: (b: BuildingEntity) => (b as Extractor).upgradeSpeed(),
-            getValue: (b: BuildingEntity) => {
-                const config = b.getConfig();
-                const baseRate = (config && 'extractionRate' in config) ? config.extractionRate : 1.0;
-                return ((b as Extractor).speedMultiplier * baseRate * 60).toFixed(0) + ' items/min';
-            }
-        }
+
     ]
 };

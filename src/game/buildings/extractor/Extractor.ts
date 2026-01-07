@@ -16,7 +16,7 @@ export class Extractor extends BuildingEntity implements IExtractable, IPowered,
 
   // Stability Timers
   private blockStabilityTimer: number = 0;
-  private readonly STABILITY_THRESHOLD = 0.5; // Seconds to wait before switching to 'blocked'
+  private readonly STABILITY_THRESHOLD = 1.5; // Seconds to wait before switching to 'blocked'
   
   constructor(x: number, y: number, direction: 'north' | 'south' | 'east' | 'west' = 'north') {
     super(x, y, 'extractor', direction);
@@ -84,8 +84,8 @@ export class Extractor extends BuildingEntity implements IExtractable, IPowered,
         console.log(`[Extractor] machine at ${this.x},${this.y} active flag change: ${oldActive} -> ${this.active} (Factor: ${powerFactor.toFixed(3)}, Status: ${this.operationStatus})`);
     }
   
-      // Check output only if ready
-      if (this.accumTime >= interval) {
+      // Check output only if ready AND we have resources
+      if (this.accumTime >= interval && hasResources) {
           if (this.tryOutput(world)) {
               if (tile instanceof ResourceTile) {
                  tile.deplete(1);
@@ -120,7 +120,7 @@ export class Extractor extends BuildingEntity implements IExtractable, IPowered,
 
   // --- IPowered ---
   public getPowerDemand(): number {
-    if (!this.powerConfig || this.operationStatus === 'no_resources') return 0;
+    if (!this.powerConfig || this.operationStatus === 'no_resources' || this.operationStatus === 'blocked') return 0;
     return this.powerConfig.rate;
   }
 

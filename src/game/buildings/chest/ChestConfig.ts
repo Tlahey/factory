@@ -17,14 +17,5 @@ export const CHEST_CONFIG: ChestConfigType = {
     maxCount: 1,
     maxSlots: 5,
     upgrades: [
-        {
-            id: 'capacity',
-            name: 'Extra Slot',
-            description: 'Add an additional inventory slot to this chest.',
-            baseCost: 50,
-            costMultiplier: 2,
-            onUpgrade: (b: BuildingEntity) => (b as Chest).upgradeCapacity(),
-            getValue: (b: BuildingEntity) => (b as Chest).maxSlots + ' slots'
-        }
     ]
 };

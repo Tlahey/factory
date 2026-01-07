@@ -1,32 +1,12 @@
 # Bugs
 
+- Le hub ne peut être que relié à 1 seul cable. Il n'est pas possible d'en relier plusieurs.
+
 # Features
 
-- Ajouter le système d'input/ output pour les batiments
-  - Foreuse à une sortie (output) qui envoie les ressources extraites aux convoyeurs
-  - Le container a une entrée (input) qui reçoit les ressources des convoyeurs et une sortie (output) qui permet de récupérer les ressources stockées dans le container (la sortie est toujours à l'oposé de l'entrée)
-  - NB: dans le futur, les batiments pourrant avoir plusieurs entrées (qui seront toutes côté à côte sur le batiment) et toujours une seule sortie (à l'opposé des entrées)
-  - On matérialisera les entrées par une flèche verte et les sorties par une flèche rouge sur le batiment.
-  - Tout convoyeur qui n'est pas lié à une entrée ou une sortie d'un batiment ne fonctionnera pas
-
-- Ajouter dans la configuration de la foreuse une gestion du rate de la foreuse. Par exemple, on pourra améliorer la foreuse pour augmenter sa vitesse de production.
+- les batiments n'ont plus d'onglet d'amélioration, tout passe par le hub
 
 - Les resources doivent avoir un ratio de production qui influe sur les extracteur. Par exemple les roches ont aléatoirement un extraction en *0.5 ou *1. D'autres ressources par la suite pourront avoir du 1.5 etc ...
-
-- Ajouter une vitesse pour les convoyeurs. Par défaut un covoyeur va à une vitesse de 10 tiles par minutes. Par exemple, on pourra améliorer la vitesse des convoyeurs pour qu'ils puissent transporter plus de ressources par minute.
-
-
-
-- Au départ le container doit être forcément placé a côté du hub. On ne peut pas le déplacer ailleurs avant d'avoir débloqué une amélioration dans l'arbre de compétence.
-
-- On démarre la partie avec le hub placé au milieu de la carte. Il ne doit pas avoir de roche a proximité immédiate du hub pour forcer le joueur à explorer la carte.
-  - Il n'est pas possible de supprimer ou déplacer le hub, il doit aussi disparaitre de la liste des buildings constructibles.
-
-
-
-- Il est possible de drag and drop pour supprimer les éléments avec la l'icone de la poubelle
-
-- les batiments n'ont plus d'onglet d'amélioration, tout passe par le hub
 
 - Le hub doit avoir un arbre de compétences et un shop
   - L'arbre de compétences permet de stocker plus d'éléments / de débloquer de nouveaux éléments. Il faut forcément que les éléments précédent soient débloqués pour débloquer les suivants.
@@ -37,6 +17,34 @@
   - Au click sur la battery, on affiche son taux de charge (en pourcentage) et la quantité d'énergie stockée (en unités d'énergie Kw). Cette batterie pourra être améliorée dans l'arbre de compétences pour augmenter sa capacité de stockage et son taux de charge/décharge.
   - Il faut obligatoirement que la battery soit reliée à au moins un panneau solaire ou une éolienne pour fonctionner.
   - La battery peut avoir un disjoncteur qui permet de couper l'alimentation des bâtiments qui y sont reliés.
+
+
+- Les poteaux électriques ont un nombre limité de connexion qui est de 3. ils pourront être améliorés par la suite pour augmenter ce nombre.
+
+
+
+
+- Ajouter le système d'input/ output pour les batiments
+  - Foreuse à une sortie (output) qui envoie les ressources extraites aux convoyeurs
+  - Le container a une entrée (input) qui reçoit les ressources des convoyeurs et une sortie (output) qui permet de récupérer les ressources stockées dans le container (la sortie est toujours à l'oposé de l'entrée)
+  - NB: dans le futur, les batiments pourrant avoir plusieurs entrées (qui seront toutes côté à côte sur le batiment) et toujours une seule sortie (à l'opposé des entrées)
+  - On matérialisera les entrées par une flèche verte et les sorties par une flèche rouge sur le batiment.
+  - Tout convoyeur qui n'est pas lié à une entrée ou une sortie d'un batiment ne fonctionnera pas
+
+- Ajouter dans la configuration de la foreuse une gestion du rate de la foreuse. Par exemple, on pourra améliorer la foreuse pour augmenter sa vitesse de production.
+
+
+
+- Au départ le container doit être forcément placé a côté du hub. On ne peut pas le déplacer ailleurs avant d'avoir débloqué une amélioration dans l'arbre de compétence.
+
+- On démarre la partie avec le hub placé au milieu de la carte. Il ne doit pas avoir de roche a proximité immédiate du hub pour forcer le joueur à explorer la carte.
+  - Il n'est pas possible de supprimer ou déplacer le hub, il doit aussi disparaitre de la liste des buildings constructibles.
+
+
+
+
+
+
 
 - Implémenté un fourneau. Le fourneau permet de transformer les minerais bruts en lingots. Par exemple, le minerai de fer peut être transformé en lingot de fer. Le fourneau consomme de l'énergie pour fonctionner, et sa vitesse de production peut être améliorée dans l'arbre de compétences. (augmente la vitesse de transformation des minerais en lingots)
   - Le fourneau doit avoir une entrée et une sortie pour les minerais et les lingots respectivement.
@@ -79,3 +87,9 @@
   - Si un monstre atteint le hub, il inflige des dégâts à la structure du hub. Si la santé du hub atteint zéro, la partie est terminée.
   - Tant qu'il n'y a pas de tourelle, les monstres ignorent les autres bâtiments et se dirigent directement vers le hub.
   - Le hub contient une tourelle de base qui peut tirer sur les monstres à proximité, mais elle a une puissance de feu limitée et une cadence de tir lente.
+
+- Implémenter un convoyer souterrain qui permet de transporter des ressources en passant en dessous d'un autre convoyeur.
+  - Il partage la même logique que les convoyeurs (mais ils doivent être améliorer de leur côté pour permettre la construction de convoyeurs souterrains)
+  - Pour les placer il faut forcément qu'il soit au niveau d'un autre convoyeur à la surface et ils prennent 3 de largeur (1 pour l'entrée 2 pour le passage 3 pour la sortie)
+  - En input il prendra le convoyer et en output un autre convoyeur 
+  - Le sens du flux sera le même que le convoyer et géré de la même façon

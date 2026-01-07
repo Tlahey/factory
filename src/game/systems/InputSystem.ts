@@ -105,6 +105,9 @@ export class InputSystem {
   private conveyorDragStart: { x: number, y: number } | null = null;
   private isDraggingConveyor = false;
 
+  // Deletion State
+  private isDeleting = false;
+
   // Last hover position for rotation updates
   private lastHoverPosition: { x: number, y: number, isValid: boolean, ghost: string | null } | null = null;
 
@@ -211,6 +214,16 @@ export class InputSystem {
                 return;
             }
         }
+        
+        // Deletion Mode?
+        if (selectedBuilding === 'delete') {
+            this.isDeleting = true;
+            const intersection = this.getIntersection(event);
+            if (intersection) {
+                 this.performDelete(intersection.x, intersection.y, event);
+            }
+            return;
+        }
 
         this.isDragging = true;
         this.previousMousePosition = { x: event.clientX, y: event.clientY };
@@ -224,8 +237,14 @@ export class InputSystem {
   }
 
   private onPointerMove(event: PointerEvent) {
-    // 1. Hover/Drag Visuals
+    // 1. Hover/Drag/Delete Visuals
     const intersection = this.getIntersection(event);
+
+     if (this.isDeleting && intersection) {
+         this.performDelete(intersection.x, intersection.y, event);
+         // Also update hover logic below for feedback? 
+         // Actually, if deleting, we might want to continue showing the red highlight or something.
+     }
 
      if (this.isDraggingCable && this.cableStart && intersection) {
         // Validation Logic
@@ -378,8 +397,8 @@ export class InputSystem {
 
 
 
-    // 2. Camera Drag Logic (Only if NOT dragging cable)
-    if (this.isDragging && !this.isDraggingCable) {
+    // 2. Camera Drag Logic (Only if NOT dragging cable AND NOT deleting)
+    if (this.isDragging && !this.isDraggingCable && !this.isDeleting) {
         const deltaX = event.clientX - this.previousMousePosition.x;
         const deltaY = event.clientY - this.previousMousePosition.y;
 
@@ -430,6 +449,11 @@ export class InputSystem {
         }
         this.isDraggingCable = false;
         this.cableStart = null;
+        return;
+    }
+    
+    if (this.isDeleting) {
+        this.isDeleting = false;
         return;
     }
     
@@ -618,52 +642,7 @@ export class InputSystem {
 
       if (selectedBuilding) {
           if (selectedBuilding === 'delete') {
-              const building = this.world.getBuilding(gridX, gridY);
-              
-              if (building) {
-                  this.world.removeBuilding(gridX, gridY);
-                  // Fix: Clear selection if the deleted building was selected
-                  const currentOpened = useGameStore.getState().openedEntityKey;
-                  if (currentOpened === `${gridX},${gridY}`) {
-                      useGameStore.getState().setOpenedEntityKey(null);
-                  }
-                  this.onWorldChange?.();
-              } else {
-                  // Try to delete Cable
-                  // We need precise hit detection for cables, not just grid tile.
-                  // Since cables are lines, we need distance from point to line segment.
-                  // Raycaster can intersection objects!
-                  
-                  // Use Three.js Raycaster against CableVisuals? 
-                  // But InputSystem doesn't have access to Visuals easily.
-                  // Alternative: Iterate World Cables and check distance to click.
-                  
-                  // Map Grid Click to World Pos?
-                  
-                  // Let's re-calculate exact world pos
-                  const rect = this.domElement.getBoundingClientRect();
-                  const mx = ((originalEvent.clientX - rect.left) / rect.width) * 2 - 1;
-                  const my = -((originalEvent.clientY - rect.top) / rect.height) * 2 + 1;
-                  this.raycaster.setFromCamera(new THREE.Vector2(mx, my), this.camera);
-                  const target = new THREE.Vector3();
-                  const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0.5);
-                  if (this.raycaster.ray.intersectPlane(plane, target)) {
-                      // target.x, target.z
-                      const cables = this.world.cables;
-                      let deleted = false;
-                      const THRESHOLD = 0.5; // distance from line
-
-                      for (const c of cables) {
-                          const dist = this.distToSegment(target.x, target.z, c.x1, c.y1, c.x2, c.y2);
-                          if (dist < THRESHOLD) {
-                              this.world.removeCable(c.x1, c.y1, c.x2, c.y2);
-                              deleted = true;
-                              break; // Delete one at a time
-                          }
-                      }
-                      if (deleted) this.onWorldChange?.();
-                  }
-              }
+              this.performDelete(gridX, gridY, originalEvent);
               return;
           }
 
@@ -709,6 +688,49 @@ export class InputSystem {
       if (tile.isStone()) {
            useGameStore.getState().addItem('stone', 1);
       }
+  }
+
+  private performDelete(gridX: number, gridY: number, event: PointerEvent) {
+        const building = this.world.getBuilding(gridX, gridY);
+        
+        if (building) {
+            this.world.removeBuilding(gridX, gridY);
+            // Fix: Clear selection if the deleted building was selected
+            const currentOpened = useGameStore.getState().openedEntityKey;
+            if (currentOpened === `${gridX},${gridY}`) {
+                useGameStore.getState().setOpenedEntityKey(null);
+            }
+            this.onWorldChange?.();
+        } else {
+            // Try to delete Cable
+            // We need precise hit detection for cables, not just grid tile.
+            // Since cables are lines, we need distance from point to line segment.
+            // Raycaster can intersection objects!
+            
+            // Re-calculate exact world pos
+            const rect = this.domElement.getBoundingClientRect();
+            const mx = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            const my = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            this.raycaster.setFromCamera(new THREE.Vector2(mx, my), this.camera);
+            const target = new THREE.Vector3();
+            const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0.5);
+            if (this.raycaster.ray.intersectPlane(plane, target)) {
+                // target.x, target.z
+                const cables = this.world.cables;
+                let deleted = false;
+                const THRESHOLD = 0.5; // distance from line
+
+                for (const c of cables) {
+                    const dist = this.distToSegment(target.x, target.z, c.x1, c.y1, c.x2, c.y2);
+                    if (dist < THRESHOLD) {
+                        this.world.removeCable(c.x1, c.y1, c.x2, c.y2);
+                        deleted = true;
+                        break; // Delete one at a time per tick is fine
+                    }
+                }
+                if (deleted) this.onWorldChange?.();
+            }
+        }
   }
 
   private distToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {

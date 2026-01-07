@@ -28,7 +28,8 @@ export interface BaseBuildingConfig {
     type: string;
     cost: number;
     hasMenu: boolean;
-    description: string;
+    description: string; // Fallback or Dev description
+    id: string; // Key for i18n (e.g. 'extractor', 'conveyor')
     maxCount?: number;
     width?: number;
     height?: number;
@@ -160,6 +161,7 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     'electric_pole': ELECTRIC_POLE_CONFIG,
 
     'cable': {
+        id: 'cable',
         name: 'Cable',
         type: 'cable',
         cost: 1,

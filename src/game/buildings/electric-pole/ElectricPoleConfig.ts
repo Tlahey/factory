@@ -1,6 +1,7 @@
 import type { ElectricPoleConfigType } from '../BuildingConfig';
 
 export const ELECTRIC_POLE_CONFIG: ElectricPoleConfigType = {
+    id: 'electric_pole',
     name: 'Electric Pole',
     type: 'electric_pole',
     cost: 5,

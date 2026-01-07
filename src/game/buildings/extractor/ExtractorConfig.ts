@@ -1,9 +1,9 @@
 import type { ExtractorConfigType } from '../BuildingConfig';
-import { Extractor } from './Extractor';
 
 import { BuildingEntity } from '../../entities/BuildingEntity';
 
 export const EXTRACTOR_CONFIG: ExtractorConfigType = {
+    id: 'extractor',
     name: 'Extractor',
     type: 'extractor',
     cost: 10,

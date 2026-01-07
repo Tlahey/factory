@@ -10,8 +10,10 @@ import { BuildingEntity } from '@/game/entities/BuildingEntity';
 import { BuildingUpgrade } from '@/game/buildings/BuildingConfig';
 import { IWorld } from '@/game/entities/types';
 import ModelPreview from './ModelPreview';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function BuildingInfoPanel() {
+  const { t } = useTranslation();
   const openedEntityKey = useGameStore((state) => state.openedEntityKey);
   const setOpenedEntityKey = useGameStore((state) => state.setOpenedEntityKey);
   const inventory = useGameStore((state) => state.inventory);
@@ -185,10 +187,10 @@ export default function BuildingInfoPanel() {
           </div>
           <div>
             <h3 className="font-bold text-lg leading-none capitalize">
-              {config.name}
+              {t(`building.${config.id}.name`)}
             </h3>
             <p className="text-xs text-gray-400 mt-1">
-              {isChest ? `Lv. ${building.maxSlots - 4}` : 'Building'}
+              {isChest ? `Lv. ${building.maxSlots - 4}` : t('common.building')}
             </p>
           </div>
         </div>
@@ -209,7 +211,7 @@ export default function BuildingInfoPanel() {
             : 'text-gray-500 hover:text-gray-300'
             }`}
         >
-          Overview
+          {t('common.overview')}
           {activeTab === 'overview' && (
             <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-500" />
           )}
@@ -222,7 +224,7 @@ export default function BuildingInfoPanel() {
               : 'text-gray-500 hover:text-gray-300'
               }`}
           >
-            Upgrades
+            {t('common.upgrades')}
             {activeTab === 'upgrade' && (
               <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-500" />
             )}
@@ -296,37 +298,37 @@ export default function BuildingInfoPanel() {
 
                       // 1. Not Linked
                       if (!building.hasPowerSource) {
-                        status = 'NO POWER SOURCE';
+                        status = t('common.status.no_power');
                         color =
                           'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]';
                       }
                       // 2. Blocked
                       else if (building.operationStatus === 'blocked') {
-                        status = 'BLOCKED / FULL';
+                        status = t('common.status.blocked');
                         color =
                           'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]';
                       }
                       // 3. No Resources
                       else if (building.operationStatus === 'no_resources') {
-                        status = 'NO RESOURCES';
+                        status = t('common.status.no_resources');
                         color =
                           'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]';
                       }
                       // 4. Low Power
                       else if (building.powerStatus === 'warn') {
-                        status = 'LOW POWER';
+                        status = t('common.status.low_power');
                         color =
                           'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]';
                       }
                       // 5. Active
                       else if (building.active) {
-                        status = 'OPERATIONAL';
+                        status = t('common.status.operational');
                         color =
                           'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]';
                       }
                       // 6. Idle
                       else {
-                        status = 'IDLE';
+                        status = t('common.status.idle');
                         color =
                           'bg-gray-500 shadow-[0_0_10px_rgba(107,114,128,0.5)]';
                       }
@@ -348,16 +350,16 @@ export default function BuildingInfoPanel() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-3 bg-black/20 rounded-lg border border-white/5">
                       <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                        <Zap size={10} className="text-yellow-500" /> Rate
+                        <Zap size={10} className="text-yellow-500" /> {t('common.rate')}
                       </div>
                       <div className="text-lg font-mono font-bold text-white">
                         {(building.getExtractionRate() * 60).toFixed(1)}{' '}
-                        <span className="text-[10px] text-gray-500">/min</span>
+                        <span className="text-[10px] text-gray-500">{t('common.per_minute')}</span>
                       </div>
                     </div>
                     <div className="p-3 bg-black/20 rounded-lg border border-white/5">
                       <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                        <Box size={10} className="text-blue-500" /> Output
+                        <Box size={10} className="text-blue-500" /> {t('common.output')}
                       </div>
                       <div className="text-lg font-mono font-bold text-white capitalize">
                         Stone
@@ -365,8 +367,7 @@ export default function BuildingInfoPanel() {
                     </div>
                     <div className="col-span-2 p-3 bg-black/20 rounded-lg border border-white/5 flex justify-between items-center">
                       <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
-                        <Zap size={10} className="text-red-500" /> Energy
-                        Consumption
+                        <Zap size={10} className="text-red-500" /> {t('common.power')}
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-mono font-bold text-red-400">
@@ -387,20 +388,20 @@ export default function BuildingInfoPanel() {
 
                 <div className="space-y-2">
                   <div className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] px-1">
-                    Performance Details
+                    {t('common.performance')}
                   </div>
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs p-2 rounded hover:bg-white/5 transition-colors">
-                      <span className="text-gray-400">Baseline Rate</span>
-                      <span className="text-white font-mono">{building.extractionRate.toFixed(1)}/min</span>
+                      <span className="text-gray-400">{t('common.rate')} (Base)</span>
+                      <span className="text-white font-mono">{building.extractionRate.toFixed(1)}{t('common.per_minute')}</span>
                     </div>
                     <div className="flex justify-between text-xs p-2 rounded hover:bg-white/5 transition-colors">
-                      <span className="text-gray-400">Efficiency</span>
+                      <span className="text-gray-400">{t('common.efficiency')}</span>
                       <span className="text-green-400 font-mono">100%</span>
                     </div>
                     <div className="flex justify-between text-xs p-2 rounded hover:bg-white/5 transition-colors">
                       <span className="text-gray-400">
-                        Overclock Multiplier
+                        {t('common.overclock')}
                       </span>
                       <span className="text-indigo-400 font-mono">
                         x{building.speedMultiplier.toFixed(1)}
@@ -425,7 +426,7 @@ export default function BuildingInfoPanel() {
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="p-3 bg-black/20 rounded-lg border border-white/5">
                       <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                        <Zap size={10} className="text-green-500" /> Production
+                        <Zap size={10} className="text-green-500" /> {t('common.production')}
                       </div>
                       <div className="text-lg font-mono font-bold text-green-400">
                         {(building as Hub).statsHistory &&
@@ -441,7 +442,7 @@ export default function BuildingInfoPanel() {
                     </div>
                     <div className="p-3 bg-black/20 rounded-lg border border-white/5">
                       <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                        <Zap size={10} className="text-red-500" /> Consumption
+                        <Zap size={10} className="text-red-500" /> {t('common.consumption')}
                       </div>
                       <div className="text-lg font-mono font-bold text-red-400">
                         {(building as Hub).statsHistory &&

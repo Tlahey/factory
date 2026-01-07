@@ -4,6 +4,8 @@ import { useGameStore } from '@/game/state/store';
 import clsx from 'clsx';
 import ModelPreview from './ModelPreview';
 import { getBuildingConfig } from '@/game/buildings/BuildingConfig';
+import { useState } from 'react';
+import BuildingHoverCard from './BuildingHoverCard';
 
 export default function BuildingSidebar() {
     const selectedBuilding = useGameStore((state) => state.selectedBuilding);
@@ -11,6 +13,8 @@ export default function BuildingSidebar() {
     const hotbar = useGameStore((state) => state.hotbar);
     const setHotbarSlot = useGameStore((state) => state.setHotbarSlot);
     const buildingCounts = useGameStore((state) => state.buildingCounts);
+
+    const [hoveredBuildingId, setHoveredBuildingId] = useState<string | null>(null);
 
     const handleDrop = (e: React.DragEvent, index: number) => {
         e.preventDefault();
@@ -81,8 +85,18 @@ export default function BuildingSidebar() {
 
                         {countDisplay}
 
+                        {/* Hover Card */}
+                        {buildingId && hoveredBuildingId === buildingId && (
+                            <BuildingHoverCard
+                                config={getBuildingConfig(buildingId)!}
+                                variant="minimal"
+                            />
+                        )}
+
                         <button
                             draggable={!!buildingId}
+                            onMouseEnter={() => setHoveredBuildingId(buildingId)}
+                            onMouseLeave={() => setHoveredBuildingId(null)}
                             onDragStart={(e) => {
                                 if (buildingId) {
                                     e.dataTransfer.setData('source', 'hotbar');

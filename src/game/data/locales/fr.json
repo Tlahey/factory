@@ -1,0 +1,59 @@
+{
+    "common": {
+        "stone": "Pierre",
+        "cost": "Coût",
+        "power": "Énergie",
+        "input": "Entrée",
+        "output": "Sortie",
+        "description": "Description",
+        "stats": "Statistiques",
+        "production": "Production",
+        "consumption": "Consommation",
+        "rate": "Taux",
+        "per_second": "/s",
+        "per_minute": "/min",
+        "count": "Total",
+        "max": "Max",
+        "overview": "Aperçu",
+        "upgrades": "Améliorations",
+        "building": "Bâtiment",
+        "performance": "Performance",
+        "efficiency": "Efficacité",
+        "overclock": "Overclock",
+        "status": {
+            "no_power": "SANS ÉNERGIE",
+            "blocked": "BLOQUÉ",
+            "no_resources": "VIDE",
+            "low_power": "FAIBLE ÉNERGIE",
+            "operational": "OPÉRATIONNEL",
+            "idle": "EN ATTENTE"
+        },
+        "select_item": "Sélectionnez un élément pour voir les détails"
+    },
+    "building": {
+        "extractor": {
+            "name": "Foreuse",
+            "description": "Extrait des ressources des gisements. Nécessite de l'électricité."
+        },
+        "conveyor": {
+            "name": "Convoyeur",
+            "description": "Transporte les objets entre les bâtiments."
+        },
+        "chest": {
+            "name": "Conteneur",
+            "description": "Stocke des objets. Peut limiter les entrées/sorties."
+        },
+        "hub": {
+            "name": "Hub",
+            "description": "Le cœur de votre usine. Génère de l'énergie et sert de base principale."
+        },
+        "electric_pole": {
+            "name": "Poteau Électrique",
+            "description": "Connecte les lignes électriques sur une distance."
+        },
+        "cable": {
+            "name": "Câble",
+            "description": "Connecte les bâtiments à l'électricité."
+        }
+    }
+}

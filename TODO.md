@@ -1,12 +1,6 @@
 # Bugs
 
-- Aucun éléments ne peut être placé sur les ressources sauf la foreuse. Corrige ça et ajoute des tests
-
 # Features
-
-- Ajouter une rotation de 45 degrès de la pièce sélectionnée. La rotation se fait au scroll de la souris en haut rotation dans le sens horaire, scroll bas rotation dans le sens anti-horaire.
-  - La rotation fonctionne avec tous les buildings
-  - La rotation est stockée dans le fichier de la map
 
 - Ajouter le système d'input/ output pour les batiments
   - Foreuse à une sortie (output) qui envoie les ressources extraites aux convoyeurs
@@ -28,11 +22,7 @@
 - On démarre la partie avec le hub placé au milieu de la carte. Il ne doit pas avoir de roche a proximité immédiate du hub pour forcer le joueur à explorer la carte.
   - Il n'est pas possible de supprimer ou déplacer le hub, il doit aussi disparaitre de la liste des buildings constructibles.
 
-- Sur le menu build, il faudrait avoir une section à droite qui au hover d'un batiment affiche ses caractéristiques (coût en ressources, description du batiment, s'il a une sortie ou une entrée, le nombre de batiments qu'on possède au total, production par seconde, etc)
-  - Actuellement un nouvel utilisateur n'est pas capable de savoir ce que fait chaque batiment avant de le construire. Il faut lui donner plus d'informations avant qu'il ne construise un batiment et surtout comment il fonctionne (foreuse doit être liée à un convoyeur, etc)
-  - Les informations doivent être généré avec un fichier i18n pour pouvoir être traduit facilement dans toutes les autres langues avec une locale.
-  - On développement un système SOLID autour des langues pour qu'on puisse ajouter un fichier JSON de langue facilement.
-  - Il faut aussi afficher les informations du batiment quand on clique dessus dans la map (en plus de l'UI actuelle)
+
 
 - Il est possible de drag and drop pour supprimer les éléments avec la l'icone de la poubelle
 

@@ -1,6 +1,7 @@
 import type { HubConfigType } from '../BuildingConfig';
 
 export const HUB_CONFIG: HubConfigType = {
+    id: 'hub',
     name: 'Central Hub',
     type: 'hub',
     cost: 50,

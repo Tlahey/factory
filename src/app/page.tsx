@@ -111,7 +111,7 @@ export default function Home() {
         <BuildingInfoPanel />
         <BuildingMenu />
         <div className="absolute inset-0 z-[60] pointer-events-none p-6">
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-end">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-end z-10">
             <BuildingSidebar />
           </div>
           <div className="absolute bottom-28 left-1/2 -translate-x-1/2">

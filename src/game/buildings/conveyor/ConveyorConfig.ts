@@ -1,6 +1,7 @@
 import type { ConveyorConfigType } from '../BuildingConfig';
 
 export const CONVEYOR_CONFIG: ConveyorConfigType = {
+    id: 'conveyor',
     name: 'Conveyor Belt',
     type: 'conveyor',
     cost: 2,

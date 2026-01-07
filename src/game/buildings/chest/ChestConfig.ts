@@ -1,9 +1,9 @@
 import type { ChestConfigType } from '../BuildingConfig';
-import { Chest } from './Chest';
 
 import { BuildingEntity } from '../../entities/BuildingEntity';
 
 export const CHEST_CONFIG: ChestConfigType = {
+    id: 'chest',
     name: 'Chest',
     type: 'chest',
     cost: 5,

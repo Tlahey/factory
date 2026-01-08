@@ -1,48 +1,20 @@
 {
-  "name": "factory",
-  "version": "0.1.0",
+  "name": "factory-monorepo",
   "private": true,
-  "lint-staged": {
-    "*.{js,ts,jsx,tsx}": [
-      "eslint --max-warnings=0",
-      "prettier --write"
-    ],
-    "*.{json,css,md}": "prettier --write"
-  },
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
-    "prepare": "husky",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "prettier": "prettier --write ."
-  },
-  "dependencies": {
-    "@types/three": "^0.182.0",
-    "clsx": "^2.1.1",
-    "lucide-react": "^0.562.0",
-    "next": "16.1.1",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "reactflow": "^11.11.4",
-    "tailwind-merge": "^3.4.0",
-    "three": "^0.182.0",
-    "zustand": "^5.0.9"
+    "dev": "npm run dev:game",
+    "dev:game": "npm run dev -w apps/game",
+    "dev:tools": "npm run dev -w apps/tools",
+    "build": "npm run build:game",
+    "build:game": "npm run build -w apps/game",
+    "build:tools": "npm run build -w apps/tools",
+    "lint": "npm run lint -w apps/game",
+    "test": "npm run test -w apps/game"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.1.1",
-    "husky": "^9.0.11",
-    "lint-staged": "^15.2.2",
-    "prettier": "^3.7.4",
-    "tailwindcss": "^4",
-    "typescript": "^5",
-    "vitest": "^4.0.16"
+    "prettier": "^3.0.0"
   }
 }

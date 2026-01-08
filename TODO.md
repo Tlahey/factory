@@ -101,3 +101,12 @@ Chaque amélioration a aussi un cout en ressource qu'il faudra définir dans le 
 
 - Pour découvrir de nouvelles régions, on va créer un building qui sera une tour de guet qu'on pourra évoluer pour qu'elle puisse découvrir de nouvelles régions.
   - Lors de l'amélioration, un nouveau terrain sera généré à côté du terrain actuel. Et qu'il contiendra de nouvelles ressources
+
+- Il faudra cacher des éléments dans la roche qui quand elle sera totalement consommé rélèvera une nouvelle amélioration.
+  - exemple, miner va permettre de débloquer un item spécial qui permettra de faire évoluer la foreuse. On prendra des minéraux rare existants pour faire évoluer les éléments. et il faudra vraiment que ça soit rare ! 0.1% de chance.
+
+- Ajouter un système qui permet d'avoir du texte à l'écran. Il sera utilisé comme tutoriel et pour afficher des messages importants (on y ajoutera un personnage qui parle avec une image animée). Tous les textes seront stockés dans un fichier pour faciliter la traduction mais aussi avoir un bon système qui permet de modifier les dialogues.
+  - Exemple: quand on commence la partie il nous parle de certaines choses
+  - Quand on clique la permière fois sur un élement il va nous dire à quoi ça sert
+  - Expliquer le système de consomation d'électricité
+  etc ...

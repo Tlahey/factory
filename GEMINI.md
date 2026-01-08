@@ -12,21 +12,25 @@ This file serves as a guide for the Antigravity AI to maintain consistency, stru
 
 ## 📁 Project Structure
 
-- `src/game/buildings/`: Contains all buildings. Each building has its own subfolder (e.g., `conveyor/`).
+This is a Monorepo with two main workspaces:
+- `apps/game/`: The main game application.
+- `apps/tools/`: Standalone developer tools.
+
+### Game Structure (`apps/game/src/`)
+- `game/buildings/`: Contains all buildings. Each building has its own subfolder.
   - `[Building].ts`: Entity logic.
-  - `[Building]Config.ts`: Building configuration (name, menu, upgrades).
-  - `[Building]Visual.ts`: Rendering logic (if separate).
-- `src/game/systems/`: Global systems (Input, Factory, Grid).
-- `src/game/core/`: Engine core (World, Tile).
+  - `[Building]Config.ts`: Building configuration.
+- `game/systems/`: Global systems.
+- `game/core/`: Engine core.
 
 ## 🚀 Adding a New Feature (e.g., New Building)
 
 To add a new building (e.g., "SolarPanel"):
 
-1. Create `src/game/buildings/solar-panel/`.
+1. Create `apps/game/src/game/buildings/solar-panel/`.
 2. Create `SolarPanel.ts` inheriting from `BuildingEntity`.
 3. Create `SolarPanelConfig.ts` exporting `SOLAR_PANEL_CONFIG`.
-4. Register the configuration in `src/game/buildings/BuildingConfig.ts`.
+4. Register the configuration in `apps/game/src/game/buildings/BuildingConfig.ts`.
 5. If complex visuals are required, create `SolarPanelVisual.ts` or similar.
 
 ## 🛠 Key Points to Watch

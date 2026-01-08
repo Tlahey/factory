@@ -1,0 +1,116 @@
+{
+  "common": {
+    "stone": "Pierre",
+    "iron": "Fer",
+    "copper": "Cuivre",
+    "cost": "Coût",
+    "power": "Énergie",
+    "input": "Entrée",
+    "output": "Sortie",
+    "description": "Description",
+    "stats": "Statistiques",
+    "production": "Production",
+    "consumption": "Consommation",
+    "rate": "Taux",
+    "per_second": "/s",
+    "per_minute": "/min",
+    "count": "Total",
+    "max": "Max",
+    "overview": "Aperçu",
+    "upgrades": "Améliorations",
+    "available_upgrades": "Améliorations disponibles",
+    "building": "Bâtiment",
+    "performance": "Performance",
+    "efficiency": "Efficacité",
+    "overclock": "Overclock",
+    "status": {
+      "no_power": "SANS ÉNERGIE",
+      "blocked": "BLOQUÉ",
+      "no_resources": "VIDE",
+      "low_power": "FAIBLE ÉNERGIE",
+      "operational": "OPÉRATIONNEL",
+      "idle": "EN ATTENTE"
+    },
+    "select_item": "Sélectionnez un élément pour voir les détails",
+    "free": "Gratuit"
+  },
+  "building": {
+    "extractor": {
+      "name": "Foreuse",
+      "description": "Extrait des ressources des gisements. Nécessite de l'électricité."
+    },
+    "conveyor": {
+      "name": "Convoyeur",
+      "description": "Transporte les objets entre les bâtiments."
+    },
+    "chest": {
+      "name": "Conteneur",
+      "description": "Stocke des objets. Peut limiter les entrées/sorties."
+    },
+    "hub": {
+      "name": "Hub",
+      "description": "Le cœur de votre usine. Génère de l'énergie et sert de base principale."
+    },
+    "electric_pole": {
+      "name": "Poteau Électrique",
+      "description": "Connecte les lignes électriques sur une distance."
+    },
+    "cable": {
+      "name": "Câble",
+      "description": "Connecte les bâtiments à l'électricité."
+    }
+  },
+  "skill_tree": {
+    "title": "Arbre de Compétences",
+    "root": "Départ",
+    "unlock": "Débloquer",
+    "unlocked": "Débloqué",
+    "locked": "Verrouillé",
+    "requires": "Nécessite",
+    "cost": "Coût",
+    "in_progress": "en cours",
+    "unlocking": "Déblocage",
+    "start_unlock": "Lancer le déblocage",
+    "unlock_time": "Temps de déblocage",
+    "tech": {
+      "logistics_tech": "Logistique",
+      "logistics_tech_desc": "Débloque des méthodes de transport et de stockage avancées."
+    }
+  },
+  "upgrade": {
+    "extractor": {
+      "speed_1": {
+        "name": "Forage Amélioré I",
+        "description": "Augmente le taux d'extraction de 20%"
+      },
+      "speed_2": {
+        "name": "Forage Amélioré II",
+        "description": "Augmente le taux d'extraction de 40%"
+      },
+      "speed_3": {
+        "name": "Forage Amélioré III",
+        "description": "Augmente le taux d'extraction de 60%"
+      }
+    },
+    "chest": {
+      "slots_1": {
+        "name": "Stockage Étendu I",
+        "description": "Ajoute 2 emplacements de stockage"
+      },
+      "slots_2": {
+        "name": "Stockage Étendu II",
+        "description": "Ajoute 4 emplacements de stockage"
+      }
+    },
+    "hub": {
+      "power_1": {
+        "name": "Amélioration Solaire I",
+        "description": "Augmente la production d'énergie de 25%"
+      },
+      "power_2": {
+        "name": "Amélioration Solaire II",
+        "description": "Augmente la production d'énergie de 50%"
+      }
+    }
+  }
+}

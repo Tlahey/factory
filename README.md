@@ -17,18 +17,21 @@ A web-based isometric factory building game inspired by classics like Factorio a
 - **Web Based**: Runs directly in your browser.
 
 ## 🚀 Getting Started
+This project is configured as a Monorepo containing:
+- **Game**: The main factory game (Next.js)
+- **Tools**: Developer tools like the Skill Tree Editor (Vite)
 
-First, run the development server:
-
+### Running the Game
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev:game
 ```
+Open [http://localhost:3000](http://localhost:3000)
+
+### Running Developer Tools
+```bash
+npm run dev:tools
+```
+Open [http://localhost:5173](http://localhost:5173) (or port specified in console)
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 

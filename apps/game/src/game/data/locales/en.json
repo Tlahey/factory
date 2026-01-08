@@ -1,0 +1,116 @@
+{
+  "common": {
+    "stone": "Stone",
+    "iron": "Iron",
+    "copper": "Copper",
+    "cost": "Cost",
+    "power": "Power",
+    "input": "Input",
+    "output": "Output",
+    "description": "Description",
+    "stats": "Stats",
+    "production": "Production",
+    "consumption": "Consumption",
+    "rate": "Rate",
+    "per_second": "/s",
+    "per_minute": "/min",
+    "count": "Count",
+    "max": "Max",
+    "overview": "Overview",
+    "upgrades": "Upgrades",
+    "available_upgrades": "Available Upgrades",
+    "building": "Building",
+    "performance": "Performance",
+    "efficiency": "Efficiency",
+    "overclock": "Overclock",
+    "status": {
+      "no_power": "NO POWER",
+      "blocked": "BLOCKED",
+      "no_resources": "NO RESOURCES",
+      "low_power": "LOW POWER",
+      "operational": "OPERATIONAL",
+      "idle": "IDLE"
+    },
+    "select_item": "Select an item to view details",
+    "free": "Free"
+  },
+  "building": {
+    "extractor": {
+      "name": "Drill",
+      "description": "Extracts resources from resource nodes. Requires power."
+    },
+    "conveyor": {
+      "name": "Conveyor Belt",
+      "description": "Transports items between buildings."
+    },
+    "chest": {
+      "name": "Container",
+      "description": "Stores items. Can determine input/output limits."
+    },
+    "hub": {
+      "name": "Hub",
+      "description": "The heart of your factory. Generates power and serves as the main base."
+    },
+    "electric_pole": {
+      "name": "Electric Pole",
+      "description": "Connects power lines over a distance."
+    },
+    "cable": {
+      "name": "Cable",
+      "description": "Connects buildings to power."
+    }
+  },
+  "skill_tree": {
+    "title": "Skill Tree",
+    "root": "Start",
+    "unlock": "Unlock",
+    "unlocked": "Unlocked",
+    "locked": "Locked",
+    "requires": "Requires",
+    "cost": "Cost",
+    "in_progress": "in progress",
+    "unlocking": "Unlocking",
+    "start_unlock": "Start Unlock",
+    "unlock_time": "Unlock time",
+    "tech": {
+      "logistics_tech": "Logistics",
+      "logistics_tech_desc": "Unlocks advanced transportation and storage methods."
+    }
+  },
+  "upgrade": {
+    "extractor": {
+      "speed_1": {
+        "name": "Enhanced Drilling I",
+        "description": "Increases extraction rate by 20%"
+      },
+      "speed_2": {
+        "name": "Enhanced Drilling II",
+        "description": "Increases extraction rate by 40%"
+      },
+      "speed_3": {
+        "name": "Enhanced Drilling III",
+        "description": "Increases extraction rate by 60%"
+      }
+    },
+    "chest": {
+      "slots_1": {
+        "name": "Expanded Storage I",
+        "description": "Adds 2 storage slots"
+      },
+      "slots_2": {
+        "name": "Expanded Storage II",
+        "description": "Adds 4 storage slots"
+      }
+    },
+    "hub": {
+      "power_1": {
+        "name": "Solar Upgrade I",
+        "description": "Increases power generation by 25%"
+      },
+      "power_2": {
+        "name": "Solar Upgrade II",
+        "description": "Increases power generation by 50%"
+      }
+    }
+  }
+}

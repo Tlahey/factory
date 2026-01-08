@@ -6,8 +6,6 @@
 
 - Les resources doivent avoir un ratio de production qui influe sur les extracteur. Par exemple les roches ont aléatoirement un extraction en *0.5 ou *1. D'autres ressources par la suite pourront avoir du 1.5 etc ...
 
-- Quand un convoyeur est relié à une flèche IO, alors on cache cette flèche
-
 - Le hub doit avoir un arbre de compétences et un shop
   - L'arbre de compétences permet de stocker plus d'éléments / de débloquer de nouveaux éléments. Il faut forcément que les éléments précédent soient débloqués pour débloquer les suivants.
     Les éléments qui ne sont pas encore déblocable sont caché à l'utilisateur. Donc on ne voit que les éléments qui sont actuellement débloquable. La configuration de l'arbre de compétence doit être dans un fichier JSON ou autre (graph ?) pour qu'il soit simple de le modifier.

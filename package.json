@@ -15,7 +15,8 @@
     "start": "next start",
     "lint": "eslint",
     "prepare": "husky",
-    "test": "vitest",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "prettier": "prettier --write ."
   },
   "dependencies": {

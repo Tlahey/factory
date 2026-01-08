@@ -28,7 +28,7 @@ export class Extractor
   // Stability Timers
   private blockStabilityTimer: number = 0;
   private readonly STABILITY_THRESHOLD = 1.5; // Seconds to wait before switching to 'blocked'
-  
+
   public internalStorage: number = 0;
   private readonly STORAGE_CAPACITY = 10;
 
@@ -95,18 +95,18 @@ export class Extractor
     // Mining condition: hasResources AND !isBufferFull
     // We update accumTime if we have power and are effectively working
     const canMine = hasResources && !isBufferFull;
-    
+
     // We consider it "active" (animating) if it's processing or moving items.
     // If it's blocked, it stops.
-    // If it's no_resources but has items to output, it might still active? 
+    // If it's no_resources but has items to output, it might still active?
     // Usually drill animation is linked to mining.
     const isWorking = canMine && powerFactor > 0;
-    
+
     if (isWorking) {
-       this.accumTime += delta * powerFactor;
-       this.active = true;
+      this.accumTime += delta * powerFactor;
+      this.active = true;
     } else {
-       this.active = false;
+      this.active = false;
     }
 
     if (this.active !== oldActive) {
@@ -117,11 +117,11 @@ export class Extractor
 
     // Mining Step
     if (canMine && this.accumTime >= interval) {
-        if (tile instanceof ResourceTile) {
-            tile.deplete(1);
-        }
-        this.internalStorage += 1;
-        this.accumTime -= interval;
+      if (tile instanceof ResourceTile) {
+        tile.deplete(1);
+      }
+      this.internalStorage += 1;
+      this.accumTime -= interval;
     }
 
     // Output Step (Independent of mining interval, but dependent on checkOutputClear which we called earlier)

@@ -116,9 +116,9 @@ export const SKILL_TREE: SkillNode[] = [
     position: { x: 2, y: 4 },
     unlockDuration: 60,
   },
-  
+
   // === UPGRADES ===
-  
+
   // Hub Upgrades - Moved down deeply
   {
     id: "hub_1",
@@ -129,7 +129,7 @@ export const SKILL_TREE: SkillNode[] = [
     position: { x: 4, y: 5 }, // Far bottom right or separate branch
     unlockDuration: 90,
   },
-  
+
   // Extractor Upgrades - Detached from immediate flow
   {
     id: "extractor_1",

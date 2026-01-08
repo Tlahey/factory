@@ -663,15 +663,22 @@ export class InputSystem {
     }
 
     if (isValid) {
-      // Check Cost for Cable
+      // Check if Cable is unlocked
       const cableConfig = getBuildingConfig("cable");
-      const { hasResources, removeResources } = useGameStore.getState();
-      
+      const { unlockedBuildings, hasResources, removeResources } =
+        useGameStore.getState();
+
+      if (cableConfig?.locked && !unlockedBuildings.includes("cable")) {
+        console.log("Cable is locked");
+        this.cancelCableDrag();
+        return;
+      }
+
       if (cableConfig && cableConfig.cost) {
         if (!hasResources(cableConfig.cost)) {
-           console.log("Insufficient resources for cable");
-           this.cancelCableDrag();
-           return;
+          console.log("Insufficient resources for cable");
+          this.cancelCableDrag();
+          return;
         }
       }
 
@@ -726,7 +733,7 @@ export class InputSystem {
     // Check Total Cost
     const conveyorConfig = getBuildingConfig("conveyor");
     const { hasResources, removeResources } = useGameStore.getState();
-    
+
     // Assume all valid placements in path need cost.
     // However, world.placeBuilding might refuse if something changed (unlikely in single frame).
     // Let's pre-calculate valid counts.
@@ -738,9 +745,12 @@ export class InputSystem {
       totalCost[res] = amt * count;
     }
 
-    if (conveyorConfig?.locked && !useGameStore.getState().unlockedBuildings.includes("conveyor")) {
+    if (
+      conveyorConfig?.locked &&
+      !useGameStore.getState().unlockedBuildings.includes("conveyor")
+    ) {
       console.log("Conveyor is locked");
-       this.cancelConveyorDrag();
+      this.cancelConveyorDrag();
       return;
     }
 
@@ -865,7 +875,8 @@ export class InputSystem {
       if (!config) return;
 
       // Check Locked
-      const { unlockedBuildings, hasResources, removeResources } = useGameStore.getState();
+      const { unlockedBuildings, hasResources, removeResources } =
+        useGameStore.getState();
       if (config.locked && !unlockedBuildings.includes(selectedBuilding)) {
         // TODO: Show locked feedback
         console.log("Building is locked");

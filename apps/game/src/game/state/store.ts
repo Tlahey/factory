@@ -56,7 +56,7 @@ interface GameState {
   startUnlock: (skillId: string, duration: number) => void;
   cancelUnlock: (skillId: string) => void;
   completeUnlock: (skillId: string) => void;
-  
+
   // Progression
   unlockedBuildings: string[];
   unlockBuilding: (buildingId: string) => void;
@@ -262,9 +262,9 @@ export const useGameStore = create<GameState>()(
             ? state.unlockedSkills
             : [...state.unlockedSkills, skillId],
         })),
-      
+
       // Progression
-      unlockedBuildings: ["hub", "cable"], // Hub and Cable are starter items
+      unlockedBuildings: ["hub"], // Only Hub is a starter item
       unlockBuilding: (buildingId) =>
         set((state) => ({
           unlockedBuildings: state.unlockedBuildings.includes(buildingId)
@@ -277,7 +277,8 @@ export const useGameStore = create<GameState>()(
         const totalResources: Record<string, number> = {};
         for (const slot of state.inventory) {
           if (slot.type) {
-            totalResources[slot.type] = (totalResources[slot.type] || 0) + slot.count;
+            totalResources[slot.type] =
+              (totalResources[slot.type] || 0) + slot.count;
           }
         }
         // Check cost

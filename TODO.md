@@ -6,7 +6,7 @@
   - Exemple: quand on commence la partie il nous parle de certaines choses
   - Quand on clique la permière fois sur un élement il va nous dire à quoi ça sert
   - Expliquer le système de consomation d'électricité
-  etc ...
+    etc ...
 
 - Il faudrait trouver un moyen de récupérer de la roche au départ du jeu sans forcément avoir d'équipement.
   - On pourrait penser à un scénario scripté de départ où une personne nous parle et nous dit ce qu'il faut faire
@@ -115,4 +115,3 @@ Chaque amélioration a aussi un cout en ressource qu'il faudra définir dans le 
 
 - Il faudra cacher des éléments dans la roche qui quand elle sera totalement consommé rélèvera une nouvelle amélioration.
   - exemple, miner va permettre de débloquer un item spécial qui permettra de faire évoluer la foreuse. On prendra des minéraux rare existants pour faire évoluer les éléments. et il faudra vraiment que ça soit rare ! 0.1% de chance.
-

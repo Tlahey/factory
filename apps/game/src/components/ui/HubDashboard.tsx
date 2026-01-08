@@ -16,7 +16,6 @@ import {
   X,
   Lock,
   Unlock,
-  ChevronRight,
   Zap,
   Box,
   Settings,
@@ -107,12 +106,14 @@ const SkillTreeNode = ({ data }: NodeProps) => {
 
   // Use "tech" ID check
   const isTechNode = node.id.includes("tech") || node.type === "tech";
-  const colors = isTechNode ? {
-    bg: "bg-purple-500/20",
-    border: "border-purple-500/50",
-    glow: "shadow-purple-500/30",
-    accent: "text-purple-400",
-  } : (BUILDING_COLORS[node.buildingId] || BUILDING_COLORS.extractor);
+  const colors = isTechNode
+    ? {
+        bg: "bg-purple-500/20",
+        border: "border-purple-500/50",
+        glow: "shadow-purple-500/30",
+        accent: "text-purple-400",
+      }
+    : BUILDING_COLORS[node.buildingId] || BUILDING_COLORS.extractor;
 
   const isRoot = node.id === "root";
   const isUnlockNode = node.type === "unlock";
@@ -141,7 +142,12 @@ const SkillTreeNode = ({ data }: NodeProps) => {
   if (isRoot) {
     return (
       <>
-        <Handle type="target" position={Position.Top} className="invisible" isConnectable={false} />
+        <Handle
+          type="target"
+          position={Position.Top}
+          className="invisible"
+          isConnectable={false}
+        />
         <div
           className={`
           w-6 h-6 rounded-full border-2 border-green-500/50 
@@ -152,7 +158,12 @@ const SkillTreeNode = ({ data }: NodeProps) => {
           onMouseEnter={() => onHover(node)}
           onMouseLeave={() => onHover(null)}
         />
-        <Handle type="source" position={Position.Bottom} className="invisible" isConnectable={false} />
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          className="invisible"
+          isConnectable={false}
+        />
       </>
     );
   }
@@ -168,11 +179,22 @@ const SkillTreeNode = ({ data }: NodeProps) => {
           ? "bg-emerald-500/20 hover:scale-110 cursor-pointer animate-pulse text-emerald-300"
           : "bg-gray-800 opacity-50 text-gray-500";
 
-    const borderClass = isUnlocked ? "border-green-500" : isPending ? "border-indigo-500" : (canUnlock && canAfford) ? "border-emerald-500/60" : "border-gray-600";
+    const borderClass = isUnlocked
+      ? "border-green-500"
+      : isPending
+        ? "border-indigo-500"
+        : canUnlock && canAfford
+          ? "border-emerald-500/60"
+          : "border-gray-600";
 
     return (
       <>
-        <Handle type="target" position={Position.Top} className="invisible" isConnectable={false} />
+        <Handle
+          type="target"
+          position={Position.Top}
+          className="invisible"
+          isConnectable={false}
+        />
         <div
           className={`
           w-6 h-6 rounded-full border-2 
@@ -187,7 +209,9 @@ const SkillTreeNode = ({ data }: NodeProps) => {
           onMouseLeave={() => onHover(null)}
         >
           {/* Inner Dot */}
-          <div className={`w-2 h-2 rounded-full ${isReachable ? "bg-current" : "bg-gray-600"}`} />
+          <div
+            className={`w-2 h-2 rounded-full ${isReachable ? "bg-current" : "bg-gray-600"}`}
+          />
 
           {isPending && (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -195,9 +219,14 @@ const SkillTreeNode = ({ data }: NodeProps) => {
             </div>
           )}
         </div>
-        <Handle type="source" position={Position.Bottom} className="invisible" isConnectable={false} />
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          className="invisible"
+          isConnectable={false}
+        />
       </>
-    )
+    );
   }
 
   // STANDARD NODE RENDERING (Card)
@@ -206,7 +235,12 @@ const SkillTreeNode = ({ data }: NodeProps) => {
 
   return (
     <>
-      <Handle type="target" position={Position.Top} className="invisible" isConnectable={false} />
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="invisible"
+        isConnectable={false}
+      />
       <div
         className={`
             w-20 h-20 rounded-lg border-2 
@@ -239,7 +273,9 @@ const SkillTreeNode = ({ data }: NodeProps) => {
               static
             />
           ) : (
-            <span className="text-4xl font-black text-gray-700 select-none">?</span>
+            <span className="text-4xl font-black text-gray-700 select-none">
+              ?
+            </span>
           )}
         </div>
 
@@ -269,8 +305,9 @@ const SkillTreeNode = ({ data }: NodeProps) => {
               </div>
             ) : canUnlock ? (
               <div
-                className={`w-5 h-5 rounded-full ${canAfford ? "bg-blue-500 animate-bounce" : "bg-gray-500"
-                  } flex items-center justify-center shadow-lg`}
+                className={`w-5 h-5 rounded-full ${
+                  canAfford ? "bg-blue-500 animate-bounce" : "bg-gray-500"
+                } flex items-center justify-center shadow-lg`}
               >
                 <Lock className="w-2.5 h-2.5 text-white" />
               </div>
@@ -285,7 +322,9 @@ const SkillTreeNode = ({ data }: NodeProps) => {
         {/* Building Type Icon - Hide if unknown */}
         {!isRoot && isReachable && (
           <div className="absolute top-4 -right-1.5 z-10">
-            <div className={`w-5 h-5 rounded-full ${colors.bg} ${colors.border} border flex items-center justify-center shadow-lg`}>
+            <div
+              className={`w-5 h-5 rounded-full ${colors.bg} ${colors.border} border flex items-center justify-center shadow-lg`}
+            >
               <div className={colors.accent}>
                 {BUILDING_ICONS[node.buildingId]}
               </div>
@@ -296,13 +335,15 @@ const SkillTreeNode = ({ data }: NodeProps) => {
         {/* "NEW" Badge for Unlocks (Top Left) */}
         {!isRoot && isUnlockNode && !isUnlocked && isReachable && (
           <div className="absolute -left-2 -top-2 z-20">
-            <div className={`
+            <div
+              className={`
                   w-5 h-5 bg-amber-400 rounded-full 
                   shadow-[0_0_10px_rgba(251,191,36,0.6)] 
                   flex items-center justify-center 
                   border border-white/20
-                  ${(canUnlock && canAfford) ? 'animate-pulse' : ''}
-                `}>
+                  ${canUnlock && canAfford ? "animate-pulse" : ""}
+                `}
+            >
               <Sparkles className="w-3 h-3 text-black fill-white" />
             </div>
           </div>
@@ -316,7 +357,12 @@ const SkillTreeNode = ({ data }: NodeProps) => {
           </div>
         )}
       </div>
-      <Handle type="source" position={Position.Bottom} className="invisible" isConnectable={false} />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="invisible"
+        isConnectable={false}
+      />
     </>
   );
 };
@@ -481,8 +527,8 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                   <div className="text-lg font-mono font-bold text-green-400">
                     {hub.statsHistory && hub.statsHistory.length > 0
                       ? hub.statsHistory[
-                        hub.statsHistory.length - 1
-                      ].production.toFixed(1)
+                          hub.statsHistory.length - 1
+                        ].production.toFixed(1)
                       : powerGeneration.toFixed(1)}
                     <span className="text-[10px] text-gray-500 ml-1">kW</span>
                   </div>
@@ -495,8 +541,8 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                   <div className="text-lg font-mono font-bold text-red-400">
                     {hub.statsHistory && hub.statsHistory.length > 0
                       ? hub.statsHistory[
-                        hub.statsHistory.length - 1
-                      ].consumption.toFixed(1)
+                          hub.statsHistory.length - 1
+                        ].consumption.toFixed(1)
                       : "0.0"}
                     <span className="text-[10px] text-gray-500 ml-1">kW</span>
                   </div>
@@ -581,57 +627,57 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
             {unlockedSkills.filter(
               (s) => s.includes("_") && !s.includes("unlock"),
             ).length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
-                    Active Upgrades
-                  </h4>
-                  <div className="space-y-2">
-                    {["extractor", "chest", "hub"].map((buildingId) => {
-                      const level =
-                        skillTreeManager.getBuildingUpgradeLevel(buildingId);
-                      const upgrade =
-                        skillTreeManager.getActiveUpgrade(buildingId);
-                      if (level === 0 || !upgrade) return null;
+              <div className="mb-4">
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                  Active Upgrades
+                </h4>
+                <div className="space-y-2">
+                  {["extractor", "chest", "hub"].map((buildingId) => {
+                    const level =
+                      skillTreeManager.getBuildingUpgradeLevel(buildingId);
+                    const upgrade =
+                      skillTreeManager.getActiveUpgrade(buildingId);
+                    if (level === 0 || !upgrade) return null;
 
-                      return (
-                        <div
-                          key={buildingId}
-                          className="p-2 bg-white/5 border border-white/10 rounded-lg"
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="w-6 h-6 rounded overflow-hidden bg-black/30">
-                              <ModelPreview
-                                type="building"
-                                id={buildingId}
-                                width={24}
-                                height={24}
-                                static
-                              />
-                            </div>
-                            <span className="text-xs font-bold text-white">
-                              {t(`building.${buildingId}.name`)} Lv.{level}
-                            </span>
+                    return (
+                      <div
+                        key={buildingId}
+                        className="p-2 bg-white/5 border border-white/10 rounded-lg"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-6 h-6 rounded overflow-hidden bg-black/30">
+                            <ModelPreview
+                              type="building"
+                              id={buildingId}
+                              width={24}
+                              height={24}
+                              static
+                            />
                           </div>
-                          <div className="flex flex-wrap gap-1">
-                            {upgrade.effects.map((effect, i) => (
-                              <span
-                                key={i}
-                                className="px-1.5 py-0.5 text-[9px] font-mono rounded bg-indigo-500/20 text-indigo-300"
-                              >
-                                {effect.type === "multiplier"
-                                  ? `${effect.stat} ×${effect.value}`
-                                  : effect.type === "additive"
-                                    ? `${effect.stat} +${effect.value}`
-                                    : `Unlock: ${effect.stat}`}
-                              </span>
-                            ))}
-                          </div>
+                          <span className="text-xs font-bold text-white">
+                            {t(`building.${buildingId}.name`)} Lv.{level}
+                          </span>
                         </div>
-                      );
-                    })}
-                  </div>
+                        <div className="flex flex-wrap gap-1">
+                          {upgrade.effects.map((effect, i) => (
+                            <span
+                              key={i}
+                              className="px-1.5 py-0.5 text-[9px] font-mono rounded bg-indigo-500/20 text-indigo-300"
+                            >
+                              {effect.type === "multiplier"
+                                ? `${effect.stat} ×${effect.value}`
+                                : effect.type === "additive"
+                                  ? `${effect.stat} +${effect.value}`
+                                  : `Unlock: ${effect.stat}`}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
+            )}
 
             {/* Pending Unlocks */}
             {pendingUnlocks.length > 0 && (
@@ -721,12 +767,13 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                     <h3 className="font-bold text-white text-sm">
                       {hoveredNode.type === "unlock"
                         ? `${t("skill_tree.unlock")} ${t(
-                          `building.${hoveredNode.buildingId}.name`,
-                        )}`
+                            `building.${hoveredNode.buildingId}.name`,
+                          )}`
                         : hoveredUpgrade
                           ? t(hoveredUpgrade.name)
-                          : `${t(`building.${hoveredNode.buildingId}.name`)} Lv.${hoveredNode.level
-                          }`}
+                          : `${t(`building.${hoveredNode.buildingId}.name`)} Lv.${
+                              hoveredNode.level
+                            }`}
                     </h3>
                     <p className="text-xs text-gray-400 mt-0.5">
                       {hoveredNode.type === "unlock"
@@ -770,8 +817,9 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                         return (
                           <div
                             key={resource}
-                            className={`text-xs font-mono ${canAfford ? "text-green-400" : "text-red-400"
-                              }`}
+                            className={`text-xs font-mono ${
+                              canAfford ? "text-green-400" : "text-red-400"
+                            }`}
                           >
                             {current}/{amount} {t(`common.${resource}`)}
                           </div>

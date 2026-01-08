@@ -21,6 +21,7 @@ describe("SkillTreeManager", () => {
     unlockSkill: vi.fn(),
     startUnlock: vi.fn(),
     completeUnlock: vi.fn(),
+    unlockBuilding: vi.fn(),
     removeItem: vi.fn(),
     ...overrides,
   });
@@ -45,9 +46,9 @@ describe("SkillTreeManager", () => {
       expect(result).toEqual(["root", "extractor_unlock"]);
     });
 
-    it("should return empty array when no skills unlocked", () => {
+    it("should return ['root'] when no skills unlocked", () => {
       const result = manager.getUnlockedNodeIds();
-      expect(result).toEqual([]);
+      expect(result).toEqual(["root"]);
     });
   });
 
@@ -176,10 +177,8 @@ describe("SkillTreeManager", () => {
   });
 
   describe("canUnlock", () => {
-    it("should return false for already unlocked node", () => {
-      mockGetState.mockReturnValue(
-        createMockState({ unlockedSkills: ["root"] }),
-      );
+    it("should return false for already unlocked node (root is always unlocked)", () => {
+      mockGetState.mockReturnValue(createMockState({ unlockedSkills: [] }));
 
       expect(manager.canUnlock("root")).toBe(false);
     });
@@ -210,11 +209,11 @@ describe("SkillTreeManager", () => {
       expect(manager.canUnlock("extractor_unlock")).toBe(true);
     });
 
-    it("should return false when requirements are not met", () => {
+    it("should return true when root requirement is met (root is auto-unlocked)", () => {
       mockGetState.mockReturnValue(createMockState({ unlockedSkills: [] }));
 
-      // extractor_unlock requires "root" which is not unlocked
-      expect(manager.canUnlock("extractor_unlock")).toBe(false);
+      // extractor_unlock requires "root" which is auto-unlocked
+      expect(manager.canUnlock("extractor_unlock")).toBe(true);
     });
 
     it("should return false for non-existent node", () => {
@@ -437,7 +436,7 @@ describe("SkillTreeManager", () => {
       expect(mockState.removeItem).toHaveBeenCalled();
       expect(mockState.startUnlock).toHaveBeenCalledWith(
         "extractor_unlock",
-        30,
+        10,
       );
     });
   });
@@ -447,7 +446,7 @@ describe("SkillTreeManager", () => {
       const startTime = Date.now() - 60000; // 60 seconds ago
       const mockState = createMockState({
         pendingUnlocks: [
-          { skillId: "extractor_unlock", startTime, duration: 30 },
+          { skillId: "extractor_unlock", startTime, duration: 10 },
         ],
       });
       mockGetState.mockReturnValue(mockState);
@@ -459,10 +458,10 @@ describe("SkillTreeManager", () => {
     });
 
     it("should not complete ongoing unlocks", () => {
-      const startTime = Date.now() - 10000; // Only 10 seconds ago
+      const startTime = Date.now() - 5000; // Only 5 seconds ago
       const mockState = createMockState({
         pendingUnlocks: [
-          { skillId: "extractor_unlock", startTime, duration: 30 },
+          { skillId: "extractor_unlock", startTime, duration: 10 },
         ],
       });
       mockGetState.mockReturnValue(mockState);

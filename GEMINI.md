@@ -13,10 +13,12 @@ This file serves as a guide for the Antigravity AI to maintain consistency, stru
 ## 📁 Project Structure
 
 This is a Monorepo with two main workspaces:
+
 - `apps/game/`: The main game application.
 - `apps/tools/`: Standalone developer tools.
 
 ### Game Structure (`apps/game/src/`)
+
 - `game/buildings/`: Contains all buildings. Each building has its own subfolder.
   - `[Building].ts`: Entity logic.
   - `[Building]Config.ts`: Building configuration.

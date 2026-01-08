@@ -43,7 +43,10 @@ export default function BuildingHoverCard({
           <div className="flex flex-col gap-1">
             {(() => {
               const costEntries = Object.entries(config.cost || {});
-              const totalCost = costEntries.reduce((acc, [, amount]) => acc + amount, 0);
+              const totalCost = costEntries.reduce(
+                (acc, [, amount]) => acc + amount,
+                0,
+              );
               const isEmpty = costEntries.length === 0 || totalCost === 0;
 
               if (isEmpty) {
@@ -57,7 +60,10 @@ export default function BuildingHoverCard({
               }
 
               return costEntries.map(([res, amount]) => (
-                <div key={res} className="flex justify-between items-center bg-black/20 p-1.5 rounded">
+                <div
+                  key={res}
+                  className="flex justify-between items-center bg-black/20 p-1.5 rounded"
+                >
                   <span className="text-xs text-gray-400 font-bold uppercase">
                     {t(`common.${res}`)}
                   </span>
@@ -124,20 +130,27 @@ export default function BuildingHoverCard({
             </span>
             {(() => {
               const costEntries = Object.entries(config.cost || {});
-              const totalCost = costEntries.reduce((acc, [, amount]) => acc + amount, 0);
+              const totalCost = costEntries.reduce(
+                (acc, [, amount]) => acc + amount,
+                0,
+              );
               const isEmpty = costEntries.length === 0 || totalCost === 0;
 
               if (isEmpty) {
                 return (
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-300 capitalize">{t("common.free")}</span>
+                    <span className="text-xs text-gray-300 capitalize">
+                      {t("common.free")}
+                    </span>
                   </div>
                 );
               }
 
               return costEntries.map(([res, amount]) => (
                 <div key={res} className="flex justify-between items-center">
-                  <span className="text-xs text-gray-300 capitalize">{t(`common.${res}`)}</span>
+                  <span className="text-xs text-gray-300 capitalize">
+                    {t(`common.${res}`)}
+                  </span>
                   <span className="text-sm font-bold text-amber-400 flex items-center gap-1">
                     <div className="w-2 h-2 rounded-full bg-stone-400" />
                     {amount}

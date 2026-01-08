@@ -136,10 +136,11 @@ export default function HUD() {
               className={`
                                 w-16 h-16 rounded-xl flex items-center justify-center relative group
                                 transition-all duration-200 border
-                                ${slot.type
-                  ? "bg-slate-800 border-white/20 hover:border-amber-400/80 hover:bg-slate-700 cursor-grab active:cursor-grabbing shadow-lg"
-                  : "bg-black/30 border-white/5 hover:border-white/10"
-                }
+                                ${
+                                  slot.type
+                                    ? "bg-slate-800 border-white/20 hover:border-amber-400/80 hover:bg-slate-700 cursor-grab active:cursor-grabbing shadow-lg"
+                                    : "bg-black/30 border-white/5 hover:border-white/10"
+                                }
                             `}
             >
               {/* Inner Shadow for depth in empty slots */}

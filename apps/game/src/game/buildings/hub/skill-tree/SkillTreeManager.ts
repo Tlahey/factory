@@ -238,11 +238,11 @@ export class SkillTreeManager {
       const elapsed = (Date.now() - pending.startTime) / 1000;
       if (elapsed >= pending.duration) {
         useGameStore.getState().completeUnlock(pending.skillId);
-        
+
         // Check for building unlock
         const node = getSkillNode(pending.skillId);
         if (node && node.type === "unlock") {
-            useGameStore.getState().unlockBuilding(node.buildingId);
+          useGameStore.getState().unlockBuilding(node.buildingId);
         }
 
         completed.push(pending.skillId);

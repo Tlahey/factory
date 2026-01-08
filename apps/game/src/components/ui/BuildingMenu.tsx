@@ -44,10 +44,11 @@ export default function BuildingMenu() {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-200 ${isBuildingMenuOpen
-        ? "opacity-100 pointer-events-auto"
-        : "opacity-0 pointer-events-none"
-        }`}
+      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-200 ${
+        isBuildingMenuOpen
+          ? "opacity-100 pointer-events-auto"
+          : "opacity-0 pointer-events-none"
+      }`}
     >
       <div
         className={`relative flex items-start gap-4 transition-transform duration-200 ${isBuildingMenuOpen ? "scale-100" : "scale-95"}`}
@@ -80,7 +81,7 @@ export default function BuildingMenu() {
           <div className="flex-1 p-6 overflow-y-auto">
             <div className="grid grid-cols-5 gap-4">
               {Object.values(BUILDINGS)
-                .filter(b => {
+                .filter((b) => {
                   // Show if it's unlocked OR if it's not locked in config (though we locked most).
                   // Also always show if it's in the unlocked list.
                   return unlockedBuildings.includes(b.type) || !b.locked;
@@ -93,7 +94,8 @@ export default function BuildingMenu() {
 
                   // Check specific locked status from config, fallback to true if unlockedBuildings includes it
                   // Actually if config.locked is true, we MUST have it in unlockedBuildings
-                  const isLocked = b.locked && !unlockedBuildings.includes(b.type);
+                  const isLocked =
+                    b.locked && !unlockedBuildings.includes(b.type);
 
                   const isDisabled = isLimitReached || isLocked;
 
@@ -101,10 +103,11 @@ export default function BuildingMenu() {
                     <div
                       key={b.type}
                       className={`aspect-square bg-gray-800/50 rounded-xl border transition-colors duration-200 group relative flex flex-col items-center justify-center gap-2
-                                            ${isDisabled
-                          ? "border-red-500/30 opacity-70 cursor-not-allowed"
-                          : "border-white/5 hover:bg-gray-800 cursor-grab active:cursor-grabbing"
-                        }
+                                            ${
+                                              isDisabled
+                                                ? "border-red-500/30 opacity-70 cursor-not-allowed"
+                                                : "border-white/5 hover:bg-gray-800 cursor-grab active:cursor-grabbing"
+                                            }
                                             ${hoveredBuildingId === b.type ? "border-indigo-500/50 bg-gray-800" : ""}
                                             ${isLocked ? "grayscale opacity-50" : ""}
                                         `}
@@ -137,13 +140,17 @@ export default function BuildingMenu() {
                           {b.name}
                         </span>
                         {isLocked ? (
-                          <div className="text-[10px] mt-0.5 text-red-500 font-bold">LOCKED</div>
-                        ) : b.maxCount && (
-                          <div
-                            className={`text-[10px] mt-0.5 ${isLimitReached ? "text-red-400 font-bold" : "text-gray-500"}`}
-                          >
-                            {currentCount} / {b.maxCount}
+                          <div className="text-[10px] mt-0.5 text-red-500 font-bold">
+                            LOCKED
                           </div>
+                        ) : (
+                          b.maxCount && (
+                            <div
+                              className={`text-[10px] mt-0.5 ${isLimitReached ? "text-red-400 font-bold" : "text-gray-500"}`}
+                            >
+                              {currentCount} / {b.maxCount}
+                            </div>
+                          )
                         )}
                       </div>
                     </div>

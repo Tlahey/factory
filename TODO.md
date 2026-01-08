@@ -6,8 +6,6 @@
 
 - Les resources doivent avoir un ratio de production qui influe sur les extracteur. Par exemple les roches ont aléatoirement un extraction en *0.5 ou *1. D'autres ressources par la suite pourront avoir du 1.5 etc ...
 
-- Supprimer la flèche modèle qui est sur la forreuse (celle orange) on doit garder seulement celle du IO.
-
 - Quand un convoyeur est relié à une flèche IO, alors on cache cette flèche
 
 - Le hub doit avoir un arbre de compétences et un shop
@@ -83,3 +81,6 @@
   - Pour les placer il faut forcément qu'il soit au niveau d'un autre convoyeur à la surface et ils prennent 3 de largeur (1 pour l'entrée 2 pour le passage 3 pour la sortie)
   - En input il prendra le convoyer et en output un autre convoyeur
   - Le sens du flux sera le même que le convoyer et géré de la même façon
+
+- Pour découvrir de nouvelles régions, on va créer un building qui sera une tour de guet qu'on pourra évoluer pour qu'elle puisse découvrir de nouvelles régions. 
+  - Lors de l'amélioration, un nouveau terrain sera généré à côté du terrain actuel. Et qu'il contiendra de nouvelles ressources

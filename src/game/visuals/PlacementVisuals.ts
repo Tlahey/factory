@@ -280,8 +280,8 @@ export class PlacementVisuals {
 
         // Update IO arrow visibility based on connectivity
         if (this.ioArrowGroup && world) {
-          const config = getBuildingConfig(this.ghostType!) as any;
-          const io = config?.io as IOConfig;
+          const config = getBuildingConfig(this.ghostType!);
+          const io = (config as unknown as { io?: IOConfig })?.io;
 
           if (io) {
             if (io.hasInput) {

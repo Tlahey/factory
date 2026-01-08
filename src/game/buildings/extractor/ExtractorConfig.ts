@@ -21,5 +21,27 @@ export const EXTRACTOR_CONFIG: ExtractorConfigType = {
     type: "consumer",
     rate: 20,
   },
-  upgrades: [],
+  upgrades: [
+    {
+      level: 1,
+      name: "upgrade.extractor.speed_1.name",
+      description: "upgrade.extractor.speed_1.description",
+      cost: { stone: 50 },
+      effects: [{ type: "multiplier", stat: "extractionRate", value: 1.2 }],
+    },
+    {
+      level: 2,
+      name: "upgrade.extractor.speed_2.name",
+      description: "upgrade.extractor.speed_2.description",
+      cost: { stone: 100, iron: 20 }, // Multiple resources
+      effects: [{ type: "multiplier", stat: "extractionRate", value: 1.4 }],
+    },
+    {
+      level: 3,
+      name: "upgrade.extractor.speed_3.name",
+      description: "upgrade.extractor.speed_3.description",
+      cost: { stone: 200, iron: 50, copper: 25 }, // Multiple resources
+      effects: [{ type: "multiplier", stat: "extractionRate", value: 1.6 }],
+    },
+  ],
 };

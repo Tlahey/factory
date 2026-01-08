@@ -5,6 +5,8 @@ import { useEffect } from "react";
 import { Package, X } from "lucide-react";
 import ModelPreview from "./ModelPreview";
 
+import { useDraggable } from "@/hooks/useDraggable";
+
 export default function HUD() {
   const inventory = useGameStore((state) => state.inventory);
   const isInventoryOpen = useGameStore((state) => state.isInventoryOpen);
@@ -13,6 +15,11 @@ export default function HUD() {
   const formatCount = (count: number) => {
     return count > 999 ? "999+" : count;
   };
+
+  const { position, handleMouseDown, elementRef, isDragging } = useDraggable({
+    x: 24, // left-6 approx
+    y: typeof window !== "undefined" ? window.innerHeight / 2 - 200 : 0,
+  });
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -79,30 +86,37 @@ export default function HUD() {
 
   return (
     <>
-      {/* Sliding Panel (Now Floating Grid) */}
+      {/* Sliding Panel (Now Floating Draggable) */}
       <div
+        ref={elementRef}
+        style={isInventoryOpen ? { left: position.x, top: position.y } : {}}
         className={`
-                    fixed left-6 top-1/2 -translate-y-1/2 z-40 pointer-events-auto
+                    fixed z-40 pointer-events-auto
                     bg-slate-900/95 backdrop-blur-xl border border-white/20 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.5)]
-                    transition-all duration-300 ease-out origin-left
+                    transition-opacity duration-300 ease-out origin-left
                     flex flex-col p-4 w-auto min-w-[200px]
-                    ${isInventoryOpen ? "opacity-100 scale-100 translate-x-0" : "opacity-0 scale-90 -translate-x-4 pointer-events-none"}
+                    ${isInventoryOpen ? "opacity-100 scale-100" : "opacity-0 scale-90 pointer-events-none"}
+                    ${isDragging ? "cursor-grabbing" : ""}
                 `}
       >
-        {/* Header */}
-        <div className="mb-4 pb-2 border-b border-white/10 flex items-center justify-between">
-          <span className="text-white font-bold text-sm tracking-widest uppercase flex items-center gap-2">
+        {/* Header (Handle) */}
+        <div
+          onMouseDown={handleMouseDown}
+          className="mb-4 pb-2 border-b border-white/10 flex items-center justify-between cursor-grab active:cursor-grabbing select-none"
+        >
+          <span className="text-white font-bold text-sm tracking-widest uppercase flex items-center gap-2 pointer-events-none">
             <Package size={16} className="text-amber-400" />
             <span className="bg-gradient-to-r from-amber-400 to-amber-200 bg-clip-text text-transparent">
               Inventory
             </span>
           </span>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] bg-slate-800 border border-white/10 px-2 py-0.5 rounded text-gray-400 font-mono shadow-inner">
+            <span className="text-[10px] bg-slate-800 border border-white/10 px-2 py-0.5 rounded text-gray-400 font-mono shadow-inner pointer-events-none">
               {inventory.filter((s) => s.type).length}/{inventory.length}
             </span>
             <button
               onClick={() => useGameStore.getState().toggleInventory()}
+              onMouseDown={(e) => e.stopPropagation()}
               className="p-1 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
             >
               <X size={14} />

@@ -9,6 +9,7 @@ import GameMenu from "@/components/ui/GameMenu";
 import BuildingInfoPanel from "@/components/ui/BuildingInfoPanel";
 import BuildingMenu from "@/components/ui/BuildingMenu";
 import HUD from "@/components/ui/HUD";
+import PendingUnlocksHUD from "@/components/ui/PendingUnlocksHUD";
 import { useGameStore } from "@/game/state/store";
 
 const GameCanvas = dynamic(() => import("@/components/GameCanvas"), {
@@ -62,7 +63,39 @@ export default function Home() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") togglePause();
+      // Priority Escape Logic (Stack-like behavior)
+      if (e.key === "Escape") {
+        const state = useGameStore.getState();
+
+        // 1. Close Building Menu
+        if (state.isBuildingMenuOpen) {
+          state.toggleBuildingMenu();
+          return;
+        }
+
+        // 2. Close Info Panel / Hub
+        if (state.openedEntityKey) {
+          state.setOpenedEntityKey(null);
+          return;
+        }
+
+        // 3. Close Inventory
+        if (state.isInventoryOpen) {
+          state.toggleInventory();
+          return;
+        }
+
+        // 4. Cancel Building Selection / Deletion Tool
+        if (state.selectedBuilding) {
+          state.setSelectedBuilding(null);
+          return;
+        }
+
+        // 5. Default: Toggle Pause Menu
+        togglePause();
+        return;
+      }
+
       if (e.key === "b" || e.key === "B") {
         useGameStore.getState().toggleBuildingMenu();
       }
@@ -118,6 +151,7 @@ export default function Home() {
         className={`transition-opacity duration-300 ${isPaused ? "opacity-0 pointer-events-none" : "opacity-100"}`}
       >
         <HUD />
+        <PendingUnlocksHUD />
         <BuildingInfoPanel />
         <BuildingMenu />
         <div className="absolute inset-0 z-[60] pointer-events-none p-6">

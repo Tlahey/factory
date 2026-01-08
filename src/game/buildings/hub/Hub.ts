@@ -6,6 +6,7 @@ import {
   HubConfigType,
   PowerConfig,
 } from "../BuildingConfig";
+import { skillTreeManager } from "./skill-tree/SkillTreeManager";
 // import { IWorld } from '../../entities/types';
 
 export class Hub extends BuildingEntity implements IPowered, IIOBuilding {
@@ -50,7 +51,9 @@ export class Hub extends BuildingEntity implements IPowered, IIOBuilding {
 
   public getPowerGeneration(): number {
     const baseRate = this.powerConfig?.rate ?? 60;
-    return Math.max(0, baseRate + this.currentFluctuation);
+    // Apply skill tree multiplier
+    const multiplier = skillTreeManager.getStatMultiplier("hub", "powerRate");
+    return Math.max(0, baseRate * multiplier + this.currentFluctuation);
   }
 
   public updatePowerStatus(
@@ -68,7 +71,7 @@ export class Hub extends BuildingEntity implements IPowered, IIOBuilding {
 
   // --- IIOBuilding ---
   public getInputPosition(): { x: number; y: number } | null {
-    // Hub doesn't have a single canonical input position, 
+    // Hub doesn't have a single canonical input position,
     // it accepts from any tile that points to it.
     return null;
   }
@@ -81,17 +84,21 @@ export class Hub extends BuildingEntity implements IPowered, IIOBuilding {
     // Hub accepts items from any adjacent tile if that tile is pointing to one of its 4 tiles.
     // The BuildingIOHelper already found this Hub by checking the target tile of the outputting building.
     // So if we are here, it means some building at (fromX, fromY) is outputting to one of our tiles.
-    
+
     // Basic adjacency check for safety
     const dx = Math.abs(fromX - this.x);
     const dy = Math.abs(fromY - this.y);
-    
+
     // Since Hub is 2x2, it's adjacent if dx in [-1, 2] and dy in [-1, 2]
     // (excluding the 4 tiles of the Hub itself)
-    const isInside = fromX >= this.x && fromX < this.x + 2 && fromY >= this.y && fromY < this.y + 2;
+    const isInside =
+      fromX >= this.x &&
+      fromX < this.x + 2 &&
+      fromY >= this.y &&
+      fromY < this.y + 2;
     if (isInside) return false;
 
-    return dx <= 2 && dy <= 2; 
+    return dx <= 2 && dy <= 2;
   }
 
   public canOutput(): boolean {

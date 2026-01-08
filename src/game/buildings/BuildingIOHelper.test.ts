@@ -26,12 +26,24 @@ class MockBuilding extends BuildingEntity implements IIOBuilding {
     return { x: this.x, y: this.y + 1 }; // South for test simplicity
   }
 
-  canInput() { return true; }
-  canOutput() { return true; }
-  tryOutput() { return true; }
-  getColor() { return 0; }
-  isValidPlacement() { return true; }
-  get powerConfig() { return undefined; }
+  canInput() {
+    return true;
+  }
+  canOutput() {
+    return true;
+  }
+  tryOutput() {
+    return true;
+  }
+  getColor() {
+    return 0;
+  }
+  isValidPlacement() {
+    return true;
+  }
+  get powerConfig() {
+    return undefined;
+  }
 }
 
 class MockWorld implements Partial<IWorld> {
@@ -49,47 +61,72 @@ describe("BuildingIOHelper", () => {
   });
 
   test("connects input when neighbor outputs to our input location", () => {
-    const main = new MockBuilding(5, 5, "north", { hasInput: true, hasOutput: false, inputSide: "front" });
-    const neighbor = new MockBuilding(5, 4, "south", { hasInput: false, hasOutput: true, outputSide: "front" });
-    
+    const main = new MockBuilding(5, 5, "north", {
+      hasInput: true,
+      hasOutput: false,
+      inputSide: "front",
+    });
+    const neighbor = new MockBuilding(5, 4, "south", {
+      hasInput: false,
+      hasOutput: true,
+      outputSide: "front",
+    });
+
     // Override positions to match what helper expects
     main.getInputPosition = () => ({ x: 5, y: 4 });
     neighbor.getOutputPosition = () => ({ x: 5, y: 5 });
 
     world.buildings.set("5,4", neighbor);
-    
+
     updateBuildingConnectivity(main, world as unknown as IWorld);
     expect(main.isInputConnected).toBe(true);
   });
 
   test("disconnects input when neighbor points elsewhere", () => {
-    const main = new MockBuilding(5, 5, "north", { hasInput: true, hasOutput: false });
-    const neighbor = new MockBuilding(5, 4, "north", { hasInput: false, hasOutput: true });
-    
+    const main = new MockBuilding(5, 5, "north", {
+      hasInput: true,
+      hasOutput: false,
+    });
+    const neighbor = new MockBuilding(5, 4, "north", {
+      hasInput: false,
+      hasOutput: true,
+    });
+
     main.getInputPosition = () => ({ x: 5, y: 4 });
     neighbor.getOutputPosition = () => ({ x: 5, y: 3 }); // neighbor outputs away from main
 
     world.buildings.set("5,4", neighbor);
-    
+
     updateBuildingConnectivity(main, world as unknown as IWorld);
     expect(main.isInputConnected).toBe(false);
   });
 
   test("connects output when neighbor has input at our output location", () => {
-    const main = new MockBuilding(5, 5, "north", { hasInput: false, hasOutput: true, outputSide: "front" });
-    const neighbor = new MockBuilding(5, 4, "south", { hasInput: true, hasOutput: false, inputSide: "front" });
-    
+    const main = new MockBuilding(5, 5, "north", {
+      hasInput: false,
+      hasOutput: true,
+      outputSide: "front",
+    });
+    const neighbor = new MockBuilding(5, 4, "south", {
+      hasInput: true,
+      hasOutput: false,
+      inputSide: "front",
+    });
+
     main.getOutputPosition = () => ({ x: 5, y: 4 });
     neighbor.getInputPosition = () => ({ x: 5, y: 5 });
 
     world.buildings.set("5,4", neighbor);
-    
+
     updateBuildingConnectivity(main, world as unknown as IWorld);
     expect(main.isOutputConnected).toBe(true);
   });
 
   test("handles buildings with no IO", () => {
-    const main = new MockBuilding(5, 5, "north", { hasInput: false, hasOutput: false });
+    const main = new MockBuilding(5, 5, "north", {
+      hasInput: false,
+      hasOutput: false,
+    });
     updateBuildingConnectivity(main, world as unknown as IWorld);
     expect(main.isInputConnected).toBe(false);
     expect(main.isOutputConnected).toBe(false);

@@ -39,7 +39,7 @@ describe("Chest IO & Storage", () => {
     test("addItem creates new slot when needed", () => {
       chest.addItem("iron", 100); // Assuming STACK_SIZE is 100 (from constants.ts)
       chest.addItem("copper", 10);
-      
+
       expect(chest.slots.length).toBe(2);
       expect(chest.slots[1].type).toBe("copper");
     });
@@ -51,9 +51,9 @@ describe("Chest IO & Storage", () => {
       chest.addItem("item3", 100);
       chest.addItem("item4", 100);
       chest.addItem("item5", 100);
-      
+
       expect(chest.isFull()).toBe(true);
-      
+
       const added = chest.addItem("item6", 1);
       expect(added).toBe(false);
       expect(chest.slots.length).toBe(5);
@@ -66,11 +66,11 @@ describe("Chest IO & Storage", () => {
       const mockConveyor = {
         x: 5,
         y: 4,
-        getOutputPosition: () => ({ x: 5, y: 5 })
+        getOutputPosition: () => ({ x: 5, y: 5 }),
       };
-      
+
       world.buildings.set("5,4", mockConveyor as unknown as BuildingEntity);
-      
+
       chest.tick(0, world as unknown as IWorld);
       expect(chest.isInputConnected).toBe(true);
     });
@@ -79,11 +79,11 @@ describe("Chest IO & Storage", () => {
       const mockConveyor = {
         x: 5,
         y: 4,
-        getOutputPosition: () => ({ x: 5, y: 3 }) // points away from chest
+        getOutputPosition: () => ({ x: 5, y: 3 }), // points away from chest
       };
-      
+
       world.buildings.set("5,4", mockConveyor as unknown as BuildingEntity);
-      
+
       chest.tick(0, world as unknown as IWorld);
       expect(chest.isInputConnected).toBe(false);
     });

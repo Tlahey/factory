@@ -1,6 +1,8 @@
 {
   "common": {
     "stone": "Pierre",
+    "iron": "Fer",
+    "copper": "Cuivre",
     "cost": "Coût",
     "power": "Énergie",
     "input": "Entrée",
@@ -16,6 +18,7 @@
     "max": "Max",
     "overview": "Aperçu",
     "upgrades": "Améliorations",
+    "available_upgrades": "Améliorations disponibles",
     "building": "Bâtiment",
     "performance": "Performance",
     "efficiency": "Efficacité",
@@ -54,6 +57,56 @@
     "cable": {
       "name": "Câble",
       "description": "Connecte les bâtiments à l'électricité."
+    }
+  },
+  "skill_tree": {
+    "title": "Arbre de Compétences",
+    "root": "Départ",
+    "unlock": "Débloquer",
+    "unlocked": "Débloqué",
+    "locked": "Verrouillé",
+    "requires": "Nécessite",
+    "cost": "Coût",
+    "in_progress": "en cours",
+    "unlocking": "Déblocage",
+    "start_unlock": "Lancer le déblocage",
+    "unlock_time": "Temps de déblocage",
+    "upgrade_via_hub": "Les améliorations sont gérées via l'Arbre de Compétences du Hub"
+  },
+  "upgrade": {
+    "extractor": {
+      "speed_1": {
+        "name": "Forage Amélioré I",
+        "description": "Augmente le taux d'extraction de 20%"
+      },
+      "speed_2": {
+        "name": "Forage Amélioré II",
+        "description": "Augmente le taux d'extraction de 40%"
+      },
+      "speed_3": {
+        "name": "Forage Amélioré III",
+        "description": "Augmente le taux d'extraction de 60%"
+      }
+    },
+    "chest": {
+      "slots_1": {
+        "name": "Stockage Étendu I",
+        "description": "Ajoute 2 emplacements de stockage"
+      },
+      "slots_2": {
+        "name": "Stockage Étendu II",
+        "description": "Ajoute 4 emplacements de stockage"
+      }
+    },
+    "hub": {
+      "power_1": {
+        "name": "Amélioration Solaire I",
+        "description": "Augmente la production d'énergie de 25%"
+      },
+      "power_2": {
+        "name": "Amélioration Solaire II",
+        "description": "Augmente la production d'énergie de 50%"
+      }
     }
   }
 }

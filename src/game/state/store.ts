@@ -37,7 +37,25 @@ interface GameState {
   // Building Limits
   buildingCounts: Record<string, number>;
   updateBuildingCount: (type: string, delta: number) => void;
+  resetBuildingCounts: () => void;
   reset: () => void;
+
+  // Skill Tree
+  unlockedSkills: string[];
+  unlockSkill: (skillId: string) => void;
+  resetSkillTree: () => void;
+  isSkillTreeOpen: boolean;
+  setSkillTreeOpen: (open: boolean) => void;
+
+  // Pending Unlocks (skills currently being unlocked)
+  pendingUnlocks: {
+    skillId: string;
+    startTime: number; // Unix timestamp when unlock started
+    duration: number; // Duration in seconds
+  }[];
+  startUnlock: (skillId: string, duration: number) => void;
+  cancelUnlock: (skillId: string) => void;
+  completeUnlock: (skillId: string) => void;
 }
 
 const INVENTORY_SIZE = 10;
@@ -155,17 +173,7 @@ export const useGameStore = create<GameState>()(
       isBuildingMenuOpen: false,
       toggleBuildingMenu: () =>
         set((state) => ({ isBuildingMenuOpen: !state.isBuildingMenuOpen })),
-      hotbar: [
-        "extractor",
-        "conveyor",
-        "chest",
-        "hub",
-        "electric_pole",
-        "cable",
-        null,
-        null,
-        null,
-      ], // Default setup
+      hotbar: Array(9).fill(null), // Default setup
       setHotbarSlot: (index, buildingId) =>
         set((state) => {
           const newHotbar = [...state.hotbar];
@@ -187,6 +195,7 @@ export const useGameStore = create<GameState>()(
             },
           };
         }),
+      resetBuildingCounts: () => set({ buildingCounts: {} }),
       reset: () =>
         set({
           inventory: Array(INVENTORY_SIZE)
@@ -194,19 +203,58 @@ export const useGameStore = create<GameState>()(
             .map(() => ({ type: null, count: 0 })),
           selectedBuilding: null,
           buildingCounts: {},
-          hotbar: [
-            "extractor",
-            "conveyor",
-            "chest",
-            "hub",
-            "electric_pole",
-            "cable",
-            null,
-            null,
-            null,
-          ],
+          hotbar: Array(9).fill(null),
           openedEntityKey: null,
+          unlockedSkills: [],
+          pendingUnlocks: [],
         }),
+
+      // Skill Tree
+      unlockedSkills: [],
+      unlockSkill: (skillId) =>
+        set((state) => ({
+          unlockedSkills: state.unlockedSkills.includes(skillId)
+            ? state.unlockedSkills
+            : [...state.unlockedSkills, skillId],
+        })),
+      resetSkillTree: () => set({ unlockedSkills: [], pendingUnlocks: [] }),
+      isSkillTreeOpen: false,
+      setSkillTreeOpen: (open) => set({ isSkillTreeOpen: open }),
+
+      // Pending Unlocks
+      pendingUnlocks: [],
+      startUnlock: (skillId, duration) =>
+        set((state) => {
+          // Don't start if already pending
+          if (state.pendingUnlocks.some((p) => p.skillId === skillId)) {
+            return state;
+          }
+          return {
+            pendingUnlocks: [
+              ...state.pendingUnlocks,
+              {
+                skillId,
+                startTime: Date.now(),
+                duration,
+              },
+            ],
+          };
+        }),
+      cancelUnlock: (skillId) =>
+        set((state) => ({
+          pendingUnlocks: state.pendingUnlocks.filter(
+            (p) => p.skillId !== skillId,
+          ),
+        })),
+      completeUnlock: (skillId) =>
+        set((state) => ({
+          pendingUnlocks: state.pendingUnlocks.filter(
+            (p) => p.skillId !== skillId,
+          ),
+          unlockedSkills: state.unlockedSkills.includes(skillId)
+            ? state.unlockedSkills
+            : [...state.unlockedSkills, skillId],
+        })),
     }),
     {
       name: "factory-game-storage", // name of the item in the storage (must be unique)
@@ -215,6 +263,8 @@ export const useGameStore = create<GameState>()(
         // Select which fields to persist
         inventory: state.inventory,
         hotbar: state.hotbar,
+        unlockedSkills: state.unlockedSkills,
+        pendingUnlocks: state.pendingUnlocks,
       }),
     },
   ),

@@ -591,6 +591,11 @@ export class World implements IWorld {
     // 2. Restore Buildings
     this.cables = (worldData.cables || []).map((c) => ({ ...c }));
     this.buildings.clear();
+
+    // START FIX: Reset building counts in store to avoid double counting
+    useGameStore.getState().resetBuildingCounts();
+    // END FIX
+
     if (worldData.buildings && Array.isArray(worldData.buildings)) {
       console.log(`Deserializing ${worldData.buildings.length} buildings...`);
       worldData.buildings.forEach((bData: SerializedBuilding) => {

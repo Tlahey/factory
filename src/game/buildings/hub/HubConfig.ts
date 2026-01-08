@@ -18,5 +18,20 @@ export const HUB_CONFIG: HubConfigType = {
     type: "producer",
     rate: 60,
   },
-  upgrades: [],
+  upgrades: [
+    {
+      level: 1,
+      name: "upgrade.hub.power_1.name",
+      description: "upgrade.hub.power_1.description",
+      cost: { stone: 100 },
+      effects: [{ type: "multiplier", stat: "powerRate", value: 1.25 }],
+    },
+    {
+      level: 2,
+      name: "upgrade.hub.power_2.name",
+      description: "upgrade.hub.power_2.description",
+      cost: { stone: 200 },
+      effects: [{ type: "multiplier", stat: "powerRate", value: 1.5 }],
+    },
+  ],
 };

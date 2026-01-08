@@ -6,9 +6,28 @@
 
 - Les resources doivent avoir un ratio de production qui influe sur les extracteur. Par exemple les roches ont aléatoirement un extraction en *0.5 ou *1. D'autres ressources par la suite pourront avoir du 1.5 etc ...
 
-- Le hub doit avoir un arbre de compétences et un shop
-  - L'arbre de compétences permet de stocker plus d'éléments / de débloquer de nouveaux éléments. Il faut forcément que les éléments précédent soient débloqués pour débloquer les suivants.
-    Les éléments qui ne sont pas encore déblocable sont caché à l'utilisateur. Donc on ne voit que les éléments qui sont actuellement débloquable. La configuration de l'arbre de compétence doit être dans un fichier JSON ou autre (graph ?) pour qu'il soit simple de le modifier.
+Le hub doit avoir un arbre de compétences
+
+- l'arbre de compétence est visible quand on clique sur le hub. Ca sera une interface qui prendre une partie de l'écran avec un arbre dans lequell on pourra naviger et hover les éléments
+- L'arbre de compétences permet de stocker plus d'éléments / de débloquer de nouveaux éléments. Il faut forcément que les éléments précédent soient débloqués pour débloquer les suivants.
+  Les éléments qui ne sont pas encore déblocable sont caché à l'utilisateur. Donc on ne voit que les éléments qui sont actuellement débloquable. La configuration de l'arbre de compétence doit être dans un fichier JSON ou autre (graph ?) pour qu'il soit simple de le modifier.
+
+Comment je vois le truc.
+Dans les buidling on a des upgrades. Il faudrait que chaque position du tableau soit l'upgrade.
+index 0: Initial
+index 1: amélioration 1
+index 2: amélioration 2
+etc ...
+
+Chaque amélioration va appliquer un multiplicateur (*1.1 , *1.2 etc ....) en fonction de son amélioration dans le hub.
+De ce fait, l'arbre de compétence vient prendre l'ID de l'élément qu'on améliore ainsi que le niveau de l'amélioration. De la on passe au building son niveau d'amélioration, on vient récupérer dans les updates quel est le multiplication (et autre types d'amélio) et on l'applique aux formules.
+De ce fait, l'arbre est assez facile d'exploration, c'est juste des identifiants (extractor, hub etc ...) et niveau d'amélioration.
+
+Attention il faut forcément qu'on voit ce qu'on gagne en amélioration et qu'on doivent forcément passé par un niveau avant d'aller à un autre.
+
+Chaque amélioration a aussi un cout en ressource qu'il faudra définir dans le upgrades du builing
+
+- Le hub doit avoir un shop
   - Le shop permet d'acheter des éléments avec les ressources collectées en jeu. Par exemple, au départ on a une seule foreuse, par la suite, avec les améliorations il sera possible d'en stocker plus, et on pourra en acheter d'autres dans le shop.
 
 - Implémenter un building battery qui stocke l'énergie produite par les panneaux solaires et les éoliennes. Cette énergie pourra être utilisée par d'autres bâtiments pour fonctionner plus efficacement.
@@ -80,5 +99,5 @@
   - En input il prendra le convoyer et en output un autre convoyeur
   - Le sens du flux sera le même que le convoyer et géré de la même façon
 
-- Pour découvrir de nouvelles régions, on va créer un building qui sera une tour de guet qu'on pourra évoluer pour qu'elle puisse découvrir de nouvelles régions. 
+- Pour découvrir de nouvelles régions, on va créer un building qui sera une tour de guet qu'on pourra évoluer pour qu'elle puisse découvrir de nouvelles régions.
   - Lors de l'amélioration, un nouveau terrain sera généré à côté du terrain actuel. Et qu'il contiendra de nouvelles ressources

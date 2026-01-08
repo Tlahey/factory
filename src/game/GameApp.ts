@@ -134,11 +134,25 @@ export class GameApp {
         if (start && end) {
           this.cableVisuals.showPreview(start, end, isValid, this.world);
           // Show cursor at target
-          this.placementVisuals.update(end.x, end.y, isValid, null, "north", this.world);
+          this.placementVisuals.update(
+            end.x,
+            end.y,
+            isValid,
+            null,
+            "north",
+            this.world,
+          );
         } else {
           this.cableVisuals.hidePreview();
           // Hide cursor
-          this.placementVisuals.update(-1, -1, false, null, "north", this.world);
+          this.placementVisuals.update(
+            -1,
+            -1,
+            false,
+            null,
+            "north",
+            this.world,
+          );
         }
       },
       (target) => {
@@ -278,10 +292,11 @@ export class GameApp {
       this.visuals.clear();
       this.cableVisuals.clear(); // Clear cables too
 
-      // 3. Clear Inventory via event (UI side should handle store)
-      console.log(
-        `App: [Instance ${this.instanceId}] Dispatching inventory reset...`,
-      );
+      // 3. Global Store Reset (Inventory, Hotbar, Counts, Skills)
+      console.log(`App: [Instance ${this.instanceId}] Resetting game store...`);
+      useGameStore.getState().reset();
+
+      // Dispatch event for legacy listeners (optional but safe)
       window.dispatchEvent(new CustomEvent("GAME_RESET_INVENTORY"));
 
       // 4. Re-init Terrain meshes

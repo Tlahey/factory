@@ -4,6 +4,7 @@ import { STACK_SIZE } from "../../constants";
 import { IWorld } from "../../entities/types";
 import { IIOBuilding, IStorage, ChestConfigType } from "../BuildingConfig";
 import { updateBuildingConnectivity } from "../BuildingIOHelper";
+import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
 
 export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   public slots: { type: string; count: number }[] = [];
@@ -29,9 +30,10 @@ export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   // --- Traits Implementation ---
 
   public get maxSlots(): number {
-    return (
-      ((this.getConfig() as ChestConfigType)?.maxSlots ?? 5) + this.bonusSlots
-    );
+    const baseSlots = (this.getConfig() as ChestConfigType)?.maxSlots ?? 5;
+    // Apply skill tree additive bonus
+    const skillBonus = skillTreeManager.getStatAdditive("chest", "maxSlots");
+    return baseSlots + this.bonusSlots + skillBonus;
   }
 
   public get io() {

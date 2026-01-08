@@ -12,6 +12,7 @@ import {
   PowerConfig,
 } from "../BuildingConfig";
 import { updateBuildingConnectivity } from "../BuildingIOHelper";
+import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
 
 export class Extractor
   extends BuildingEntity
@@ -135,7 +136,13 @@ export class Extractor
 
   // --- IExtractable ---
   public getExtractionRate(): number {
-    return (this.extractionRate / 60) * this.speedMultiplier;
+    const baseRate = (this.extractionRate / 60) * this.speedMultiplier;
+    // Apply skill tree multiplier
+    const multiplier = skillTreeManager.getStatMultiplier(
+      "extractor",
+      "extractionRate",
+    );
+    return baseRate * multiplier;
   }
 
   public getExtractionInterval(): number {

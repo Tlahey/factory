@@ -17,5 +17,20 @@ export const CHEST_CONFIG: ChestConfigType = {
   },
   maxCount: 1,
   maxSlots: 5,
-  upgrades: [],
+  upgrades: [
+    {
+      level: 1,
+      name: "upgrade.chest.slots_1.name",
+      description: "upgrade.chest.slots_1.description",
+      cost: { stone: 30 },
+      effects: [{ type: "additive", stat: "maxSlots", value: 2 }],
+    },
+    {
+      level: 2,
+      name: "upgrade.chest.slots_2.name",
+      description: "upgrade.chest.slots_2.description",
+      cost: { stone: 60 },
+      effects: [{ type: "additive", stat: "maxSlots", value: 4 }],
+    },
+  ],
 };

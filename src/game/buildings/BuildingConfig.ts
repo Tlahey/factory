@@ -3,7 +3,6 @@ import { CONVEYOR_CONFIG } from "./conveyor/ConveyorConfig";
 import { EXTRACTOR_CONFIG } from "./extractor/ExtractorConfig";
 import { HUB_CONFIG } from "./hub/HubConfig";
 import { ELECTRIC_POLE_CONFIG } from "./electric-pole/ElectricPoleConfig";
-import { BuildingEntity } from "../entities/BuildingEntity";
 import { IWorld } from "../entities/types";
 
 export interface PowerConfig {
@@ -12,14 +11,31 @@ export interface PowerConfig {
   range?: number; // For poles
 }
 
+/**
+ * Effect type for building upgrades
+ * - multiplier: Multiplies a stat by the value (e.g., 1.2 = +20%)
+ * - additive: Adds the value to a stat (e.g., +2 slots)
+ * - unlock: Unlocks a new feature
+ */
+export interface UpgradeEffect {
+  type: "multiplier" | "additive" | "unlock";
+  /** The stat being affected, e.g., "extractionRate", "maxSlots", "powerRate" */
+  stat: string;
+  /** The value of the effect */
+  value: number;
+}
+
 export interface BuildingUpgrade {
-  id: string;
+  /** Upgrade level (1, 2, 3, etc.) */
+  level: number;
+  /** i18n key for the upgrade name */
   name: string;
+  /** i18n key for the upgrade description */
   description: string;
-  baseCost: number;
-  costMultiplier: number;
-  onUpgrade: (building: BuildingEntity) => void;
-  getValue: (building: BuildingEntity) => string;
+  /** Resource costs to unlock this upgrade */
+  cost: Record<string, number>;
+  /** Effects applied when this upgrade is unlocked */
+  effects: UpgradeEffect[];
 }
 
 export interface BaseBuildingConfig {

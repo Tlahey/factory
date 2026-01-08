@@ -13,9 +13,9 @@ This file serves as a guide for the Antigravity AI to maintain consistency, stru
 ## 📁 Project Structure
 
 - `src/game/buildings/`: Contains all buildings. Each building has its own subfolder (e.g., `conveyor/`).
-    - `[Building].ts`: Entity logic.
-    - `[Building]Config.ts`: Building configuration (name, menu, upgrades).
-    - `[Building]Visual.ts`: Rendering logic (if separate).
+  - `[Building].ts`: Entity logic.
+  - `[Building]Config.ts`: Building configuration (name, menu, upgrades).
+  - `[Building]Visual.ts`: Rendering logic (if separate).
 - `src/game/systems/`: Global systems (Input, Factory, Grid).
 - `src/game/core/`: Engine core (World, Tile).
 

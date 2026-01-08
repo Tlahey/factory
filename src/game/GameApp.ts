@@ -1,32 +1,32 @@
-import * as THREE from 'three';
-import { createRockModel } from './environment/rock/RockModel';
-import { ResourceTile } from './core/ResourceTile';
-import { useGameStore } from './state/store';
-import { World } from './core/World';
-import { WORLD_HEIGHT, WORLD_WIDTH } from './constants';
-import { FactorySystem } from './systems/FactorySystem';
-import { PowerSystem } from './systems/PowerSystem';
-import { InputSystem } from './systems/InputSystem';
-import { CableVisual } from './buildings/electric-pole/CableVisual';
-import { getGrassGeometry } from './environment/grass/GrassGeometry';
-import { createGrassMaterial } from './environment/grass/GrassMaterial';
-import { createGrassTexture } from './environment/grass/GrassTexture';
+import * as THREE from "three";
+import { createRockModel } from "./environment/rock/RockModel";
+// import { ResourceTile } from './core/ResourceTile';
+import { useGameStore } from "./state/store";
+import { World } from "./core/World";
+import { WORLD_HEIGHT, WORLD_WIDTH } from "./constants";
+import { FactorySystem } from "./systems/FactorySystem";
+import { PowerSystem } from "./systems/PowerSystem";
+import { InputSystem } from "./systems/InputSystem";
+import { CableVisual } from "./buildings/electric-pole/CableVisual";
+import { getGrassGeometry } from "./environment/grass/GrassGeometry";
+import { createGrassMaterial } from "./environment/grass/GrassMaterial";
+import { createGrassTexture } from "./environment/grass/GrassTexture";
 import {
   createWaterfallTexture,
   createWaterCurrentTexture,
-} from './environment/water/WaterfallTexture';
-import { createSandTexture } from './environment/sand/SandTexture';
-import { createBeachTexture } from './environment/sand/BeachTexture';
-import { InventorySlot } from './state/store';
+} from "./environment/water/WaterfallTexture";
+import { createSandTexture } from "./environment/sand/SandTexture";
+import { createBeachTexture } from "./environment/sand/BeachTexture";
+import { InventorySlot } from "./state/store";
 
-import { VisualEntity } from './visuals/VisualEntity';
-import { ParticleSystem } from './visuals/ParticleSystem';
-import { PlacementVisuals } from './visuals/PlacementVisuals';
-import { SelectionIndicator } from './visuals/SelectionIndicator';
+import { VisualEntity } from "./visuals/VisualEntity";
+import { ParticleSystem } from "./visuals/ParticleSystem";
+import { PlacementVisuals } from "./visuals/PlacementVisuals";
+import { SelectionIndicator } from "./visuals/SelectionIndicator";
 import {
   createBuildingVisual,
   VisualContext,
-} from './buildings/BuildingFactory';
+} from "./buildings/BuildingFactory";
 
 export class GameApp {
   private renderer: THREE.WebGLRenderer;
@@ -72,7 +72,7 @@ export class GameApp {
       75,
       window.innerWidth / window.innerHeight,
       0.1,
-      1000
+      1000,
     );
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
 
@@ -121,7 +121,13 @@ export class GameApp {
         this.powerSystem.rebuildNetworks();
       },
       (x, y, isValid, ghostBuilding, rotation) => {
-        this.placementVisuals.update(x, y, isValid ?? true, ghostBuilding ?? null, rotation ?? 'north');
+        this.placementVisuals.update(
+          x,
+          y,
+          isValid ?? true,
+          ghostBuilding ?? null,
+          rotation ?? "north",
+        );
       },
       (start, end, isValid) => {
         if (start && end) {
@@ -142,9 +148,9 @@ export class GameApp {
         this.cableVisuals.highlightCable(null, this.world);
 
         if (target) {
-          if (target.type === 'cable' && target.cable) {
+          if (target.type === "cable" && target.cable) {
             this.cableVisuals.highlightCable(target.cable, this.world);
-          } else if (target.type === 'building' && target.id) {
+          } else if (target.type === "building" && target.id) {
             const visual = this.visuals.get(target.id);
             if (visual && visual.setHighlight) {
               visual.setHighlight(true);
@@ -159,11 +165,17 @@ export class GameApp {
         } else {
           this.placementVisuals.clearConveyorDragPreview();
         }
-      }
+      },
     );
 
     const originalPlace = this.world.placeBuilding.bind(this.world);
-    this.world.placeBuilding = (x, y, type, direction, skipValidation = false) => {
+    this.world.placeBuilding = (
+      x,
+      y,
+      type,
+      direction,
+      skipValidation = false,
+    ) => {
       const res = originalPlace(x, y, type, direction, skipValidation);
       if (res) {
         this.syncBuildings();
@@ -199,7 +211,7 @@ export class GameApp {
       const customEvent = e as CustomEvent;
       console.log(
         `App: [Instance ${this.instanceId}] Received TogglePause event`,
-        customEvent.detail
+        customEvent.detail,
       );
       this.togglePause(customEvent.detail);
     }) as EventListener;
@@ -210,7 +222,7 @@ export class GameApp {
       const inv = detail?.inventory;
       console.log(
         `App: [Instance ${this.instanceId}] Received Save event. Inv:`,
-        inv
+        inv,
       );
       this.saveGame(inv);
     }) as EventListener;
@@ -224,10 +236,10 @@ export class GameApp {
       this.newGame();
     };
 
-    window.addEventListener('GAME_TOGGLE_PAUSE', this.boundTogglePause);
-    window.addEventListener('GAME_SAVE', this.boundSave);
-    window.addEventListener('GAME_LOAD', this.boundLoad);
-    window.addEventListener('GAME_NEW', this.boundNew);
+    window.addEventListener("GAME_TOGGLE_PAUSE", this.boundTogglePause);
+    window.addEventListener("GAME_SAVE", this.boundSave);
+    window.addEventListener("GAME_LOAD", this.boundLoad);
+    window.addEventListener("GAME_NEW", this.boundNew);
     (window as unknown as { game: GameApp }).game = this;
 
     // Auto-load if save exists (delayed to allow UI listeners to register)
@@ -246,7 +258,7 @@ export class GameApp {
 
   public newGame(): void {
     console.log(
-      `App: [Instance ${this.instanceId}] Starting New Game procedure...`
+      `App: [Instance ${this.instanceId}] Starting New Game procedure...`,
     );
 
     try {
@@ -256,7 +268,7 @@ export class GameApp {
 
       // 2. Clear Visuals
       console.log(
-        `App: [Instance ${this.instanceId}] Clearing building visuals...`
+        `App: [Instance ${this.instanceId}] Clearing building visuals...`,
       );
       this.visuals.forEach((v) => {
         this.scene.remove(v.mesh);
@@ -267,13 +279,13 @@ export class GameApp {
 
       // 3. Clear Inventory via event (UI side should handle store)
       console.log(
-        `App: [Instance ${this.instanceId}] Dispatching inventory reset...`
+        `App: [Instance ${this.instanceId}] Dispatching inventory reset...`,
       );
-      window.dispatchEvent(new CustomEvent('GAME_RESET_INVENTORY'));
+      window.dispatchEvent(new CustomEvent("GAME_RESET_INVENTORY"));
 
       // 4. Re-init Terrain meshes
       console.log(
-        `App: [Instance ${this.instanceId}] Re-initializing terrain...`
+        `App: [Instance ${this.instanceId}] Re-initializing terrain...`,
       );
       this.initTerrain();
 
@@ -282,7 +294,7 @@ export class GameApp {
       this.syncBuildings();
 
       console.log(
-        `App: [Instance ${this.instanceId}] New Game procedure completed!`
+        `App: [Instance ${this.instanceId}] New Game procedure completed!`,
       );
     } catch (err) {
       console.error(`App: [Instance ${this.instanceId}] New Game failed!`, err);
@@ -313,12 +325,12 @@ export class GameApp {
     Object.values(this.currentTextures).forEach((t) => t.dispose());
 
     // Remove Listeners
-    window.removeEventListener('GAME_TOGGLE_PAUSE', this.boundTogglePause);
-    window.removeEventListener('GAME_SAVE', this.boundSave);
-    window.removeEventListener('GAME_LOAD', this.boundLoad);
-    window.removeEventListener('GAME_NEW', this.boundNew);
+    window.removeEventListener("GAME_TOGGLE_PAUSE", this.boundTogglePause);
+    window.removeEventListener("GAME_SAVE", this.boundSave);
+    window.removeEventListener("GAME_LOAD", this.boundLoad);
+    window.removeEventListener("GAME_NEW", this.boundNew);
     console.log(
-      `App: [Instance ${this.instanceId}] Listeners removed and destroyed.`
+      `App: [Instance ${this.instanceId}] Listeners removed and destroyed.`,
     );
   }
 
@@ -328,11 +340,11 @@ export class GameApp {
   private environmentGroup: THREE.Group | null = null; // Track waterfalls, etc.
 
   private initTerrain() {
-    console.log('App: Initializing terrain...');
+    console.log("App: Initializing terrain...");
 
     // 1. Cleanup existing terrain
     if (this.terrainGroup) {
-      console.log('App: Disposing old terrainGroup...');
+      console.log("App: Disposing old terrainGroup...");
       this.scene.remove(this.terrainGroup);
       this.terrainGroup.traverse((obj) => {
         if (obj instanceof THREE.Mesh) {
@@ -349,7 +361,7 @@ export class GameApp {
 
     // 2. Cleanup environment (waterfalls, etc)
     if (this.environmentGroup) {
-      console.log('App: Disposing old environmentGroup...');
+      console.log("App: Disposing old environmentGroup...");
       this.scene.remove(this.environmentGroup);
       this.environmentGroup.traverse((obj) => {
         if (obj instanceof THREE.Mesh) {
@@ -364,7 +376,7 @@ export class GameApp {
 
     // 3. Clear instanced grass
     if (this.instancedGrass) {
-      console.log('App: Disposing old grass...');
+      console.log("App: Disposing old grass...");
       this.scene.remove(this.instancedGrass);
       this.instancedGrass.geometry.dispose();
       (this.instancedGrass.material as THREE.Material).dispose();
@@ -420,7 +432,7 @@ export class GameApp {
     this.instancedGrass = new THREE.InstancedMesh(
       grassGeo,
       grassMaterial,
-      totalBlades
+      totalBlades,
     );
     this.instancedGrass.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     // Grass should NOT cast shadows for performance
@@ -466,19 +478,19 @@ export class GameApp {
         const topMat = tile.isSand()
           ? beachMat
           : tile.isWater()
-          ? waterMat
-          : grassMat;
+            ? waterMat
+            : grassMat;
         const sideMat = tile.isSand()
           ? sandMat
           : tile.isWater()
-          ? waterMat
-          : grassMat;
+            ? waterMat
+            : grassMat;
 
         // Face check helper
         const getFaceMat = (
           nx: number,
           ny: number,
-          defaultMat: THREE.Material
+          defaultMat: THREE.Material,
         ) => {
           const neighbor = this.world.getTile(nx, ny);
           if (neighbor.isEmpty()) return defaultMat;
@@ -584,7 +596,7 @@ export class GameApp {
         }
 
         mesh.receiveShadow = true;
-        mesh.userData = { type: 'tile', x, y };
+        mesh.userData = { type: "tile", x, y };
         this.terrainGroup.add(mesh);
 
         // Populate Grass Instances (only on grass)
@@ -718,14 +730,14 @@ export class GameApp {
           visual.mesh.position.set(building.x, 0, building.y);
 
           // Apply generic rotation for non-conveyors (ConveyorVisual handles its own)
-          if (building.getType() !== 'conveyor') {
-            if (building.direction === 'east')
+          if (building.getType() !== "conveyor") {
+            if (building.direction === "east")
               visual.mesh.rotation.y = -Math.PI / 2;
-            else if (building.direction === 'west')
+            else if (building.direction === "west")
               visual.mesh.rotation.y = Math.PI / 2;
-            else if (building.direction === 'south')
+            else if (building.direction === "south")
               visual.mesh.rotation.y = Math.PI;
-            else if (building.direction === 'north') visual.mesh.rotation.y = 0;
+            else if (building.direction === "north") visual.mesh.rotation.y = 0;
           }
 
           this.scene.add(visual.mesh);
@@ -756,7 +768,7 @@ export class GameApp {
               dummy.matrix.decompose(
                 dummy.position,
                 dummy.quaternion,
-                dummy.scale
+                dummy.scale,
               );
               dummy.scale.set(0, 0, 0);
               dummy.updateMatrix();
@@ -764,7 +776,7 @@ export class GameApp {
             } else {
               this.instancedGrass.setMatrixAt(
                 idx,
-                this.initialGrassMatrices[idx]
+                this.initialGrassMatrices[idx],
               );
             }
           }
@@ -776,13 +788,13 @@ export class GameApp {
   }
 
   private setupResize() {
-    window.addEventListener('resize', () => {
+    window.addEventListener("resize", () => {
       this.camera.aspect =
         this.container.clientWidth / this.container.clientHeight;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(
         this.container.clientWidth,
-        this.container.clientHeight
+        this.container.clientHeight,
       );
     });
   }
@@ -808,11 +820,11 @@ export class GameApp {
       inventory: inventory || [],
       timestamp: Date.now(),
     };
-    localStorage.setItem('factory_save', JSON.stringify(saveData));
+    localStorage.setItem("factory_save", JSON.stringify(saveData));
   }
 
   public loadGame(): void {
-    const saved = localStorage.getItem('factory_save');
+    const saved = localStorage.getItem("factory_save");
     if (!saved) return;
 
     try {
@@ -831,9 +843,9 @@ export class GameApp {
       let finalInventory: InventorySlot[] = [];
       if (Array.isArray(inventoryData)) {
         finalInventory = inventoryData;
-      } else if (typeof inventoryData === 'object') {
+      } else if (typeof inventoryData === "object") {
         // Migration from Record<string, number>
-        console.log('App: Migrating legacy inventory...');
+        console.log("App: Migrating legacy inventory...");
         finalInventory = Array(10)
           .fill(null)
           .map(() => ({ type: null, count: 0 }));
@@ -862,12 +874,12 @@ export class GameApp {
       this.syncBuildings();
 
       // 4. Restore Inventory
-      console.log('App: Dispatching inventory load:', finalInventory);
+      console.log("App: Dispatching inventory load:", finalInventory);
       window.dispatchEvent(
-        new CustomEvent('GAME_LOAD_INVENTORY', { detail: finalInventory })
+        new CustomEvent("GAME_LOAD_INVENTORY", { detail: finalInventory }),
       );
     } catch (err: unknown) {
-      console.error('App: Load Failed!', err);
+      console.error("App: Load Failed!", err);
     }
   }
 
@@ -893,7 +905,7 @@ export class GameApp {
     // Update Selection Indicator
     const openedKey = useGameStore.getState().openedEntityKey;
     if (openedKey) {
-      const [sx, sy] = openedKey.split(',').map(Number);
+      const [sx, sy] = openedKey.split(",").map(Number);
       const b = this.world.getBuilding(sx, sy);
       if (b) {
         this.selectionIndicator.update(b.x, b.y, b.width, b.height);
@@ -933,7 +945,7 @@ export class GameApp {
     this.particleSystem.update(delta);
 
     this.scene.traverse((obj) => {
-      if (obj.name && obj.name.startsWith('rock_')) {
+      if (obj.name && obj.name.startsWith("rock_")) {
         const { x, y } = obj.userData;
         const tile = this.world.getTile(x, y);
         if (tile) {

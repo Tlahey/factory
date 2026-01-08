@@ -1,4 +1,4 @@
-import { Tile } from './Tile';
+import { Tile } from "./Tile";
 
 export abstract class ResourceTile extends Tile {
   public initialResourceAmount: number;

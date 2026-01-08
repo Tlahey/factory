@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useGameStore, InventorySlot } from '@/game/state/store';
-import { useState, useEffect } from 'react';
-import { X, ArrowUpCircle, Box, Zap } from 'lucide-react';
-import { Chest } from '@/game/buildings/chest/Chest';
-import { Extractor } from '@/game/buildings/extractor/Extractor';
-import { Hub } from '@/game/buildings/hub/Hub';
-import { BuildingEntity } from '@/game/entities/BuildingEntity';
-import { BuildingUpgrade } from '@/game/buildings/BuildingConfig';
-import { IWorld } from '@/game/entities/types';
-import ModelPreview from './ModelPreview';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useGameStore, InventorySlot } from "@/game/state/store";
+import { useState, useEffect } from "react";
+import { X, ArrowUpCircle, Box, Zap } from "lucide-react";
+import { Chest } from "@/game/buildings/chest/Chest";
+import { Extractor } from "@/game/buildings/extractor/Extractor";
+import { Hub } from "@/game/buildings/hub/Hub";
+import { BuildingEntity } from "@/game/entities/BuildingEntity";
+import { BuildingUpgrade } from "@/game/buildings/BuildingConfig";
+import { IWorld } from "@/game/entities/types";
+import ModelPreview from "./ModelPreview";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function BuildingInfoPanel() {
   const { t } = useTranslation();
@@ -20,8 +20,8 @@ export default function BuildingInfoPanel() {
   const removeItem = useGameStore((state) => state.removeItem);
 
   const [building, setBuilding] = useState<BuildingEntity | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'upgrade'>(
-    'overview'
+  const [activeTab, setActiveTab] = useState<"overview" | "upgrade">(
+    "overview",
   );
   const [_, forceUpdate] = useState(0);
 
@@ -30,7 +30,7 @@ export default function BuildingInfoPanel() {
     if (!openedEntityKey) return;
 
     const interval = setInterval(() => {
-      const [x, y] = openedEntityKey.split(',').map(Number);
+      const [x, y] = openedEntityKey.split(",").map(Number);
       const b = (
         window as unknown as { game: { world: IWorld } }
       ).game?.world.getBuilding(x, y);
@@ -52,7 +52,7 @@ export default function BuildingInfoPanel() {
       // Only handle if this panel is open for the source chest?
       // Actually, if we drag from THIS panel, 'source' is 'chest'.
       // We assume single open container model for now.
-      if (source === 'chest') {
+      if (source === "chest") {
         // The event details come from HUD drop handler
         const chestSlot = building.slots[sourceIndex];
         if (!chestSlot) return; // Sync issue?
@@ -81,9 +81,9 @@ export default function BuildingInfoPanel() {
       }
     };
 
-    window.addEventListener('GAME_INVENTORY_DROP', handleInventoryDrop);
+    window.addEventListener("GAME_INVENTORY_DROP", handleInventoryDrop);
     return () =>
-      window.removeEventListener('GAME_INVENTORY_DROP', handleInventoryDrop);
+      window.removeEventListener("GAME_INVENTORY_DROP", handleInventoryDrop);
   }, [building]);
 
   if (!openedEntityKey || !building) return null;
@@ -93,56 +93,58 @@ export default function BuildingInfoPanel() {
 
   const handleClose = () => {
     setOpenedEntityKey(null);
-    setActiveTab('overview');
+    setActiveTab("overview");
   };
 
   const isChest = building instanceof Chest;
-  const upgrades = ('upgrades' in config ? config.upgrades : []) as BuildingUpgrade[];
+  const upgrades = (
+    "upgrades" in config ? config.upgrades : []
+  ) as BuildingUpgrade[];
 
   // Helper to calc total items for upgrade check
   const getInventoryItemCount = (type: string) => {
     return inventory.reduce(
       (total, slot) => (slot.type === type ? total + slot.count : total),
-      0
+      0,
     );
   };
 
   const handleUpgrade = (upgrade: BuildingUpgrade) => {
     const currentCost = Math.floor(upgrade.baseCost);
-    if (getInventoryItemCount('stone') >= currentCost) {
-      removeItem('stone', currentCost);
+    if (getInventoryItemCount("stone") >= currentCost) {
+      removeItem("stone", currentCost);
       upgrade.onUpgrade(building);
     }
   };
 
   const handleDragStart = (
     e: React.DragEvent,
-    source: 'chest' | 'inventory',
+    source: "chest" | "inventory",
     index: number,
-    slot: InventorySlot
+    slot: InventorySlot,
   ) => {
     if (!slot || !slot.type) {
       e.preventDefault();
       return;
     }
-    e.dataTransfer.setData('source', source);
-    e.dataTransfer.setData('index', index.toString());
-    e.dataTransfer.setData('type', slot.type);
-    e.dataTransfer.setData('count', slot.count.toString());
+    e.dataTransfer.setData("source", source);
+    e.dataTransfer.setData("index", index.toString());
+    e.dataTransfer.setData("type", slot.type);
+    e.dataTransfer.setData("count", slot.count.toString());
   };
 
   const handleDrop = (
     e: React.DragEvent,
-    target: 'chest' | 'inventory',
-    _targetIndex: number
+    target: "chest" | "inventory",
+    _targetIndex: number,
   ) => {
     e.preventDefault();
-    const source = e.dataTransfer.getData('source') as 'chest' | 'inventory';
-    const sourceIndex = parseInt(e.dataTransfer.getData('index'));
+    const source = e.dataTransfer.getData("source") as "chest" | "inventory";
+    const sourceIndex = parseInt(e.dataTransfer.getData("index"));
 
     if (source === target) return;
 
-    if (source === 'chest' && target === 'inventory') {
+    if (source === "chest" && target === "inventory") {
       // Logic handled by HUD if target is 'inventory'?
       // Wait, if we drop on the InfoPanel's Inventory UI (which we are deleting), this would run.
       // But we are deleting it.
@@ -150,7 +152,7 @@ export default function BuildingInfoPanel() {
       // BUT: We kept it in case we re-add it? Or we should clean it up?
       // User asked "enlever la partie Player Inventory".
       // So we define drop targets only for Chest.
-    } else if (source === 'inventory' && target === 'chest') {
+    } else if (source === "inventory" && target === "chest") {
       // Move Inventory (HUD) -> Chest
       const invSlot = inventory[sourceIndex];
       if (!invSlot.type) return;
@@ -190,7 +192,7 @@ export default function BuildingInfoPanel() {
               {t(`building.${config.id}.name`)}
             </h3>
             <p className="text-xs text-gray-400 mt-1">
-              {isChest ? `Lv. ${building.maxSlots - 4}` : t('common.building')}
+              {isChest ? `Lv. ${building.maxSlots - 4}` : t("common.building")}
             </p>
           </div>
         </div>
@@ -205,27 +207,29 @@ export default function BuildingInfoPanel() {
       {/* Tabs */}
       <div className="flex border-b border-white/10">
         <button
-          onClick={() => setActiveTab('overview')}
-          className={`flex-1 p-3 text-sm font-medium transition-colors relative ${activeTab === 'overview'
-            ? 'text-white'
-            : 'text-gray-500 hover:text-gray-300'
-            }`}
+          onClick={() => setActiveTab("overview")}
+          className={`flex-1 p-3 text-sm font-medium transition-colors relative ${
+            activeTab === "overview"
+              ? "text-white"
+              : "text-gray-500 hover:text-gray-300"
+          }`}
         >
-          {t('common.overview')}
-          {activeTab === 'overview' && (
+          {t("common.overview")}
+          {activeTab === "overview" && (
             <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-500" />
           )}
         </button>
         {upgrades.length > 0 && (
           <button
-            onClick={() => setActiveTab('upgrade')}
-            className={`flex-1 p-3 text-sm font-medium transition-colors relative ${activeTab === 'upgrade'
-              ? 'text-white'
-              : 'text-gray-500 hover:text-gray-300'
-              }`}
+            onClick={() => setActiveTab("upgrade")}
+            className={`flex-1 p-3 text-sm font-medium transition-colors relative ${
+              activeTab === "upgrade"
+                ? "text-white"
+                : "text-gray-500 hover:text-gray-300"
+            }`}
           >
-            {t('common.upgrades')}
-            {activeTab === 'upgrade' && (
+            {t("common.upgrades")}
+            {activeTab === "upgrade" && (
               <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-500" />
             )}
           </button>
@@ -234,7 +238,7 @@ export default function BuildingInfoPanel() {
 
       {/* Content */}
       <div className="p-4 min-h-[200px]">
-        {activeTab === 'overview' && (
+        {activeTab === "overview" && (
           <div className="space-y-4">
             {isChest && (
               <>
@@ -257,10 +261,10 @@ export default function BuildingInfoPanel() {
                           className="aspect-square bg-black/40 rounded border border-white/10 flex items-center justify-center relative group cursor-grab active:cursor-grabbing"
                           draggable={!!slot}
                           onDragStart={(e) =>
-                            handleDragStart(e, 'chest', i, slot)
+                            handleDragStart(e, "chest", i, slot)
                           }
                           onDragOver={handleDragOver}
-                          onDrop={(e) => handleDrop(e, 'chest', i)}
+                          onDrop={(e) => handleDrop(e, "chest", i)}
                         >
                           {slot ? (
                             <>
@@ -292,52 +296,53 @@ export default function BuildingInfoPanel() {
                 <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
                   <div className="flex items-center gap-3 mb-4">
                     {(() => {
-                      let status = 'IDLE';
+                      let status = "IDLE";
                       let color =
-                        'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]'; // Orange/Yellow
+                        "bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]"; // Orange/Yellow
 
                       // 1. Not Linked
                       if (!building.hasPowerSource) {
-                        status = t('common.status.no_power');
+                        status = t("common.status.no_power");
                         color =
-                          'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]';
+                          "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]";
                       }
                       // 2. Blocked
-                      else if (building.operationStatus === 'blocked') {
-                        status = t('common.status.blocked');
+                      else if (building.operationStatus === "blocked") {
+                        status = t("common.status.blocked");
                         color =
-                          'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]';
+                          "bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]";
                       }
                       // 3. No Resources
-                      else if (building.operationStatus === 'no_resources') {
-                        status = t('common.status.no_resources');
+                      else if (building.operationStatus === "no_resources") {
+                        status = t("common.status.no_resources");
                         color =
-                          'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]';
+                          "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]";
                       }
                       // 4. Low Power
-                      else if (building.powerStatus === 'warn') {
-                        status = t('common.status.low_power');
+                      else if (building.powerStatus === "warn") {
+                        status = t("common.status.low_power");
                         color =
-                          'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]';
+                          "bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]";
                       }
                       // 5. Active
                       else if (building.active) {
-                        status = t('common.status.operational');
+                        status = t("common.status.operational");
                         color =
-                          'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]';
+                          "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]";
                       }
                       // 6. Idle
                       else {
-                        status = t('common.status.idle');
+                        status = t("common.status.idle");
                         color =
-                          'bg-gray-500 shadow-[0_0_10px_rgba(107,114,128,0.5)]';
+                          "bg-gray-500 shadow-[0_0_10px_rgba(107,114,128,0.5)]";
                       }
 
                       return (
                         <>
                           <div
-                            className={`w-3 h-3 rounded-full ${building.active ? 'animate-pulse' : ''
-                              } ${color}`}
+                            className={`w-3 h-3 rounded-full ${
+                              building.active ? "animate-pulse" : ""
+                            } ${color}`}
                           />
                           <span className="text-sm font-bold tracking-tight text-white/90">
                             {status}
@@ -350,16 +355,20 @@ export default function BuildingInfoPanel() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-3 bg-black/20 rounded-lg border border-white/5">
                       <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                        <Zap size={10} className="text-yellow-500" /> {t('common.rate')}
+                        <Zap size={10} className="text-yellow-500" />{" "}
+                        {t("common.rate")}
                       </div>
                       <div className="text-lg font-mono font-bold text-white">
-                        {(building.getExtractionRate() * 60).toFixed(1)}{' '}
-                        <span className="text-[10px] text-gray-500">{t('common.per_minute')}</span>
+                        {(building.getExtractionRate() * 60).toFixed(1)}{" "}
+                        <span className="text-[10px] text-gray-500">
+                          {t("common.per_minute")}
+                        </span>
                       </div>
                     </div>
                     <div className="p-3 bg-black/20 rounded-lg border border-white/5">
                       <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                        <Box size={10} className="text-blue-500" /> {t('common.output')}
+                        <Box size={10} className="text-blue-500" />{" "}
+                        {t("common.output")}
                       </div>
                       <div className="text-lg font-mono font-bold text-white capitalize">
                         Stone
@@ -367,18 +376,20 @@ export default function BuildingInfoPanel() {
                     </div>
                     <div className="col-span-2 p-3 bg-black/20 rounded-lg border border-white/5 flex justify-between items-center">
                       <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
-                        <Zap size={10} className="text-red-500" /> {t('common.power')}
+                        <Zap size={10} className="text-red-500" />{" "}
+                        {t("common.power")}
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-mono font-bold text-red-400">
                           {parseFloat(
-                            String(building.powerConfig?.rate || 0)
-                          ).toFixed(2)}{' '}
+                            String(building.powerConfig?.rate || 0),
+                          ).toFixed(2)}{" "}
                           <span className="text-[10px] text-gray-500">kW</span>
                         </div>
                         {building.visualSatisfaction < 0.98 && (
                           <div className="text-[10px] font-bold text-yellow-500">
-                            {(building.visualSatisfaction * 100).toFixed(0)}% Satisfaction
+                            {(building.visualSatisfaction * 100).toFixed(0)}%
+                            Satisfaction
                           </div>
                         )}
                       </div>
@@ -388,20 +399,27 @@ export default function BuildingInfoPanel() {
 
                 <div className="space-y-2">
                   <div className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] px-1">
-                    {t('common.performance')}
+                    {t("common.performance")}
                   </div>
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs p-2 rounded hover:bg-white/5 transition-colors">
-                      <span className="text-gray-400">{t('common.rate')} (Base)</span>
-                      <span className="text-white font-mono">{building.extractionRate.toFixed(1)}{t('common.per_minute')}</span>
+                      <span className="text-gray-400">
+                        {t("common.rate")} (Base)
+                      </span>
+                      <span className="text-white font-mono">
+                        {building.extractionRate.toFixed(1)}
+                        {t("common.per_minute")}
+                      </span>
                     </div>
                     <div className="flex justify-between text-xs p-2 rounded hover:bg-white/5 transition-colors">
-                      <span className="text-gray-400">{t('common.efficiency')}</span>
+                      <span className="text-gray-400">
+                        {t("common.efficiency")}
+                      </span>
                       <span className="text-green-400 font-mono">100%</span>
                     </div>
                     <div className="flex justify-between text-xs p-2 rounded hover:bg-white/5 transition-colors">
                       <span className="text-gray-400">
-                        {t('common.overclock')}
+                        {t("common.overclock")}
                       </span>
                       <span className="text-indigo-400 font-mono">
                         x{building.speedMultiplier.toFixed(1)}
@@ -412,7 +430,7 @@ export default function BuildingInfoPanel() {
               </div>
             )}
 
-            {!isChest && building.getType() === 'hub' && (
+            {!isChest && building.getType() === "hub" && (
               <div className="space-y-6 py-2">
                 <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
                   <div className="flex items-center gap-3 mb-4">
@@ -426,14 +444,15 @@ export default function BuildingInfoPanel() {
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="p-3 bg-black/20 rounded-lg border border-white/5">
                       <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                        <Zap size={10} className="text-green-500" /> {t('common.production')}
+                        <Zap size={10} className="text-green-500" />{" "}
+                        {t("common.production")}
                       </div>
                       <div className="text-lg font-mono font-bold text-green-400">
                         {(building as Hub).statsHistory &&
-                          (building as Hub).statsHistory.length > 0
+                        (building as Hub).statsHistory.length > 0
                           ? (building as Hub).statsHistory[
-                            (building as Hub).statsHistory.length - 1
-                          ].production.toFixed(2)
+                              (building as Hub).statsHistory.length - 1
+                            ].production.toFixed(2)
                           : (building.powerConfig?.rate || 0).toFixed(2)}
                         <span className="text-[10px] text-gray-500 ml-1">
                           kW
@@ -442,14 +461,15 @@ export default function BuildingInfoPanel() {
                     </div>
                     <div className="p-3 bg-black/20 rounded-lg border border-white/5">
                       <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                        <Zap size={10} className="text-red-500" /> {t('common.consumption')}
+                        <Zap size={10} className="text-red-500" />{" "}
+                        {t("common.consumption")}
                       </div>
                       <div className="text-lg font-mono font-bold text-red-400">
                         {(building as Hub).statsHistory &&
-                          (building as Hub).statsHistory.length > 0
+                        (building as Hub).statsHistory.length > 0
                           ? (building as Hub).statsHistory[
-                            (building as Hub).statsHistory.length - 1
-                          ].consumption.toFixed(2)
+                              (building as Hub).statsHistory.length - 1
+                            ].consumption.toFixed(2)
                           : (0).toFixed(2)}
                         <span className="text-[10px] text-gray-500 ml-1">
                           kW
@@ -481,8 +501,8 @@ export default function BuildingInfoPanel() {
                           10, // Minimum scale
                           ...history.map(
                             (h: { production: number; consumption: number }) =>
-                              Math.max(h.production, h.consumption)
-                          )
+                              Math.max(h.production, h.consumption),
+                          ),
                         ) * 1.1;
 
                       const width = 100; // Use percentage for width coords to simplify
@@ -490,20 +510,20 @@ export default function BuildingInfoPanel() {
 
                       // Create points
                       const createPoints = (
-                        key: 'production' | 'consumption'
+                        key: "production" | "consumption",
                       ) => {
                         return history
                           .map(
                             (
                               pt: { production: number; consumption: number },
-                              i: number
+                              i: number,
                             ) => {
                               const x = (i / (history.length - 1)) * width;
                               const y = height - (pt[key] / maxVal) * height;
                               return `${x},${y}`;
-                            }
+                            },
                           )
-                          .join(' ');
+                          .join(" ");
                       };
 
                       return (
@@ -515,7 +535,7 @@ export default function BuildingInfoPanel() {
                           >
                             {/* Consumption Line (Red) */}
                             <polyline
-                              points={createPoints('consumption')}
+                              points={createPoints("consumption")}
                               fill="none"
                               stroke="rgba(239, 68, 68, 0.8)"
                               strokeWidth="2"
@@ -523,7 +543,7 @@ export default function BuildingInfoPanel() {
                             />
                             {/* Production Line (Green) */}
                             <polyline
-                              points={createPoints('production')}
+                              points={createPoints("production")}
                               fill="none"
                               stroke="rgba(74, 222, 128, 0.8)"
                               strokeWidth="2"
@@ -558,7 +578,7 @@ export default function BuildingInfoPanel() {
 
             {!isChest &&
               !(building instanceof Extractor) &&
-              building.getType() !== 'hub' && (
+              building.getType() !== "hub" && (
                 <div className="flex items-center justify-center h-full text-gray-500 text-sm italic py-8 text-center uppercase tracking-widest opacity-50">
                   No statistics available
                 </div>
@@ -566,11 +586,11 @@ export default function BuildingInfoPanel() {
           </div>
         )}
 
-        {activeTab === 'upgrade' && (
+        {activeTab === "upgrade" && (
           <div className="space-y-4">
             {upgrades.map((upgrade: BuildingUpgrade) => {
               const currentCost = upgrade.baseCost;
-              const currentStone = getInventoryItemCount('stone');
+              const currentStone = getInventoryItemCount("stone");
               const canAfford = currentStone >= currentCost;
 
               return (
@@ -596,10 +616,11 @@ export default function BuildingInfoPanel() {
                     className={`
                                             w-full py-2 px-4 rounded-lg font-bold flex items-center justify-center gap-2
                                             transition-all
-                                            ${canAfford
-                        ? 'bg-indigo-500 hover:bg-indigo-400 text-white shadow-lg shadow-indigo-500/20'
-                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                      }
+                                            ${
+                                              canAfford
+                                                ? "bg-indigo-500 hover:bg-indigo-400 text-white shadow-lg shadow-indigo-500/20"
+                                                : "bg-gray-700 text-gray-500 cursor-not-allowed"
+                                            }
                                         `}
                   >
                     <ArrowUpCircle size={16} />

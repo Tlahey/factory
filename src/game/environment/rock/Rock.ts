@@ -1,8 +1,8 @@
-import { ResourceTile } from '../../core/ResourceTile';
-import { TileType } from '../../constants';
-import { Tile } from '../../core/Tile';
-import { Grass } from '../grass/Grass';
-import { IWorld } from '../../entities/types';
+import { ResourceTile } from "../../core/ResourceTile";
+import { TileType } from "../../constants";
+import { Tile } from "../../core/Tile";
+import { Grass } from "../grass/Grass";
+import { IWorld } from "../../entities/types";
 
 export class Rock extends ResourceTile {
   constructor(resourceAmount: number = 100) {
@@ -14,7 +14,7 @@ export class Rock extends ResourceTile {
   }
 
   public getResourceType(): string {
-    return 'stone';
+    return "stone";
   }
 
   public getVisualScale(): number {
@@ -25,7 +25,7 @@ export class Rock extends ResourceTile {
     return this.resourceAmount > 0;
   }
 
-  public override onTick(x: number, y: number, world: IWorld): Tile {
+  public onTick(_x: number, _y: number, _world: IWorld): Tile {
     if (this.resourceAmount <= 0) {
       return new Grass();
     }

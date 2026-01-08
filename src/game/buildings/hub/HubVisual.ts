@@ -1,9 +1,9 @@
-import { Hub } from './Hub';
-import { createHubModel } from './HubModel';
-import { SimpleVisual } from '../../visuals/SimpleVisual';
+import { Hub } from "./Hub";
+import { createHubModel } from "./HubModel";
+import { SimpleVisual } from "../../visuals/SimpleVisual";
 
 export class HubVisual extends SimpleVisual {
-    constructor(_hub: Hub) {
-        super(createHubModel());
-    }
+  constructor(_hub: Hub) {
+    super(createHubModel());
+  }
 }

@@ -15,7 +15,8 @@
     "start": "next start",
     "lint": "eslint",
     "prepare": "husky",
-    "test": "vitest"
+    "test": "vitest",
+    "prettier": "prettier --write ."
   },
   "dependencies": {
     "@types/three": "^0.182.0",

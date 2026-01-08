@@ -1,10 +1,10 @@
-import { TileType } from './constants';
-import { Tile } from './core/Tile';
-import { Grass } from './environment/grass/Grass';
-import { Rock } from './environment/rock/Rock';
-import { Water } from './environment/water/Water';
-import { Sand } from './environment/sand/Sand';
-import { EmptyTile } from './core/EmptyTile';
+import { TileType } from "./constants";
+import { Tile } from "./core/Tile";
+import { Grass } from "./environment/grass/Grass";
+import { Rock } from "./environment/rock/Rock";
+import { Water } from "./environment/water/Water";
+import { Sand } from "./environment/sand/Sand";
+import { EmptyTile } from "./core/EmptyTile";
 
 export class TileFactory {
   public static createTile(type: TileType, resourceAmount?: number): Tile {

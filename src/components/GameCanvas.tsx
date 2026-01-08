@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import { GameApp } from '@/game/GameApp';
+import { useEffect, useRef } from "react";
+import { GameApp } from "@/game/GameApp";
 
 export default function GameCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);

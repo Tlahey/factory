@@ -1,5 +1,5 @@
-import { TileType } from '../constants';
-import { IWorld } from '../entities/types';
+import { TileType } from "../constants";
+import { IWorld } from "../entities/types";
 
 export abstract class Tile {
   constructor() {}
@@ -16,7 +16,7 @@ export abstract class Tile {
   }
 
   // Logic update, returns a new Tile if it transforms
-  public onTick(x: number, y: number, world: IWorld): Tile {
+  public onTick(_x: number, _y: number, _world: IWorld): Tile {
     return this;
   }
 

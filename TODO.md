@@ -1,12 +1,14 @@
 # Bugs
 
-- Le hub ne peut être que relié à 1 seul cable. Il n'est pas possible d'en relier plusieurs.
-
 # Features
 
 - les batiments n'ont plus d'onglet d'amélioration, tout passe par le hub
 
 - Les resources doivent avoir un ratio de production qui influe sur les extracteur. Par exemple les roches ont aléatoirement un extraction en *0.5 ou *1. D'autres ressources par la suite pourront avoir du 1.5 etc ...
+
+- Supprimer la flèche modèle qui est sur la forreuse (celle orange) on doit garder seulement celle du IO.
+
+- Quand un convoyeur est relié à une flèche IO, alors on cache cette flèche
 
 - Le hub doit avoir un arbre de compétences et un shop
   - L'arbre de compétences permet de stocker plus d'éléments / de débloquer de nouveaux éléments. Il faut forcément que les éléments précédent soient débloqués pour débloquer les suivants.
@@ -18,11 +20,7 @@
   - Il faut obligatoirement que la battery soit reliée à au moins un panneau solaire ou une éolienne pour fonctionner.
   - La battery peut avoir un disjoncteur qui permet de couper l'alimentation des bâtiments qui y sont reliés.
 
-
 - Les poteaux électriques ont un nombre limité de connexion qui est de 3. ils pourront être améliorés par la suite pour augmenter ce nombre.
-
-
-
 
 - Ajouter le système d'input/ output pour les batiments
   - Foreuse à une sortie (output) qui envoie les ressources extraites aux convoyeurs
@@ -33,18 +31,10 @@
 
 - Ajouter dans la configuration de la foreuse une gestion du rate de la foreuse. Par exemple, on pourra améliorer la foreuse pour augmenter sa vitesse de production.
 
-
-
 - Au départ le container doit être forcément placé a côté du hub. On ne peut pas le déplacer ailleurs avant d'avoir débloqué une amélioration dans l'arbre de compétence.
 
 - On démarre la partie avec le hub placé au milieu de la carte. Il ne doit pas avoir de roche a proximité immédiate du hub pour forcer le joueur à explorer la carte.
   - Il n'est pas possible de supprimer ou déplacer le hub, il doit aussi disparaitre de la liste des buildings constructibles.
-
-
-
-
-
-
 
 - Implémenté un fourneau. Le fourneau permet de transformer les minerais bruts en lingots. Par exemple, le minerai de fer peut être transformé en lingot de fer. Le fourneau consomme de l'énergie pour fonctionner, et sa vitesse de production peut être améliorée dans l'arbre de compétences. (augmente la vitesse de transformation des minerais en lingots)
   - Le fourneau doit avoir une entrée et une sortie pour les minerais et les lingots respectivement.
@@ -91,5 +81,5 @@
 - Implémenter un convoyer souterrain qui permet de transporter des ressources en passant en dessous d'un autre convoyeur.
   - Il partage la même logique que les convoyeurs (mais ils doivent être améliorer de leur côté pour permettre la construction de convoyeurs souterrains)
   - Pour les placer il faut forcément qu'il soit au niveau d'un autre convoyeur à la surface et ils prennent 3 de largeur (1 pour l'entrée 2 pour le passage 3 pour la sortie)
-  - En input il prendra le convoyer et en output un autre convoyeur 
+  - En input il prendra le convoyer et en output un autre convoyeur
   - Le sens du flux sera le même que le convoyer et géré de la même façon

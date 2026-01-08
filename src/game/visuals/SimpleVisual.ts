@@ -1,5 +1,5 @@
-import * as THREE from 'three';
-import { VisualEntity } from './VisualEntity';
+import * as THREE from "three";
+import { VisualEntity } from "./VisualEntity";
 
 export class SimpleVisual implements VisualEntity {
   public mesh: THREE.Object3D;

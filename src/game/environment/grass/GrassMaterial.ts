@@ -1,25 +1,26 @@
-import * as THREE from 'three';
+import * as THREE from "three";
 
 export function createGrassMaterial() {
-    const material = new THREE.MeshLambertMaterial({
-        color: 0x4caf50,
-        side: THREE.DoubleSide,
-    });
+  const material = new THREE.MeshLambertMaterial({
+    color: 0x4caf50,
+    side: THREE.DoubleSide,
+  });
 
-    const uniforms = {
-        uTime: { value: 0 },
-    };
+  const uniforms = {
+    uTime: { value: 0 },
+  };
 
-    material.onBeforeCompile = (shader) => {
-        shader.uniforms.uTime = uniforms.uTime;
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uTime = uniforms.uTime;
 
-        shader.vertexShader = `
+    shader.vertexShader =
+      `
             uniform float uTime;
         ` + shader.vertexShader;
 
-        shader.vertexShader = shader.vertexShader.replace(
-            '#include <begin_vertex>',
-            `
+    shader.vertexShader = shader.vertexShader.replace(
+      "#include <begin_vertex>",
+      `
             #include <begin_vertex>
             
             // Subtle sway animation
@@ -30,9 +31,9 @@ export function createGrassMaterial() {
             
             transformed.x += sway * strength;
             transformed.z += sway * strength * 0.5;
-            `
-        );
-    };
+            `,
+    );
+  };
 
-    return { material, uniforms };
+  return { material, uniforms };
 }

@@ -1,35 +1,34 @@
-import { Tile } from '../../core/Tile';
-import { BuildingEntity, Direction4 } from '../../entities/BuildingEntity';
+import { Tile } from "../../core/Tile";
+import { BuildingEntity, Direction4 } from "../../entities/BuildingEntity";
 import {
-  Direction,
   getDirectionOffset,
   getOppositeDirection,
   determineFlowInputDirection,
   calculateTurnType,
-} from './ConveyorLogicSystem';
-import { IWorld } from '../../entities/types';
-import { Chest } from '../chest/Chest';
-import { IIOBuilding, ConveyorConfigType, PowerConfig } from '../BuildingConfig';
+} from "./ConveyorLogicSystem";
+import { IWorld } from "../../entities/types";
+import { Chest } from "../chest/Chest";
+import {
+  IIOBuilding,
+  ConveyorConfigType,
+  PowerConfig,
+} from "../BuildingConfig";
 
 interface Candidate {
-  direction: 'north' | 'south' | 'east' | 'west';
+  direction: "north" | "south" | "east" | "west";
   priority: number;
 }
 
 export class Conveyor extends BuildingEntity implements IIOBuilding {
-  constructor(
-    x: number,
-    y: number,
-    direction: Direction4 = 'north'
-  ) {
-    super(x, y, 'conveyor', direction);
+  constructor(x: number, y: number, direction: Direction4 = "north") {
+    super(x, y, "conveyor", direction);
   }
 
   public currentItem: string | null = null;
   public itemId: number | null = null; // Unique ID for tracking mesh
   public transportProgress: number = 0;
   public isResolved: boolean = false; // True only if connected to a valid destination (chest)
-  public visualType: 'straight' | 'left' | 'right' = 'straight';
+  public visualType: "straight" | "left" | "right" = "straight";
 
   public get transportSpeed(): number {
     return ((this.getConfig() as ConveyorConfigType).speed ?? 60) / 60; // tiles per second
@@ -54,10 +53,10 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
     let tx = this.x;
     let ty = this.y;
 
-    if (this.direction === 'north') ty -= 1;
-    else if (this.direction === 'south') ty += 1;
-    else if (this.direction === 'east') tx += 1;
-    else if (this.direction === 'west') tx -= 1;
+    if (this.direction === "north") ty -= 1;
+    else if (this.direction === "south") ty += 1;
+    else if (this.direction === "east") tx += 1;
+    else if (this.direction === "west") tx -= 1;
 
     const targetBuilding = world.getBuilding(tx, ty);
 
@@ -97,7 +96,7 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
   }
 
   // --- IIOBuilding ---
-  public getInputPosition(): { x: number, y: number } | null {
+  public getInputPosition(): { x: number; y: number } | null {
     if (!this.io.hasInput) return null;
     // Conveyor input is from the back (opposite of direction)
     const oppositeDir = getOppositeDirection(this.direction);
@@ -105,7 +104,7 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
     return { x: this.x + offset.dx, y: this.y + offset.dy };
   }
 
-  public getOutputPosition(): { x: number, y: number } | null {
+  public getOutputPosition(): { x: number; y: number } | null {
     if (!this.io.hasOutput) return null;
     // Conveyor output is in its direction (front)
     const offset = getDirectionOffset(this.direction);
@@ -115,34 +114,38 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
   public canInput(fromX: number, fromY: number): boolean {
     const dx = fromX - this.x;
     const dy = fromY - this.y;
-    
+
     // Conveyor only accepts input from the opposite of its direction
     // Unless it's a side-load? Currently, let's keep it simple: only back-load.
     const oppositeDir = getOppositeDirection(this.direction);
     const offset = getDirectionOffset(oppositeDir);
-    
+
     return dx === offset.dx && dy === offset.dy && !this.currentItem;
   }
 
   public canOutput(world: IWorld): boolean {
     let tx = this.x;
     let ty = this.y;
-    if (this.direction === 'north') ty -= 1;
-    else if (this.direction === 'south') ty += 1;
-    else if (this.direction === 'east') tx += 1;
-    else if (this.direction === 'west') tx -= 1;
+    if (this.direction === "north") ty -= 1;
+    else if (this.direction === "south") ty += 1;
+    else if (this.direction === "east") tx += 1;
+    else if (this.direction === "west") tx -= 1;
 
     const target = world.getBuilding(tx, ty);
     if (!target) return false;
 
     if (target instanceof Conveyor) {
-        return target.isResolved && !target.currentItem;
+      return target.isResolved && !target.currentItem;
     }
 
-    if ('canInput' in target && typeof (target as any).canInput === 'function') {
-        return (target as unknown as IIOBuilding).canInput(this.x, this.y);
+    if (
+      "canInput" in target &&
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      typeof (target as any).canInput === "function"
+    ) {
+      return (target as unknown as IIOBuilding).canInput(this.x, this.y);
     }
-    
+
     return false;
   }
 
@@ -179,11 +182,11 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
     const PRIO_CONVEYOR_IN = 3; // Continuing a flow from neighbor
     const PRIO_EXTRACTOR_IN = 4; // Starting a flow from extractor
 
-    const directions: Array<'north' | 'south' | 'east' | 'west'> = [
-      'north',
-      'south',
-      'east',
-      'west',
+    const directions: Array<"north" | "south" | "east" | "west"> = [
+      "north",
+      "south",
+      "east",
+      "west",
     ];
     let bestCandidate: Candidate | null = null;
 
@@ -192,14 +195,14 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
       const offset = getDirectionOffset(checkDir);
       const neighbor = world.getBuilding(
         this.x + offset.dx,
-        this.y + offset.dy
+        this.y + offset.dy,
       );
 
       if (!neighbor) continue;
       const neighborType = neighbor.getType();
 
       // 1. Chest Target
-      if (neighborType === 'chest') {
+      if (neighborType === "chest") {
         const candidate: Candidate = {
           direction: checkDir,
           priority: PRIO_CHEST,
@@ -207,12 +210,12 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
         this.updateBestCandidate(
           candidate,
           bestCandidate,
-          (c) => (bestCandidate = c)
+          (c) => (bestCandidate = c),
         );
       }
 
       // 2. Conveyor Target (ANY conveyor is a potential output)
-      else if (neighborType === 'conveyor') {
+      else if (neighborType === "conveyor") {
         const neighborDir = neighbor.direction;
         const dirToUs = getOppositeDirection(checkDir);
 
@@ -239,7 +242,7 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
         this.updateBestCandidate(
           candidate,
           bestCandidate,
-          (c) => (bestCandidate = c)
+          (c) => (bestCandidate = c),
         );
       }
     }
@@ -249,14 +252,14 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
       const offset = getDirectionOffset(checkDir);
       const neighbor = world.getBuilding(
         this.x + offset.dx,
-        this.y + offset.dy
+        this.y + offset.dy,
       );
 
       if (!neighbor) continue;
       const neighborType = neighbor.getType();
 
       // 3. Conveyor Input (Neighbor points AT us)
-      if (neighborType === 'conveyor') {
+      if (neighborType === "conveyor") {
         const neighborDir = neighbor.direction;
         const dirToUs = getOppositeDirection(checkDir);
 
@@ -272,13 +275,13 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
           this.updateBestCandidate(
             candidate,
             bestCandidate,
-            (c) => (bestCandidate = c)
+            (c) => (bestCandidate = c),
           );
         }
       }
 
       // 4. Extractor Input
-      else if (neighborType === 'extractor') {
+      else if (neighborType === "extractor") {
         const extractorDir = neighbor.direction;
         const dirToUs = getOppositeDirection(checkDir);
 
@@ -293,7 +296,7 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
           this.updateBestCandidate(
             candidate,
             bestCandidate,
-            (c) => (bestCandidate = c)
+            (c) => (bestCandidate = c),
           );
         }
       }
@@ -308,18 +311,18 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
       // This creates a chain reaction ensuring flow consistency from source to destination
       if (this.direction !== oldDirection) {
         try {
-          const directionsInProp: Array<'north' | 'south' | 'east' | 'west'> = [
-            'north',
-            'south',
-            'east',
-            'west',
+          const directionsInProp: Array<"north" | "south" | "east" | "west"> = [
+            "north",
+            "south",
+            "east",
+            "west",
           ];
 
           for (const dir of directionsInProp) {
             const offset = getDirectionOffset(dir);
             const neighbor = world.getBuilding(
               this.x + offset.dx,
-              this.y + offset.dy
+              this.y + offset.dy,
             );
 
             // Only propagate to conveyors to avoid infinite loops with other checks
@@ -337,7 +340,7 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
   private updateBestCandidate(
     candidate: Candidate,
     currentBest: Candidate | null,
-    setBest: (c: Candidate) => void
+    setBest: (c: Candidate) => void,
   ) {
     if (!currentBest || candidate.priority < currentBest.priority) {
       setBest(candidate);
@@ -351,15 +354,15 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
       this.x,
       this.y,
       this.direction,
-      world
+      world,
     );
-    let type: 'straight' | 'left' | 'right' = 'straight';
+    let type: "straight" | "left" | "right" = "straight";
 
     if (flowIn) {
       type = calculateTurnType(flowIn, this.direction) as
-        | 'straight'
-        | 'left'
-        | 'right';
+        | "straight"
+        | "left"
+        | "right";
     }
     this.visualType = type;
   }

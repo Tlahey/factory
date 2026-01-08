@@ -1,9 +1,9 @@
-import * as THREE from 'three';
-import { VisualEntity } from '../../visuals/VisualEntity';
-import { Extractor } from './Extractor';
-import { createExtractorModel } from './ExtractorModel';
-import { ParticleSystem } from '../../visuals/ParticleSystem';
-import { createIOArrows, updateIOArrows } from '../../visuals/IOArrowHelper';
+import * as THREE from "three";
+import { VisualEntity } from "../../visuals/VisualEntity";
+import { Extractor } from "./Extractor";
+import { createExtractorModel } from "./ExtractorModel";
+import { ParticleSystem } from "../../visuals/ParticleSystem";
+import { createIOArrows, updateIOArrows } from "../../visuals/IOArrowHelper";
 
 export class ExtractorVisual implements VisualEntity {
   public mesh: THREE.Object3D;
@@ -16,11 +16,11 @@ export class ExtractorVisual implements VisualEntity {
 
   constructor(extractor: Extractor, particleSystem: ParticleSystem) {
     this.mesh = createExtractorModel();
-    this.mesh.name = 'extractor';
+    this.mesh.name = "extractor";
     this.lastDirection = extractor.direction;
 
-    this.drillMesh = this.mesh.getObjectByName('drill_mesh');
-    this.drillContainer = this.mesh.getObjectByName('drill_container');
+    this.drillMesh = this.mesh.getObjectByName("drill_mesh");
+    this.drillContainer = this.mesh.getObjectByName("drill_container");
     this.particleSystem = particleSystem;
 
     // Status Light
@@ -47,7 +47,7 @@ export class ExtractorVisual implements VisualEntity {
     // Update Status Light
     const statusMat = this.statusLight?.material as THREE.MeshBasicMaterial;
     if (!statusMat || !statusMat.color) {
-      console.error('ExtractorVisual: statusLight material is undefined');
+      console.error("ExtractorVisual: statusLight material is undefined");
       return;
     }
 
@@ -58,7 +58,7 @@ export class ExtractorVisual implements VisualEntity {
       this.statusLight.scale.setScalar(1.0);
     }
     // 2. Low Power (Working Slow) -> ORANGE PULSING
-    else if (entity.powerStatus === 'warn' && entity.active) {
+    else if (entity.powerStatus === "warn" && entity.active) {
       statusMat.color.setHex(0xffaa00);
       this.statusLight.scale.setScalar(1.0 + Math.sin(time * 5) * 0.15);
     }

@@ -1,18 +1,14 @@
-import { Tile } from '../../core/Tile';
-import { BuildingEntity, Direction4 } from '../../entities/BuildingEntity';
-import { STACK_SIZE } from '../../constants';
-import { IIOBuilding, IStorage, ChestConfigType } from '../BuildingConfig';
+import { Tile } from "../../core/Tile";
+import { BuildingEntity, Direction4 } from "../../entities/BuildingEntity";
+import { STACK_SIZE } from "../../constants";
+import { IIOBuilding, IStorage, ChestConfigType } from "../BuildingConfig";
 
 export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   public slots: { type: string; count: number }[] = [];
   public bonusSlots: number = 0;
 
-  constructor(
-    x: number,
-    y: number,
-    direction: Direction4 = 'north'
-  ) {
-    super(x, y, 'chest', direction);
+  constructor(x: number, y: number, direction: Direction4 = "north") {
+    super(x, y, "chest", direction);
   }
 
   public tick(_delta: number): void {
@@ -24,9 +20,11 @@ export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   }
 
   // --- Traits Implementation ---
-  
+
   public get maxSlots(): number {
-    return ((this.getConfig() as ChestConfigType)?.maxSlots ?? 5) + this.bonusSlots;
+    return (
+      ((this.getConfig() as ChestConfigType)?.maxSlots ?? 5) + this.bonusSlots
+    );
   }
 
   public get io() {
@@ -34,7 +32,7 @@ export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   }
 
   public get powerConfig() {
-      return undefined;
+    return undefined;
   }
 
   // Returns true if item was accepted
@@ -72,33 +70,54 @@ export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   }
 
   // --- IIOBuilding ---
-  public getInputPosition(): { x: number, y: number } | null {
+  public getInputPosition(): { x: number; y: number } | null {
     if (!this.io.hasInput) return null;
     // Input is on front of chest (direction it faces)
-    const offset = this.getIOOffset('front');
+    const offset = this.getIOOffset("front");
     return { x: this.x + offset.dx, y: this.y + offset.dy };
   }
 
-  public getOutputPosition(): { x: number, y: number } | null {
+  public getOutputPosition(): { x: number; y: number } | null {
     if (!this.io.hasOutput) return null;
     // Output is on back of chest (opposite of direction it faces)
-    const offset = this.getIOOffset('back');
+    const offset = this.getIOOffset("back");
     return { x: this.x + offset.dx, y: this.y + offset.dy };
   }
 
-  private getIOOffset(side: 'front' | 'back' | 'left' | 'right'): { dx: number, dy: number } {
-    const clockwiseOrder: Array<'north' | 'east' | 'south' | 'west'> = ['north', 'east', 'south', 'west'];
+  private getIOOffset(side: "front" | "back" | "left" | "right"): {
+    dx: number;
+    dy: number;
+  } {
+    const clockwiseOrder: Array<"north" | "east" | "south" | "west"> = [
+      "north",
+      "east",
+      "south",
+      "west",
+    ];
     const currentIndex = clockwiseOrder.indexOf(this.direction);
-    let targetDir: 'north' | 'east' | 'south' | 'west';
-    
+    let targetDir: "north" | "east" | "south" | "west";
+
     switch (side) {
-      case 'front': targetDir = this.direction; break;
-      case 'back': targetDir = clockwiseOrder[(currentIndex + 2) % 4]; break;
-      case 'right': targetDir = clockwiseOrder[(currentIndex + 1) % 4]; break;
-      case 'left': targetDir = clockwiseOrder[(currentIndex + 3) % 4]; break;
+      case "front":
+        targetDir = this.direction;
+        break;
+      case "back":
+        targetDir = clockwiseOrder[(currentIndex + 2) % 4];
+        break;
+      case "right":
+        targetDir = clockwiseOrder[(currentIndex + 1) % 4];
+        break;
+      case "left":
+        targetDir = clockwiseOrder[(currentIndex + 3) % 4];
+        break;
     }
-    
-    const offsets = { 'north': { dx: 0, dy: -1 }, 'south': { dx: 0, dy: 1 }, 'east': { dx: 1, dy: 0 }, 'west': { dx: -1, dy: 0 } };
+
+    const offsets = {
+      north: { dx: 0, dy: -1 },
+      south: { dx: 0, dy: 1 },
+      east: { dx: 1, dy: 0 },
+      west: { dx: -1, dy: 0 },
+    };
     return offsets[targetDir];
   }
 
@@ -111,11 +130,11 @@ export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   }
 
   public canOutput(): boolean {
-      return false; // For now Chests don't output by themselves
+    return false; // For now Chests don't output by themselves
   }
 
   public tryOutput(): boolean {
-      return false;
+    return false;
   }
 
   public removeSlot(index: number): void {

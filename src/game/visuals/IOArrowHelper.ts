@@ -1,10 +1,10 @@
-import * as THREE from 'three';
-import type { BuildingEntity } from '../entities/BuildingEntity';
-import type { IIOBuilding, Direction } from '../buildings/BuildingConfig';
+import * as THREE from "three";
+import type { BuildingEntity } from "../entities/BuildingEntity";
+import type { IIOBuilding, Direction } from "../buildings/BuildingConfig";
 
 /**
  * IO Arrow Helper
- * 
+ *
  * Creates visual arrow indicators for building input/output ports.
  * - Input arrows: Green, point toward building (items coming IN)
  * - Output arrows: Red, point away from building (items going OUT)
@@ -14,7 +14,7 @@ const ARROW_HEAD_SIZE = 0.15;
 const ARROW_SHAFT_LENGTH = 0.2;
 const ARROW_SHAFT_RADIUS = 0.04;
 const ARROW_HEIGHT = 0.3;
-const INPUT_COLOR = 0x00ff00;  // Green
+const INPUT_COLOR = 0x00ff00; // Green
 const OUTPUT_COLOR = 0xff0000; // Red
 
 /**
@@ -22,41 +22,50 @@ const OUTPUT_COLOR = 0xff0000; // Red
  * The arrow group will be rotated to face the correct direction
  */
 function createArrowMesh(color: number, pointsInward: boolean): THREE.Group {
-    const arrowGroup = new THREE.Group();
-    
-    const material = new THREE.MeshBasicMaterial({ 
-        color,
-        transparent: true,
-        opacity: 0.95
-    });
-    
-    // Arrow head (cone) - default cone points +Y, we rotate to point +Z
-    const headGeometry = new THREE.ConeGeometry(ARROW_HEAD_SIZE, ARROW_HEAD_SIZE * 1.8, 8);
-    const head = new THREE.Mesh(headGeometry, material);
-    
-    // Arrow shaft (cylinder)
-    const shaftGeometry = new THREE.CylinderGeometry(ARROW_SHAFT_RADIUS, ARROW_SHAFT_RADIUS, ARROW_SHAFT_LENGTH, 8);
-    const shaft = new THREE.Mesh(shaftGeometry, material);
-    
-    // Rotate both to point along Z axis
-    head.rotation.x = Math.PI / 2;  // Now points toward +Z
-    shaft.rotation.x = Math.PI / 2; // Now aligns with Z axis
-    
-    if (pointsInward) {
-        // Arrow points INWARD (toward center) = tip at negative Z
-        head.rotation.x = -Math.PI / 2; // Flip to point toward -Z
-        head.position.z = -ARROW_HEAD_SIZE * 0.8;
-        shaft.position.z = ARROW_SHAFT_LENGTH / 2 + ARROW_HEAD_SIZE * 0.2;
-    } else {
-        // Arrow points OUTWARD (away from center) = tip at positive Z
-        head.position.z = ARROW_HEAD_SIZE * 0.8;
-        shaft.position.z = -(ARROW_SHAFT_LENGTH / 2 + ARROW_HEAD_SIZE * 0.2);
-    }
-    
-    arrowGroup.add(head);
-    arrowGroup.add(shaft);
-    
-    return arrowGroup;
+  const arrowGroup = new THREE.Group();
+
+  const material = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity: 0.95,
+  });
+
+  // Arrow head (cone) - default cone points +Y, we rotate to point +Z
+  const headGeometry = new THREE.ConeGeometry(
+    ARROW_HEAD_SIZE,
+    ARROW_HEAD_SIZE * 1.8,
+    8,
+  );
+  const head = new THREE.Mesh(headGeometry, material);
+
+  // Arrow shaft (cylinder)
+  const shaftGeometry = new THREE.CylinderGeometry(
+    ARROW_SHAFT_RADIUS,
+    ARROW_SHAFT_RADIUS,
+    ARROW_SHAFT_LENGTH,
+    8,
+  );
+  const shaft = new THREE.Mesh(shaftGeometry, material);
+
+  // Rotate both to point along Z axis
+  head.rotation.x = Math.PI / 2; // Now points toward +Z
+  shaft.rotation.x = Math.PI / 2; // Now aligns with Z axis
+
+  if (pointsInward) {
+    // Arrow points INWARD (toward center) = tip at negative Z
+    head.rotation.x = -Math.PI / 2; // Flip to point toward -Z
+    head.position.z = -ARROW_HEAD_SIZE * 0.8;
+    shaft.position.z = ARROW_SHAFT_LENGTH / 2 + ARROW_HEAD_SIZE * 0.2;
+  } else {
+    // Arrow points OUTWARD (away from center) = tip at positive Z
+    head.position.z = ARROW_HEAD_SIZE * 0.8;
+    shaft.position.z = -(ARROW_SHAFT_LENGTH / 2 + ARROW_HEAD_SIZE * 0.2);
+  }
+
+  arrowGroup.add(head);
+  arrowGroup.add(shaft);
+
+  return arrowGroup;
 }
 
 /**
@@ -64,112 +73,134 @@ function createArrowMesh(color: number, pointsInward: boolean): THREE.Group {
  * The arrow is built to point toward +Z, so we rotate to match world direction
  */
 function getDirectionRotation(direction: Direction): number {
-    switch (direction) {
-        case 'north': return Math.PI;      // +Z to -Z
-        case 'south': return 0;            // +Z stays +Z
-        case 'east': return -Math.PI / 2;  // +Z to +X
-        case 'west': return Math.PI / 2;   // +Z to -X
-    }
+  switch (direction) {
+    case "north":
+      return Math.PI; // +Z to -Z
+    case "south":
+      return 0; // +Z stays +Z
+    case "east":
+      return -Math.PI / 2; // +Z to +X
+    case "west":
+      return Math.PI / 2; // +Z to -X
+  }
 }
 
 /**
  * Get the world position offset for placing arrow at tile edge
  */
-function getEdgePosition(direction: Direction, distance: number): { x: number, z: number } {
-    switch (direction) {
-        case 'north': return { x: 0, z: -distance };
-        case 'south': return { x: 0, z: distance };
-        case 'east': return { x: distance, z: 0 };
-        case 'west': return { x: -distance, z: 0 };
-    }
+function getEdgePosition(
+  direction: Direction,
+  distance: number,
+): { x: number; z: number } {
+  switch (direction) {
+    case "north":
+      return { x: 0, z: -distance };
+    case "south":
+      return { x: 0, z: distance };
+    case "east":
+      return { x: distance, z: 0 };
+    case "west":
+      return { x: -distance, z: 0 };
+  }
 }
 
 /**
  * Calculate the actual world direction from a relative side and building direction
  */
-function getSideDirection(side: 'front' | 'back' | 'left' | 'right'): Direction {
-    // Return relative direction assuming building faces 'north'
-    // Rotation is handled by the parent mesh
-    switch (side) {
-        case 'front': return 'north';
-        case 'back': return 'south';
-        case 'right': return 'east';
-        case 'left': return 'west';
-    }
+function getSideDirection(
+  side: "front" | "back" | "left" | "right",
+): Direction {
+  // Return relative direction assuming building faces 'north'
+  // Rotation is handled by the parent mesh
+  switch (side) {
+    case "front":
+      return "north";
+    case "back":
+      return "south";
+    case "right":
+      return "east";
+    case "left":
+      return "west";
+  }
 }
 
 /**
  * Create IO arrows for a building element.
  */
-export function createIOArrows(building: BuildingEntity & IIOBuilding): THREE.Group {
-    const group = new THREE.Group();
-    group.name = 'io_arrows';
-    
-    const io = building.io;
-    if (!io.showArrow) return group;
-    
-    // Create INPUT arrow (green, pointing toward building)
-    if (io.hasInput) {
-        const inputSide = io.inputSide || 'front';
-        const inputDir = getSideDirection(inputSide);
-        
-        const inputArrow = createArrowMesh(INPUT_COLOR, true); // points inward
-        const rotation = getDirectionRotation(inputDir);
-        const pos = getEdgePosition(inputDir, 0.55);
-        
-        inputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
-        inputArrow.rotation.y = rotation;
-        inputArrow.name = 'input_arrow';
-        
-        group.add(inputArrow);
-    }
-    
-    // Create OUTPUT arrow (red, pointing away from building)
-    if (io.hasOutput) {
-        const outputSide = io.outputSide || 'front';
-        const outputDir = getSideDirection(outputSide);
-        
-        const outputArrow = createArrowMesh(OUTPUT_COLOR, false); // points outward
-        const rotation = getDirectionRotation(outputDir);
-        const pos = getEdgePosition(outputDir, 0.55);
-        
-        outputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
-        outputArrow.rotation.y = rotation;
-        outputArrow.name = 'output_arrow';
-        
-        group.add(outputArrow);
-    }
-    
-    return group;
+export function createIOArrows(
+  building: BuildingEntity & IIOBuilding,
+): THREE.Group {
+  const group = new THREE.Group();
+  group.name = "io_arrows";
+
+  const io = building.io;
+  if (!io.showArrow) return group;
+
+  // Create INPUT arrow (green, pointing toward building)
+  if (io.hasInput) {
+    const inputSide = io.inputSide || "front";
+    const inputDir = getSideDirection(inputSide);
+
+    const inputArrow = createArrowMesh(INPUT_COLOR, true); // points inward
+    const rotation = getDirectionRotation(inputDir);
+    const pos = getEdgePosition(inputDir, 0.55);
+
+    inputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
+    inputArrow.rotation.y = rotation;
+    inputArrow.name = "input_arrow";
+
+    group.add(inputArrow);
+  }
+
+  // Create OUTPUT arrow (red, pointing away from building)
+  if (io.hasOutput) {
+    const outputSide = io.outputSide || "front";
+    const outputDir = getSideDirection(outputSide);
+
+    const outputArrow = createArrowMesh(OUTPUT_COLOR, false); // points outward
+    const rotation = getDirectionRotation(outputDir);
+    const pos = getEdgePosition(outputDir, 0.55);
+
+    outputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
+    outputArrow.rotation.y = rotation;
+    outputArrow.name = "output_arrow";
+
+    group.add(outputArrow);
+  }
+
+  return group;
 }
 
 /**
  * Update IO arrows to reflect current building direction.
  */
-export function updateIOArrows(arrowGroup: THREE.Group, building: BuildingEntity & IIOBuilding): void {
-    const io = building.io;
-    
-    // Update input arrow
-    const inputArrow = arrowGroup.getObjectByName('input_arrow');
-    if (inputArrow && io.hasInput) {
-        const inputSide = io.inputSide || 'front';
-        const inputDir = getSideDirection(inputSide);
-        const rotation = getDirectionRotation(inputDir);
-        const pos = getEdgePosition(inputDir, 0.55);
-        
-        inputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
-        inputArrow.rotation.y = rotation;
-    }
-    
-    // Update output arrow
-    const outputArrow = arrowGroup.getObjectByName('output_arrow');
-    if (outputArrow && io.hasOutput) {
-        const outputSide = io.outputSide || 'front';
-        const outputDir = getSideDirection(outputSide);
-        const rotation = getDirectionRotation(outputDir);
-        const pos = getEdgePosition(outputDir, 0.35);
-        
-        outputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
-        outputArrow.rotation.y = rotation;
-    }
+export function updateIOArrows(
+  arrowGroup: THREE.Group,
+  building: BuildingEntity & IIOBuilding,
+): void {
+  const io = building.io;
+
+  // Update input arrow
+  const inputArrow = arrowGroup.getObjectByName("input_arrow");
+  if (inputArrow && io.hasInput) {
+    const inputSide = io.inputSide || "front";
+    const inputDir = getSideDirection(inputSide);
+    const rotation = getDirectionRotation(inputDir);
+    const pos = getEdgePosition(inputDir, 0.55);
+
+    inputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
+    inputArrow.rotation.y = rotation;
+  }
+
+  // Update output arrow
+  const outputArrow = arrowGroup.getObjectByName("output_arrow");
+  if (outputArrow && io.hasOutput) {
+    const outputSide = io.outputSide || "front";
+    const outputDir = getSideDirection(outputSide);
+    const rotation = getDirectionRotation(outputDir);
+    const pos = getEdgePosition(outputDir, 0.35);
+
+    outputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
+    outputArrow.rotation.y = rotation;
+  }
 }

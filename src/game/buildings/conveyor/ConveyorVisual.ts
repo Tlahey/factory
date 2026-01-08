@@ -1,18 +1,18 @@
-import * as THREE from 'three';
-import { VisualEntity } from '../../visuals/VisualEntity';
-import { Conveyor } from './Conveyor';
-import { createConveyorTexture } from './ConveyorTexture';
-import { createConveyorModel } from './ConveyorGeometry';
+import * as THREE from "three";
+import { VisualEntity } from "../../visuals/VisualEntity";
+import { Conveyor } from "./Conveyor";
+import { createConveyorTexture } from "./ConveyorTexture";
+import { createConveyorModel } from "./ConveyorGeometry";
 import {
   createItemRockModel,
   updateRockVisuals,
-} from '../../environment/rock/RockModel';
+} from "../../environment/rock/RockModel";
 
 export class ConveyorVisual implements VisualEntity {
   public mesh: THREE.Object3D;
   private beltMaterial: THREE.MeshLambertMaterial | null = null;
   private itemContainer: THREE.Group; // Wrapper for Transform/Scale correction
-  public type: 'straight' | 'left' | 'right';
+  public type: "straight" | "left" | "right";
   private lastResolved: boolean;
   private itemMesh: THREE.Group;
   private lastItemId: number | null = null;
@@ -26,10 +26,10 @@ export class ConveyorVisual implements VisualEntity {
 
     const texture = createConveyorTexture();
     this.mesh = createConveyorModel(this.type, texture);
-    this.mesh.name = 'conveyor';
+    this.mesh.name = "conveyor";
 
     // Setup Belt Material
-    const belt = this.mesh.getObjectByName('belt');
+    const belt = this.mesh.getObjectByName("belt");
     if (belt && belt instanceof THREE.Mesh) {
       if (this.lastResolved) {
         this.beltMaterial = belt.material as THREE.MeshLambertMaterial;
@@ -48,7 +48,7 @@ export class ConveyorVisual implements VisualEntity {
     this.itemContainer.add(this.itemMesh);
 
     // Counter-scale for Right turns to preserve rock shape (Parent is Scale X=-1)
-    if (this.type === 'right') {
+    if (this.type === "right") {
       this.itemContainer.scale.set(-1, 1, 1);
     } else {
       this.itemContainer.scale.set(1, 1, 1);
@@ -58,16 +58,16 @@ export class ConveyorVisual implements VisualEntity {
     this.setOrientation(this.type, conveyor.direction);
   }
 
-  private setOrientation(type: 'straight' | 'left' | 'right', outDir: string) {
+  private setOrientation(type: "straight" | "left" | "right", outDir: string) {
     const getRot = (dir: string) => {
       switch (dir) {
-        case 'north':
+        case "north":
           return 0;
-        case 'west':
+        case "west":
           return Math.PI / 2;
-        case 'south':
+        case "south":
           return Math.PI;
-        case 'east':
+        case "east":
           return -Math.PI / 2;
         default:
           return 0;
@@ -75,8 +75,8 @@ export class ConveyorVisual implements VisualEntity {
     };
 
     let rot = getRot(outDir);
-    if (type === 'left') rot -= Math.PI / 2;
-    else if (type === 'right') {
+    if (type === "left") rot -= Math.PI / 2;
+    else if (type === "right") {
       this.mesh.scale.set(-1, 1, 1);
       rot += Math.PI / 2;
     }
@@ -87,7 +87,7 @@ export class ConveyorVisual implements VisualEntity {
    * Update the resolved status of the conveyor, changing belt material to enable/disable animation
    */
   public setResolved(isResolved: boolean): void {
-    const belt = this.mesh.getObjectByName('belt');
+    const belt = this.mesh.getObjectByName("belt");
     if (belt && belt instanceof THREE.Mesh) {
       if (isResolved) {
         // Enable animated belt - get the texture from current material or create new one
@@ -151,7 +151,7 @@ export class ConveyorVisual implements VisualEntity {
       // Position item based on progress
       const progress = conveyor.transportProgress;
 
-      if (this.type === 'straight') {
+      if (this.type === "straight") {
         this.itemContainer.position.set(0, 0.2, 0.5 - progress);
         this.itemContainer.rotation.y = 0;
       } else {
@@ -167,7 +167,7 @@ export class ConveyorVisual implements VisualEntity {
         this.itemContainer.position.set(x, 0.2, z);
 
         // Rotation Logic
-        if (this.type === 'right') {
+        if (this.type === "right") {
           // Right Turn: Needs to turn South(0) -> East(-90).
           // Scale(-1) * Rot(t) * Scale(-1) = Rot(-t).
           // We want Global -90. So -t = -90 => t = 90.
@@ -190,11 +190,11 @@ export class ConveyorVisual implements VisualEntity {
    * Check if visual needs to be rebuilt due to type change
    */
   public updateType(
-    newType: 'straight' | 'left' | 'right',
-    outDir: string
+    newType: "straight" | "left" | "right",
+    outDir: string,
   ): void {
     console.log(
-      `Conveyor type changed from ${this.type} to ${newType}, rebuilding mesh`
+      `Conveyor type changed from ${this.type} to ${newType}, rebuilding mesh`,
     );
     this.type = newType;
     this.lastDirection = outDir;
@@ -210,14 +210,14 @@ export class ConveyorVisual implements VisualEntity {
     // Create new mesh with new type
     const texture = createConveyorTexture();
     this.mesh = createConveyorModel(newType, texture);
-    this.mesh.name = 'conveyor';
+    this.mesh.name = "conveyor";
     this.mesh.position.copy(pos);
     // Rotation needs to be recalculated based on dir, not just copied,
     // because 'straight' and 'left' meshes have different base orientations relative to pivot?
     // Actually `setOrientation` handles it.
 
     // Re-setup belt material
-    const belt = this.mesh.getObjectByName('belt');
+    const belt = this.mesh.getObjectByName("belt");
     if (belt && belt instanceof THREE.Mesh) {
       if (this.lastResolved) {
         this.beltMaterial = belt.material as THREE.MeshLambertMaterial;
@@ -233,7 +233,7 @@ export class ConveyorVisual implements VisualEntity {
     this.itemContainer.add(this.itemMesh);
 
     // Counter-scale for Right turns
-    if (newType === 'right') {
+    if (newType === "right") {
       this.itemContainer.scale.set(-1, 1, 1);
     } else {
       this.itemContainer.scale.set(1, 1, 1);

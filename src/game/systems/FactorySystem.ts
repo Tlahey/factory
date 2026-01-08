@@ -1,6 +1,6 @@
 // import { Application, Ticker } from 'pixi.js'; // REMOVED
-import { World } from '../core/World';
-import { BuildingEntity } from '../entities/BuildingEntity';
+import { World } from "../core/World";
+import { BuildingEntity } from "../entities/BuildingEntity";
 
 export class FactorySystem {
   private world: World;
@@ -18,7 +18,7 @@ export class FactorySystem {
 
   private tick(delta: number) {
     this.world.buildings.forEach((building: BuildingEntity) => {
-       building.tick(delta, this.world);
+      building.tick(delta, this.world);
     });
   }
 }

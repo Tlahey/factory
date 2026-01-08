@@ -1,23 +1,26 @@
-import { TileType, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
-import { useGameStore } from '../state/store';
-import { BuildingEntity, Direction4 } from '../entities/BuildingEntity';
-import { Extractor } from '../buildings/extractor/Extractor';
-import { Conveyor } from '../buildings/conveyor/Conveyor';
-import { Chest } from '../buildings/chest/Chest';
-import { Hub } from '../buildings/hub/Hub';
-import { ElectricPole } from '../buildings/electric-pole/ElectricPole';
-import { getBuildingConfig, ChestConfigType } from '../buildings/BuildingConfig';
-import { createBuildingLogic } from '../buildings/BuildingFactory';
-import { IWorld, WorldData, SerializedBuilding } from '../entities/types';
+import { TileType, WORLD_HEIGHT, WORLD_WIDTH } from "../constants";
+import { useGameStore } from "../state/store";
+import { BuildingEntity, Direction4 } from "../entities/BuildingEntity";
+import { Extractor } from "../buildings/extractor/Extractor";
+import { Conveyor } from "../buildings/conveyor/Conveyor";
+import { Chest } from "../buildings/chest/Chest";
+import { Hub } from "../buildings/hub/Hub";
+import { ElectricPole } from "../buildings/electric-pole/ElectricPole";
+import {
+  getBuildingConfig,
+  ChestConfigType,
+} from "../buildings/BuildingConfig";
+import { createBuildingLogic } from "../buildings/BuildingFactory";
+import { IWorld, WorldData, SerializedBuilding } from "../entities/types";
 import {
   getDirectionOffset,
   getOppositeDirection,
   Direction,
-} from '../buildings/conveyor/ConveyorLogicSystem';
+} from "../buildings/conveyor/ConveyorLogicSystem";
 
-import { Tile } from './Tile';
-import { ResourceTile } from './ResourceTile';
-import { TileFactory } from '../TileFactory';
+import { Tile } from "./Tile";
+import { ResourceTile } from "./ResourceTile";
+import { TileFactory } from "../TileFactory";
 
 interface AutoOrientable {
   autoOrient(world: IWorld): void;
@@ -37,7 +40,7 @@ export class World implements IWorld {
     return this.buildings.get(`${x},${y}`);
   }
 
-  public tick(delta: number): void {
+  public tick(_delta: number): void {
     for (let y = 0; y < WORLD_HEIGHT; y++) {
       for (let x = 0; x < WORLD_WIDTH; x++) {
         const currentTile = this.grid[y][x];
@@ -66,7 +69,7 @@ export class World implements IWorld {
     startX: number,
     startY: number,
     targetType: string,
-    viaTypes: string[] = ['conveyor']
+    viaTypes: string[] = ["conveyor"],
   ): boolean {
     // Simple BFS to check connectivity
     const start = this.getBuilding(startX, startY);
@@ -200,10 +203,10 @@ export class World implements IWorld {
         processed.add(key);
 
         const dirs: { dx: number; dy: number; dir: Direction }[] = [
-          { dx: 0, dy: 1, dir: 'north' },
-          { dx: 0, dy: -1, dir: 'south' },
-          { dx: 1, dy: 0, dir: 'west' },
-          { dx: -1, dy: 0, dir: 'east' },
+          { dx: 0, dy: 1, dir: "north" },
+          { dx: 0, dy: -1, dir: "south" },
+          { dx: 1, dy: 0, dir: "west" },
+          { dx: -1, dy: 0, dir: "east" },
         ];
 
         for (const d of dirs) {
@@ -251,7 +254,7 @@ export class World implements IWorld {
     this.cables = this.cables.filter(
       (c) =>
         !(c.x1 === x1 && c.y1 === y1 && c.x2 === x2 && c.y2 === y2) &&
-        !(c.x1 === x2 && c.y1 === y2 && c.x2 === x1 && c.y2 === y1)
+        !(c.x1 === x2 && c.y1 === y2 && c.x2 === x1 && c.y2 === y1),
     );
   }
 
@@ -259,6 +262,27 @@ export class World implements IWorld {
     let count = 0;
     for (const c of this.cables) {
       if ((c.x1 === x && c.y1 === y) || (c.x2 === x && c.y2 === y)) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  public getBuildingConnectionsCount(building: BuildingEntity): number {
+    let count = 0;
+    // Get all tiles occupied by building
+    const occupiedTiles = new Set<string>();
+    for (let dx = 0; dx < building.width; dx++) {
+      for (let dy = 0; dy < building.height; dy++) {
+        occupiedTiles.add(`${building.x + dx},${building.y + dy}`);
+      }
+    }
+
+    for (const c of this.cables) {
+      if (
+        occupiedTiles.has(`${c.x1},${c.y1}`) ||
+        occupiedTiles.has(`${c.x2},${c.y2}`)
+      ) {
         count++;
       }
     }
@@ -280,7 +304,7 @@ export class World implements IWorld {
     this.cables = this.cables.filter(
       (c) =>
         !occupiedTiles.has(`${c.x1},${c.y1}`) &&
-        !occupiedTiles.has(`${c.x2},${c.y2}`)
+        !occupiedTiles.has(`${c.x2},${c.y2}`),
     );
 
     // Remove from all occupied tiles
@@ -303,8 +327,8 @@ export class World implements IWorld {
     x: number,
     y: number,
     type: string,
-    direction: Direction4 = 'north',
-    skipValidation: boolean = false
+    direction: Direction4 = "north",
+    skipValidation: boolean = false,
   ): boolean {
     const key = `${x},${y}`;
     if (this.buildings.has(key)) return false; // Already occupied
@@ -318,19 +342,19 @@ export class World implements IWorld {
 
     let building: BuildingEntity;
     switch (type) {
-      case 'extractor':
+      case "extractor":
         building = new Extractor(x, y, direction);
         break;
-      case 'conveyor':
+      case "conveyor":
         building = new Conveyor(x, y, direction);
         break;
-      case 'chest':
+      case "chest":
         building = new Chest(x, y, direction);
         break;
-      case 'hub':
+      case "hub":
         building = new Hub(x, y);
         break;
-      case 'electric_pole':
+      case "electric_pole":
         building = new ElectricPole(x, y);
         break;
       default:
@@ -352,7 +376,7 @@ export class World implements IWorld {
 
     // 2. IMPORTANT: Notify ALL identifiable neighbors to re-check their orientation
     // This allows existing conveyors to react when we place a Chest or Extractor next to them
-    const directions: Direction[] = ['north', 'south', 'east', 'west'];
+    const directions: Direction[] = ["north", "south", "east", "west"];
 
     for (const dir of directions) {
       const offset = getDirectionOffset(dir);
@@ -362,7 +386,7 @@ export class World implements IWorld {
 
       // Update neighbor logic
       if (neighbor) {
-        if (neighbor.getType() === 'conveyor') {
+        if (neighbor.getType() === "conveyor") {
           (neighbor as Conveyor).autoOrientToNeighbor(this);
         } else {
           // Try to auto-orient other neighbors (e.g. Extractors)
@@ -379,7 +403,7 @@ export class World implements IWorld {
     this.updateConveyorNetwork();
 
     // Auto-orient other buildings (like Extractors)
-    if (type !== 'conveyor') {
+    if (type !== "conveyor") {
       this.autoOrientBuilding(x, y);
     }
 
@@ -391,7 +415,7 @@ export class World implements IWorld {
   // ...
   public autoOrientBuilding(x: number, y: number): void {
     const b = this.getBuilding(x, y);
-    if (b && 'autoOrient' in b) {
+    if (b && "autoOrient" in b) {
       (b as unknown as AutoOrientable).autoOrient(this);
     }
   }
@@ -416,7 +440,7 @@ export class World implements IWorld {
       const startY = extractor.y + outputOffset.dy;
 
       const firstConveyor = this.getBuilding(startX, startY);
-      if (!firstConveyor || firstConveyor.getType() !== 'conveyor') continue;
+      if (!firstConveyor || firstConveyor.getType() !== "conveyor") continue;
 
       // BFS to propagate direction
       const visited = new Set<string>();
@@ -438,7 +462,7 @@ export class World implements IWorld {
         visited.add(key);
 
         const conveyor = this.getBuilding(x, y);
-        if (!conveyor || conveyor.getType() !== 'conveyor') continue;
+        if (!conveyor || conveyor.getType() !== "conveyor") continue;
 
         const conv = conveyor as Conveyor;
         const forbiddenDir = fromDir; // Cannot point back to where we came from
@@ -446,7 +470,7 @@ export class World implements IWorld {
         // If conveyor points back toward the source, find a better direction
         if (conv.direction === forbiddenDir) {
           // Find first valid alternative (any adjacent conveyor or chest)
-          const directions: Direction[] = ['north', 'south', 'east', 'west'];
+          const directions: Direction[] = ["north", "south", "east", "west"];
 
           for (const dir of directions) {
             if (dir === forbiddenDir) continue;
@@ -456,7 +480,7 @@ export class World implements IWorld {
 
             if (neighbor) {
               const nType = neighbor.getType();
-              if (nType === 'conveyor' || nType === 'chest') {
+              if (nType === "conveyor" || nType === "chest") {
                 conv.direction = dir;
                 break;
               }
@@ -472,7 +496,7 @@ export class World implements IWorld {
 
         if (!visited.has(nextKey)) {
           const next = this.getBuilding(nextX, nextY);
-          if (next && next.getType() === 'conveyor') {
+          if (next && next.getType() === "conveyor") {
             // The next conveyor receives flow from `conv.direction`
             // which means it should not point back in the opposite direction
             queue.push({
@@ -502,8 +526,9 @@ export class World implements IWorld {
       grid: this.grid.map((row) =>
         row.map((tile) => ({
           type: tile.getType(),
-          resourceAmount: tile instanceof ResourceTile ? tile.resourceAmount : 0,
-        }))
+          resourceAmount:
+            tile instanceof ResourceTile ? tile.resourceAmount : 0,
+        })),
       ),
       buildings: uniqueBuildings.map((b) => {
         const base = {
@@ -554,7 +579,10 @@ export class World implements IWorld {
         for (let x = 0; x < WORLD_WIDTH; x++) {
           if (worldData.grid[y] && worldData.grid[y][x]) {
             const tData = worldData.grid[y][x];
-            this.grid[y][x] = TileFactory.createTile(tData.type, tData.resourceAmount);
+            this.grid[y][x] = TileFactory.createTile(
+              tData.type,
+              tData.resourceAmount,
+            );
           }
         }
       }
@@ -579,11 +607,13 @@ export class World implements IWorld {
             building.transportProgress = bData.transportProgress || 0;
           } else if (building instanceof Chest) {
             if (bData.slots) building.slots = bData.slots;
-            if (bData.bonusSlots !== undefined) building.bonusSlots = bData.bonusSlots;
+            if (bData.bonusSlots !== undefined)
+              building.bonusSlots = bData.bonusSlots;
             else if (bData.maxSlots) {
-                // Backward compatibility: calculate bonus from old total
-                const base = (getBuildingConfig('chest') as ChestConfigType)?.maxSlots || 5;
-                building.bonusSlots = Math.max(0, bData.maxSlots - base);
+              // Backward compatibility: calculate bonus from old total
+              const base =
+                (getBuildingConfig("chest") as ChestConfigType)?.maxSlots || 5;
+              building.bonusSlots = Math.max(0, bData.maxSlots - base);
             }
           } else if (building instanceof Extractor) {
             if (bData.speedMultiplier)

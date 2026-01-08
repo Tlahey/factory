@@ -1,22 +1,22 @@
-import { describe, test, expect, beforeEach } from 'vitest';
-import { Conveyor } from './Conveyor';
+import { describe, test, expect, beforeEach } from "vitest";
+import { Conveyor } from "./Conveyor";
 import {
   getDirectionOffset,
   getOppositeDirection,
-} from './ConveyorLogicSystem';
+} from "./ConveyorLogicSystem";
 
 class MockEntity {
   x: number;
   y: number;
   type: string;
-  direction: 'north' | 'south' | 'east' | 'west';
+  direction: "north" | "south" | "east" | "west";
   isResolved: boolean = true;
 
   constructor(
     type: string,
     x: number,
     y: number,
-    direction: 'north' | 'south' | 'east' | 'west' = 'north'
+    direction: "north" | "south" | "east" | "west" = "north",
   ) {
     this.type = type;
     this.x = x;
@@ -52,7 +52,7 @@ class MockWorld {
     _startX: number,
     _startY: number,
     _targetType: string,
-    _viaTypes: string[]
+    _viaTypes: string[],
   ): boolean {
     return false;
   }
@@ -60,7 +60,7 @@ class MockWorld {
   propagateFlowFromSources() {
     const extractors: MockEntity[] = [];
     this.buildings.forEach((b) => {
-      if (b.getType() === 'extractor') extractors.push(b as MockEntity);
+      if (b.getType() === "extractor") extractors.push(b as MockEntity);
     });
 
     for (const extractor of extractors) {
@@ -69,7 +69,7 @@ class MockWorld {
       const startY = extractor.y + outputOffset.dy;
 
       const firstConveyor = this.getBuilding(startX, startY);
-      if (!firstConveyor || firstConveyor.getType() !== 'conveyor') continue;
+      if (!firstConveyor || firstConveyor.getType() !== "conveyor") continue;
 
       const visited = new Set<string>();
       const queue: { x: number; y: number; fromDir: string }[] = [];
@@ -88,17 +88,17 @@ class MockWorld {
         visited.add(key);
 
         const conveyor = this.getBuilding(x, y);
-        if (!conveyor || conveyor.getType() !== 'conveyor') continue;
+        if (!conveyor || conveyor.getType() !== "conveyor") continue;
 
         const conv = conveyor as Conveyor;
         const forbiddenDir = fromDir;
 
         if (conv.direction === forbiddenDir) {
-          const directions: Array<'north' | 'south' | 'east' | 'west'> = [
-            'north',
-            'south',
-            'east',
-            'west',
+          const directions: Array<"north" | "south" | "east" | "west"> = [
+            "north",
+            "south",
+            "east",
+            "west",
           ];
           for (const dir of directions) {
             if (dir === forbiddenDir) continue;
@@ -106,8 +106,8 @@ class MockWorld {
             const neighbor = this.getBuilding(x + offset.dx, y + offset.dy);
             if (
               neighbor &&
-              (neighbor.getType() === 'conveyor' ||
-                neighbor.getType() === 'chest')
+              (neighbor.getType() === "conveyor" ||
+                neighbor.getType() === "chest")
             ) {
               conv.direction = dir;
               break;
@@ -122,7 +122,7 @@ class MockWorld {
 
         if (!visited.has(nextKey)) {
           const next = this.getBuilding(nextX, nextY);
-          if (next && next.getType() === 'conveyor') {
+          if (next && next.getType() === "conveyor") {
             queue.push({
               x: nextX,
               y: nextY,
@@ -135,18 +135,18 @@ class MockWorld {
   }
 }
 
-describe('Conveyor Orientation & Flow', () => {
+describe("Conveyor Orientation & Flow", () => {
   let world: MockWorld;
 
   beforeEach(() => {
     world = new MockWorld();
   });
 
-  test('Side Loading Priority: Straight conveyor next to Extractor', () => {
+  test("Side Loading Priority: Straight conveyor next to Extractor", () => {
     // Setup: Extractor(East) -> C1(North) -> C2(South)
-    const ext = new MockEntity('extractor', 0, 10, 'east');
-    const c1 = new Conveyor(1, 10, 'north');
-    const c2 = new Conveyor(1, 11, 'south');
+    const ext = new MockEntity("extractor", 0, 10, "east");
+    const c1 = new Conveyor(1, 10, "north");
+    const c2 = new Conveyor(1, 11, "south");
 
     world.add(ext);
     world.add(c1);
@@ -156,19 +156,19 @@ describe('Conveyor Orientation & Flow', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     c1.autoOrientToNeighbor(world as any);
 
-    if (c1.direction !== 'south') {
+    if (c1.direction !== "south") {
       console.log(`DEBUG FAILURE: Expected 'south', got '${c1.direction}'`);
     }
 
-    expect(c1.direction).toBe('south');
+    expect(c1.direction).toBe("south");
   });
 
-  test('Flow Propagation: Reversing a Chain', () => {
-    const ext = new MockEntity('extractor', 0, 10, 'east');
-    const c1 = new Conveyor(1, 10, 'west');
-    const c2 = new Conveyor(2, 10, 'west');
-    const c3 = new Conveyor(3, 10, 'west');
-    const chest = new MockEntity('chest', 4, 10, 'north');
+  test("Flow Propagation: Reversing a Chain", () => {
+    const ext = new MockEntity("extractor", 0, 10, "east");
+    const c1 = new Conveyor(1, 10, "west");
+    const c2 = new Conveyor(2, 10, "west");
+    const c3 = new Conveyor(3, 10, "west");
+    const chest = new MockEntity("chest", 4, 10, "north");
 
     world.add(ext);
     world.add(c1);
@@ -178,15 +178,15 @@ describe('Conveyor Orientation & Flow', () => {
 
     world.propagateFlowFromSources();
 
-    expect(c1.direction).toBe('east');
-    expect(c2.direction).toBe('east');
-    expect(c3.direction).toBe('east');
+    expect(c1.direction).toBe("east");
+    expect(c2.direction).toBe("east");
+    expect(c3.direction).toBe("east");
   });
 
-  test('Corner Case: Extractor -> Curve', () => {
-    const ext = new MockEntity('extractor', 0, 0, 'east');
-    const c1 = new Conveyor(1, 0, 'west');
-    const c2 = new Conveyor(1, 1, 'north');
+  test("Corner Case: Extractor -> Curve", () => {
+    const ext = new MockEntity("extractor", 0, 0, "east");
+    const c1 = new Conveyor(1, 0, "west");
+    const c2 = new Conveyor(1, 1, "north");
 
     world.add(ext);
     world.add(c1);
@@ -194,14 +194,14 @@ describe('Conveyor Orientation & Flow', () => {
 
     world.propagateFlowFromSources();
 
-    expect(c1.direction).toBe('south');
+    expect(c1.direction).toBe("south");
   });
 
-  test('Crash Safety: Conflicting Conveyors (Head-to-Head)', () => {
+  test("Crash Safety: Conflicting Conveyors (Head-to-Head)", () => {
     // Setup: C1(East) -> C2(West). They point at each other.
     // This scenario previously caused issues. We ensure it doesn't crash/stack overflow.
-    const c1 = new Conveyor(0, 0, 'east');
-    const c2 = new Conveyor(1, 0, 'west');
+    const c1 = new Conveyor(0, 0, "east");
+    const c2 = new Conveyor(1, 0, "west");
 
     world.add(c1);
     world.add(c2);

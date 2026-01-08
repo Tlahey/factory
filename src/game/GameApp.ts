@@ -127,17 +127,18 @@ export class GameApp {
           isValid ?? true,
           ghostBuilding ?? null,
           rotation ?? "north",
+          this.world,
         );
       },
       (start, end, isValid) => {
         if (start && end) {
           this.cableVisuals.showPreview(start, end, isValid, this.world);
           // Show cursor at target
-          this.placementVisuals.update(end.x, end.y, isValid, null);
+          this.placementVisuals.update(end.x, end.y, isValid, null, "north", this.world);
         } else {
           this.cableVisuals.hidePreview();
           // Hide cursor
-          this.placementVisuals.update(-1, -1);
+          this.placementVisuals.update(-1, -1, false, null, "north", this.world);
         }
       },
       (target) => {

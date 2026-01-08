@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach } from "vitest";
 import { Conveyor } from "./Conveyor";
+import { IWorld } from "../../entities/types";
 import {
   getDirectionOffset,
   getOppositeDirection,
@@ -230,5 +231,30 @@ describe("Conveyor Orientation & Flow", () => {
     const tile = { isStone: () => false, isWater: () => true };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(c.isValidPlacement(tile as any)).toBe(false);
+  });
+
+  describe("Connectivity Logic", () => {
+    test("tracks output connectivity", () => {
+      const c1 = new Conveyor(0, 0, "east");
+      const c2 = new Conveyor(1, 0, "east");
+      c2.isResolved = true;
+      world.add(c1);
+      world.add(c2);
+      c1.tick(0, world as unknown as IWorld);
+      expect(c1.isOutputConnected).toBe(true);
+    });
+
+    test("tracks input connectivity", () => {
+      const ext = new MockEntity("extractor", 0, 0, "east");
+      const c = new Conveyor(1, 0, "east");
+      world.add(c); // Add conveyor first
+      world.add(ext as unknown as MockEntity); // Cast to MockEntity which is accepted
+      
+      // Mock getOutputPosition for extractor
+      (ext as unknown as { getOutputPosition: () => { x: number; y: number } | null }).getOutputPosition = () => ({ x: 1, y: 0 });
+      
+      c.tick(0, world as unknown as IWorld);
+      expect(c.isInputConnected).toBe(true);
+    });
   });
 });

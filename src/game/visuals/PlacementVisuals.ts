@@ -14,7 +14,10 @@ import {
   getBuildingConfig,
   IOConfig,
   Direction,
+  getDirectionFromSide,
 } from "../buildings/BuildingConfig";
+import { IWorld } from "../entities/types";
+import { isPortConnected } from "../buildings/BuildingIOHelper";
 
 // 4-direction rotation mapping
 const directionToRotation: Record<Direction4, number> = {
@@ -199,6 +202,7 @@ export class PlacementVisuals {
     isValid: boolean = true,
     ghostType: string | null = null,
     rotation: Direction4 = "north",
+    world?: IWorld,
   ) {
     if (x < 0 || y < 0) {
       this.cursorMesh.visible = false;
@@ -273,6 +277,33 @@ export class PlacementVisuals {
 
         // IO arrows are children of ghostMesh and inherit its rotation automatically
         // No separate positioning needed
+
+        // Update IO arrow visibility based on connectivity
+        if (this.ioArrowGroup && world) {
+          const config = getBuildingConfig(this.ghostType!) as any;
+          const io = config?.io as IOConfig;
+
+          if (io) {
+            if (io.hasInput) {
+              const arrow = this.ioArrowGroup.getObjectByName("input_arrow");
+              if (arrow) {
+                const side = io.inputSide || "front";
+                const absDir = getDirectionFromSide(side, rotation);
+                const connected = isPortConnected(world, x, y, absDir, false);
+                arrow.visible = !connected;
+              }
+            }
+            if (io.hasOutput) {
+              const arrow = this.ioArrowGroup.getObjectByName("output_arrow");
+              if (arrow) {
+                const side = io.outputSide || "front";
+                const absDir = getDirectionFromSide(side, rotation);
+                const connected = isPortConnected(world, x, y, absDir, true);
+                arrow.visible = !connected;
+              }
+            }
+          }
+        }
 
         // Apply Ghost Material
         const ghostColor = isValid ? 0xffffff : 0xff0000;

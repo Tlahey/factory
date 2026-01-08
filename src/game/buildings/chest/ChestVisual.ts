@@ -22,11 +22,9 @@ export class ChestVisual implements VisualEntity {
   public update(_delta: number, entity?: Chest): void {
     if (!entity) return;
 
-    // Update IO arrows if direction changed
-    if (entity.direction !== this.lastDirection) {
-      updateIOArrows(this.ioArrows, entity);
-      this.lastDirection = entity.direction;
-    }
+    // Update IO arrows (visibility and direction)
+    updateIOArrows(this.ioArrows, entity);
+    this.lastDirection = entity.direction;
   }
 
   public setHighlight(active: boolean): void {

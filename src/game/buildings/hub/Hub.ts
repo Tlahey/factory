@@ -68,17 +68,30 @@ export class Hub extends BuildingEntity implements IPowered, IIOBuilding {
 
   // --- IIOBuilding ---
   public getInputPosition(): { x: number; y: number } | null {
-    // Hub doesn't have a specific input position
+    // Hub doesn't have a single canonical input position, 
+    // it accepts from any tile that points to it.
     return null;
   }
 
   public getOutputPosition(): { x: number; y: number } | null {
-    // Hub doesn't have a specific output position
     return null;
   }
 
-  public canInput(): boolean {
-    return true; // Hub can receive items
+  public canInput(fromX: number, fromY: number): boolean {
+    // Hub accepts items from any adjacent tile if that tile is pointing to one of its 4 tiles.
+    // The BuildingIOHelper already found this Hub by checking the target tile of the outputting building.
+    // So if we are here, it means some building at (fromX, fromY) is outputting to one of our tiles.
+    
+    // Basic adjacency check for safety
+    const dx = Math.abs(fromX - this.x);
+    const dy = Math.abs(fromY - this.y);
+    
+    // Since Hub is 2x2, it's adjacent if dx in [-1, 2] and dy in [-1, 2]
+    // (excluding the 4 tiles of the Hub itself)
+    const isInside = fromX >= this.x && fromX < this.x + 2 && fromY >= this.y && fromY < this.y + 2;
+    if (isInside) return false;
+
+    return dx <= 2 && dy <= 2; 
   }
 
   public canOutput(): boolean {

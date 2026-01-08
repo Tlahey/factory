@@ -91,6 +91,8 @@ export interface IIOBuilding {
   canInput(fromX: number, fromY: number): boolean;
   canOutput(world: IWorld): boolean;
   tryOutput(world: IWorld): boolean;
+  isInputConnected?: boolean;
+  isOutputConnected?: boolean;
 }
 
 export type Direction = "north" | "south" | "east" | "west";

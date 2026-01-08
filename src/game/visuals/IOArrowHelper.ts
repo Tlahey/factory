@@ -143,11 +143,12 @@ export function createIOArrows(
 
     const inputArrow = createArrowMesh(INPUT_COLOR, true); // points inward
     const rotation = getDirectionRotation(inputDir);
-    const pos = getEdgePosition(inputDir, 0.55);
+    const pos = getEdgePosition(inputDir, 0.70);
 
     inputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
     inputArrow.rotation.y = rotation;
     inputArrow.name = "input_arrow";
+    inputArrow.visible = !building.isInputConnected;
 
     group.add(inputArrow);
   }
@@ -159,11 +160,12 @@ export function createIOArrows(
 
     const outputArrow = createArrowMesh(OUTPUT_COLOR, false); // points outward
     const rotation = getDirectionRotation(outputDir);
-    const pos = getEdgePosition(outputDir, 0.55);
+    const pos = getEdgePosition(outputDir, 0.70);
 
     outputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
     outputArrow.rotation.y = rotation;
     outputArrow.name = "output_arrow";
+    outputArrow.visible = !building.isOutputConnected;
 
     group.add(outputArrow);
   }
@@ -186,10 +188,11 @@ export function updateIOArrows(
     const inputSide = io.inputSide || "front";
     const inputDir = getSideDirection(inputSide);
     const rotation = getDirectionRotation(inputDir);
-    const pos = getEdgePosition(inputDir, 0.55);
+    const pos = getEdgePosition(inputDir, 0.70);
 
     inputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
     inputArrow.rotation.y = rotation;
+    inputArrow.visible = !building.isInputConnected;
   }
 
   // Update output arrow
@@ -198,9 +201,10 @@ export function updateIOArrows(
     const outputSide = io.outputSide || "front";
     const outputDir = getSideDirection(outputSide);
     const rotation = getDirectionRotation(outputDir);
-    const pos = getEdgePosition(outputDir, 0.35);
+    const pos = getEdgePosition(outputDir, 0.70);
 
     outputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
     outputArrow.rotation.y = rotation;
+    outputArrow.visible = !building.isOutputConnected;
   }
 }

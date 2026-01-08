@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test, expect, vi } from "vitest";
 // import * as THREE from 'three';
-import { createIOArrows } from "./IOArrowHelper";
+import { createIOArrows, updateIOArrows } from "./IOArrowHelper";
 import { Extractor } from "../buildings/extractor/Extractor";
 import { Chest } from "../buildings/chest/Chest";
 import { IIOBuilding } from "../buildings/BuildingConfig";
@@ -122,5 +122,24 @@ describe("IOArrowHelper", () => {
     expect(arrowNorth.position.x).toBe(arrowEast.position.x);
     expect(arrowNorth.position.z).toBe(arrowEast.position.z);
     expect(arrowNorth.rotation.y).toBe(arrowEast.rotation.y);
+  });
+
+  test("Arrow visibility follows connectivity", () => {
+    const extractor = new Extractor(0, 0, "north");
+    const group = createIOArrows(extractor as any);
+    const arrow = group.getObjectByName("output_arrow") as any;
+
+    // Default: visible
+    expect(arrow.visible).toBe(true);
+
+    // Connected: hidden
+    (extractor as any).isOutputConnected = true;
+    updateIOArrows(group, extractor as any);
+    expect(arrow.visible).toBe(false);
+
+    // Disconnected: visible
+    (extractor as any).isOutputConnected = false;
+    updateIOArrows(group, extractor as any);
+    expect(arrow.visible).toBe(true);
   });
 });

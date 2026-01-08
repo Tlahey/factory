@@ -38,11 +38,9 @@ export class ExtractorVisual implements VisualEntity {
   public update(delta: number, entity: Extractor): void {
     const time = performance.now() / 1000;
 
-    // Update IO arrows if direction changed
-    if (entity.direction !== this.lastDirection) {
-      updateIOArrows(this.ioArrows, entity);
-      this.lastDirection = entity.direction;
-    }
+    // Update IO arrows (visibility and direction)
+    updateIOArrows(this.ioArrows, entity);
+    this.lastDirection = entity.direction;
 
     // Update Status Light
     const statusMat = this.statusLight?.material as THREE.MeshBasicMaterial;

@@ -11,12 +11,15 @@ import {
   ExtractorConfigType,
   PowerConfig,
 } from "../BuildingConfig";
+import { updateBuildingConnectivity } from "../BuildingIOHelper";
 
 export class Extractor
   extends BuildingEntity
   implements IExtractable, IPowered, IIOBuilding
 {
   public active: boolean = false;
+  public isInputConnected: boolean = false;
+  public isOutputConnected: boolean = false;
 
   public speedMultiplier: number = 1.0;
   private accumTime: number = 0;
@@ -38,6 +41,9 @@ export class Extractor
     const canOutput = this.canOutput(world);
     const interval = this.getExtractionInterval();
     const _isReadyToOutput = this.accumTime >= interval;
+
+    // Update connectivity visuals
+    updateBuildingConnectivity(this, world);
 
     // STABLE DEMAND: We demand power as long as we have resources to work on.
     this.hasDemand = hasResources;

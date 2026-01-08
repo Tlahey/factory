@@ -13,6 +13,7 @@ import {
   ConveyorConfigType,
   PowerConfig,
 } from "../BuildingConfig";
+import { updateBuildingConnectivity } from "../BuildingIOHelper";
 
 interface Candidate {
   direction: "north" | "south" | "east" | "west";
@@ -29,6 +30,8 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
   public transportProgress: number = 0;
   public isResolved: boolean = false; // True only if connected to a valid destination (chest)
   public visualType: "straight" | "left" | "right" = "straight";
+  public isInputConnected: boolean = false;
+  public isOutputConnected: boolean = false;
 
   public get transportSpeed(): number {
     return ((this.getConfig() as ConveyorConfigType).speed ?? 60) / 60; // tiles per second
@@ -37,6 +40,7 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
   public tick(delta: number, world?: IWorld): void {
     if (world) {
       this.updateVisualState(world);
+      updateBuildingConnectivity(this, world);
     }
 
     if (!this.currentItem || !this.isResolved) return;
@@ -115,12 +119,16 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
     const dx = fromX - this.x;
     const dy = fromY - this.y;
 
-    // Conveyor only accepts input from the opposite of its direction
-    // Unless it's a side-load? Currently, let's keep it simple: only back-load.
-    const oppositeDir = getOppositeDirection(this.direction);
-    const offset = getDirectionOffset(oppositeDir);
+    // Check if neighbor is adjacent
+    if (Math.abs(dx) + Math.abs(dy) !== 1) return false;
 
-    return dx === offset.dx && dy === offset.dy && !this.currentItem;
+    // Conveyor accepts input from any side EXCEPT the front (output direction)
+    const outputOffset = getDirectionOffset(this.direction);
+    if (dx === outputOffset.dx && dy === outputOffset.dy) return false;
+
+    // Structural check only: return true even if full.
+    // Logic for item transfer handles the 'full' state separately.
+    return true;
   }
 
   public canOutput(world: IWorld): boolean {

@@ -2,6 +2,17 @@
 
 # Features
 
+- Ajouter un système qui permet d'avoir du texte à l'écran. Il sera utilisé comme tutoriel et pour afficher des messages importants (on y ajoutera un personnage qui parle avec une image animée). Tous les textes seront stockés dans un fichier pour faciliter la traduction mais aussi avoir un bon système qui permet de modifier les dialogues.
+  - Exemple: quand on commence la partie il nous parle de certaines choses
+  - Quand on clique la permière fois sur un élement il va nous dire à quoi ça sert
+  - Expliquer le système de consomation d'électricité
+  etc ...
+
+- Il faudrait trouver un moyen de récupérer de la roche au départ du jeu sans forcément avoir d'équipement.
+  - On pourrait penser à un scénario scripté de départ où une personne nous parle et nous dit ce qu'il faut faire
+  - Il partira chercher un peu de roche pour nous et quand on en aura assez il se fera électrocuter par un éclair et mourra.
+  - Pour la suite de la partie ça sera son fantome qui nous parlera mais on aura assez de ressource pour commencer.
+
 - les batiments n'ont plus d'onglet d'amélioration, tout passe par le hub
 
 - Les resources doivent avoir un ratio de production qui influe sur les extracteur. Par exemple les roches ont aléatoirement un extraction en *0.5 ou *1. D'autres ressources par la suite pourront avoir du 1.5 etc ...
@@ -105,8 +116,3 @@ Chaque amélioration a aussi un cout en ressource qu'il faudra définir dans le 
 - Il faudra cacher des éléments dans la roche qui quand elle sera totalement consommé rélèvera une nouvelle amélioration.
   - exemple, miner va permettre de débloquer un item spécial qui permettra de faire évoluer la foreuse. On prendra des minéraux rare existants pour faire évoluer les éléments. et il faudra vraiment que ça soit rare ! 0.1% de chance.
 
-- Ajouter un système qui permet d'avoir du texte à l'écran. Il sera utilisé comme tutoriel et pour afficher des messages importants (on y ajoutera un personnage qui parle avec une image animée). Tous les textes seront stockés dans un fichier pour faciliter la traduction mais aussi avoir un bon système qui permet de modifier les dialogues.
-  - Exemple: quand on commence la partie il nous parle de certaines choses
-  - Quand on clique la permière fois sur un élement il va nous dire à quoi ça sert
-  - Expliquer le système de consomation d'électricité
-  etc ...

@@ -387,6 +387,15 @@ export class InputSystem {
       // 5. Self Connection
       if (dist === 0) isValid = false;
 
+      // 6. Cost Check
+      const config = getBuildingConfig("cable");
+      if (isValid && config?.cost) {
+        const { hasResources } = useGameStore.getState();
+        if (!hasResources(config.cost)) {
+          isValid = false;
+        }
+      }
+
       if (this.onCableDrag) {
         this.onCableDrag(
           this.cableStart,
@@ -408,11 +417,27 @@ export class InputSystem {
       );
 
       // Validate each position in the path
-      const validatedPath = path.map((pos) => ({
+      let validatedPath = path.map((pos) => ({
         x: pos.x,
         y: pos.y,
         isValid: this.world.canPlaceBuilding(pos.x, pos.y, "conveyor"),
       }));
+
+      // Check Total Cost
+      const config = getBuildingConfig("conveyor");
+      if (config?.cost) {
+        const count = path.length;
+        const totalCost: Record<string, number> = {};
+        for (const [res, amt] of Object.entries(config.cost)) {
+          totalCost[res] = amt * count;
+        }
+
+        const { hasResources } = useGameStore.getState();
+        if (!hasResources(totalCost)) {
+          // If cannot afford total, mark all as invalid
+          validatedPath = validatedPath.map((p) => ({ ...p, isValid: false }));
+        }
+      }
 
       // Call preview callback
       if (this.onConveyorDrag) {
@@ -505,6 +530,16 @@ export class InputSystem {
               intersection.y,
               selectedBuilding,
             );
+
+            // Check Cost
+            const config = getBuildingConfig(selectedBuilding);
+            if (config?.cost) {
+              const { hasResources } = useGameStore.getState();
+              if (!hasResources(config.cost)) {
+                isValid = false;
+              }
+            }
+
             ghost = selectedBuilding;
             this.lastHoverPosition = {
               x: intersection.x,

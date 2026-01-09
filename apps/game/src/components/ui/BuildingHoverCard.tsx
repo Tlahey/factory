@@ -20,11 +20,18 @@ export default function BuildingHoverCard({
 }: BuildingHoverCardProps) {
   const { t } = useTranslation();
   const buildingCounts = useGameStore((state) => state.buildingCounts);
+  const inventory = useGameStore((state) => state.inventory);
   const count = buildingCounts[config.type] || 0;
 
   // Helper to get translated string or fallback
   const getName = () => t(`building.${config.id}.name`);
   const getDescription = () => t(`building.${config.id}.description`);
+
+  const getPlayerResourceCount = (resourceId: string) => {
+    return inventory.reduce((total, slot) => {
+      return slot.type === resourceId ? total + slot.count : total;
+    }, 0);
+  };
 
   if (variant === "minimal") {
     return (
@@ -59,20 +66,30 @@ export default function BuildingHoverCard({
                 );
               }
 
-              return costEntries.map(([res, amount]) => (
-                <div
-                  key={res}
-                  className="flex justify-between items-center bg-black/20 p-1.5 rounded"
-                >
-                  <span className="text-xs text-gray-400 font-bold uppercase">
-                    {t(`common.${res}`)}
-                  </span>
-                  <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-stone-400" />
-                    {amount}
-                  </span>
-                </div>
-              ));
+              return costEntries.map(([res, amount]) => {
+                const playerAmount = getPlayerResourceCount(res);
+                const canAfford = playerAmount >= amount;
+
+                return (
+                  <div
+                    key={res}
+                    className="flex justify-between items-center bg-black/20 p-1.5 rounded"
+                  >
+                    <span className="text-xs text-gray-400 font-bold uppercase">
+                      {t(`common.${res}`)}
+                    </span>
+                    <span
+                      className={clsx(
+                        "text-xs font-bold flex items-center gap-1",
+                        canAfford ? "text-amber-400" : "text-red-500",
+                      )}
+                    >
+                      <div className="w-1.5 h-1.5 rounded-full bg-stone-400" />
+                      {amount}
+                    </span>
+                  </div>
+                );
+              });
             })()}
           </div>
         </div>
@@ -83,7 +100,7 @@ export default function BuildingHoverCard({
   return (
     <div
       className={clsx(
-        "absolute top-0 right-full mr-4 w-64 bg-gray-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[80] animate-in slide-in-from-right-2 fade-in duration-200 pointer-events-none",
+        "absolute top-0 right-full mr-4 w-64 bg-gray-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[80] pointer-events-none",
         className,
       )}
     >
@@ -146,17 +163,27 @@ export default function BuildingHoverCard({
                 );
               }
 
-              return costEntries.map(([res, amount]) => (
-                <div key={res} className="flex justify-between items-center">
-                  <span className="text-xs text-gray-300 capitalize">
-                    {t(`common.${res}`)}
-                  </span>
-                  <span className="text-sm font-bold text-amber-400 flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-stone-400" />
-                    {amount}
-                  </span>
-                </div>
-              ));
+              return costEntries.map(([res, amount]) => {
+                const playerAmount = getPlayerResourceCount(res);
+                const canAfford = playerAmount >= amount;
+
+                return (
+                  <div key={res} className="flex justify-between items-center">
+                    <span className="text-xs text-gray-300 capitalize">
+                      {t(`common.${res}`)}
+                    </span>
+                    <span
+                      className={clsx(
+                        "text-sm font-bold flex items-center gap-1",
+                        canAfford ? "text-amber-400" : "text-red-500",
+                      )}
+                    >
+                      <div className="w-2 h-2 rounded-full bg-stone-400" />
+                      {amount}
+                    </span>
+                  </div>
+                );
+              });
             })()}
           </div>
 

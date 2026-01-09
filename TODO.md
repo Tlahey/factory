@@ -38,6 +38,11 @@ Attention il faut forcément qu'on voit ce qu'on gagne en amélioration et qu'on
 
 Chaque amélioration a aussi un cout en ressource qu'il faudra définir dans le upgrades du builing
 
+- Ajouter un système quand on hover un élément et on appuie sur la touche "c" ça vient sélectionner l'élément comme si je l'avait fait depuis le menu de construction.
+
+- Ajouter une minimap en haut à droite de l'écran qui montre la carte entière avec la position du joueur et des bâtiments construits.
+  - La minimap doit être cliquable pour permettre au joueur de se déplacer rapidement sur la carte.
+
 - Le hub doit avoir un shop
   - Le shop permet d'acheter des éléments avec les ressources collectées en jeu. Par exemple, au départ on a une seule foreuse, par la suite, avec les améliorations il sera possible d'en stocker plus, et on pourra en acheter d'autres dans le shop.
 

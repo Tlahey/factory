@@ -16,6 +16,10 @@ export default function BuildingSidebar() {
   const setHotbarSlot = useGameStore((state) => state.setHotbarSlot);
   const buildingCounts = useGameStore((state) => state.buildingCounts);
 
+  // Subscribe to inventory to trigger re-renders when resources change
+  const _inventory = useGameStore((state) => state.inventory);
+  const hasResources = useGameStore((state) => state.hasResources);
+
   const [hoveredBuildingId, setHoveredBuildingId] = useState<string | null>(
     null,
   );
@@ -56,26 +60,32 @@ export default function BuildingSidebar() {
       {hotbar.map((buildingId, index) => {
         const isSelected = !!buildingId && selectedBuilding === buildingId;
 
-        // Get Count Info
+        // Get Count Info & Affordability
         let countDisplay = null;
+        let canAfford = true;
+
         if (buildingId) {
           const config = getBuildingConfig(buildingId);
 
-          if (config?.maxCount) {
-            const current = buildingCounts[buildingId] || 0;
-            const isLimitReached = current >= config.maxCount;
-            countDisplay = (
-              <div
-                className={clsx(
-                  "absolute -top-2 -right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md border shadow-sm z-20",
-                  isLimitReached
-                    ? "bg-red-900/90 text-red-200 border-red-500/50"
-                    : "bg-gray-800/90 text-gray-300 border-white/20",
-                )}
-              >
-                {current}/{config.maxCount}
-              </div>
-            );
+          if (config) {
+            canAfford = hasResources(config.cost);
+
+            if (config.maxCount) {
+              const current = buildingCounts[buildingId] || 0;
+              const isLimitReached = current >= config.maxCount;
+              countDisplay = (
+                <div
+                  className={clsx(
+                    "absolute -top-2 -right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md border shadow-sm z-20",
+                    isLimitReached
+                      ? "bg-red-900/90 text-red-200 border-red-500/50"
+                      : "bg-gray-800/90 text-gray-300 border-white/20",
+                  )}
+                >
+                  {current}/{config.maxCount}
+                </div>
+              );
+            }
           }
         }
 
@@ -122,7 +132,12 @@ export default function BuildingSidebar() {
                 isSelected
                   ? "bg-blue-600/20 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
                   : "bg-white/5 border-white/5 hover:border-white/20 hover:bg-white/10",
-                !!buildingId && "cursor-grab active:cursor-grabbing",
+                !!buildingId &&
+                  canAfford &&
+                  "cursor-grab active:cursor-grabbing",
+                !!buildingId &&
+                  !canAfford &&
+                  "cursor-not-allowed opacity-50 border-red-900/30",
               )}
               title={buildingId || "Empty Slot"}
             >

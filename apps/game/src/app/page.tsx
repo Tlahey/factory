@@ -11,6 +11,7 @@ import BuildingMenu from "@/components/ui/BuildingMenu";
 import HUD from "@/components/ui/HUD";
 import PendingUnlocksHUD from "@/components/ui/PendingUnlocksHUD";
 import { useGameStore } from "@/game/state/store";
+import DebugMenu from "@/components/ui/DebugMenu";
 
 const GameCanvas = dynamic(() => import("@/components/GameCanvas"), {
   ssr: false,
@@ -146,6 +147,8 @@ export default function Home() {
         onLoad={handleLoad}
         onNewGame={handleNewGame}
       />
+
+      <DebugMenu />
 
       <div
         className={`transition-opacity duration-300 ${isPaused ? "opacity-0 pointer-events-none" : "opacity-100"}`}

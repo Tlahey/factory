@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { SKILL_TREE } from "@/game/buildings/hub/skill-tree/SkillTreeConfig";
 
 export interface InventorySlot {
   type: string | null;
@@ -62,6 +63,11 @@ interface GameState {
   unlockBuilding: (buildingId: string) => void;
   hasResources: (cost: Record<string, number>) => boolean;
   removeResources: (cost: Record<string, number>) => void;
+
+  // Debug / Cheats
+  isUnlimitedResources: boolean;
+  toggleUnlimitedResources: () => void;
+  unlockAllSkills: () => void;
 }
 
 const INVENTORY_SIZE = 10;
@@ -214,6 +220,7 @@ export const useGameStore = create<GameState>()(
           unlockedSkills: [],
           unlockedBuildings: ["hub"],
           pendingUnlocks: [],
+          isUnlimitedResources: false,
         }),
 
       // Skill Tree
@@ -273,6 +280,8 @@ export const useGameStore = create<GameState>()(
         })),
       hasResources: (cost) => {
         const state = _get();
+        if (state.isUnlimitedResources) return true;
+
         // Aggregate inventory
         const totalResources: Record<string, number> = {};
         for (const slot of state.inventory) {
@@ -291,6 +300,8 @@ export const useGameStore = create<GameState>()(
       },
       removeResources: (cost) =>
         set((state) => {
+          if (state.isUnlimitedResources) return state;
+
           const newInv = state.inventory.map((s) => ({ ...s }));
           for (const [resource, amount] of Object.entries(cost)) {
             let remaining = amount;
@@ -309,6 +320,26 @@ export const useGameStore = create<GameState>()(
           }
           return { inventory: newInv };
         }),
+
+      // Debug / Cheats
+      isUnlimitedResources: false,
+      toggleUnlimitedResources: () =>
+        set((state) => ({
+          isUnlimitedResources: !state.isUnlimitedResources,
+        })),
+      unlockAllSkills: () =>
+        set(() => {
+          const allSkillIds = SKILL_TREE.map((node) => node.id);
+          const allUnlockBuildings = SKILL_TREE.filter(
+            (node) => node.type === "unlock",
+          ).map((node) => node.buildingId);
+
+          return {
+            unlockedSkills: allSkillIds,
+            unlockedBuildings: ["hub", ...allUnlockBuildings],
+            pendingUnlocks: [], // Clear any pending
+          };
+        }),
     }),
     {
       name: "factory-game-storage", // name of the item in the storage (must be unique)
@@ -320,6 +351,7 @@ export const useGameStore = create<GameState>()(
         unlockedSkills: state.unlockedSkills,
         unlockedBuildings: state.unlockedBuildings,
         pendingUnlocks: state.pendingUnlocks,
+        isUnlimitedResources: state.isUnlimitedResources,
       }),
     },
   ),

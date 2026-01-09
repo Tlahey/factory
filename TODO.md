@@ -3,10 +3,17 @@
 # Features
 
 - Ajouter un système qui permet d'avoir du texte à l'écran. Il sera utilisé comme tutoriel et pour afficher des messages importants (on y ajoutera un personnage qui parle avec une image animée). Tous les textes seront stockés dans un fichier pour faciliter la traduction mais aussi avoir un bon système qui permet de modifier les dialogues.
+  - Tu peux gérer le personnage avec des images animées en sprite sheet (idle, talking etc ...) et on changera l'animation en fonction de l'état (par exemple quand il parle on met l'animation talking)
+  - Le texte s'affiche dans une boîte en bas de l'écran avec le personnage à gauche.
+  - Il y aura un bouton "Suivant" pour passer au texte suivant.
+  - Le texte peut être déclenché par des événements spécifiques dans le jeu (par exemple, la construction d'un bâtiment, la collecte d'une ressource, etc.)
   - Exemple: quand on commence la partie il nous parle de certaines choses
   - Quand on clique la permière fois sur un élement il va nous dire à quoi ça sert
   - Expliquer le système de consomation d'électricité
     etc ...
+  - Ajouter l'information dans GEMINI qu'a l'ajout d'un nouveau batiment il faut forcément appliquer un texte pour l'explication et le tutoriel associé.
+  - Ajouter le texte dans le fichier JSON pour chaque textes et un fichier de configuration pour gérer les dialogues (ordre, conditions de déclenchement etc ...)
+  - en plus du bouton suivant, on peut aussi appuyer sur la touche espace pour passer au texte suivant.
 
 - Il faudrait trouver un moyen de récupérer de la roche au départ du jeu sans forcément avoir d'équipement.
   - On pourrait penser à un scénario scripté de départ où une personne nous parle et nous dit ce qu'il faut faire

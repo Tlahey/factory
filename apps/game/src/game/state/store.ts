@@ -77,6 +77,10 @@ interface GameState {
   hideDialogue: () => void;
   markDialogueSeen: (id: string) => void;
 
+  // Shop
+  purchasedCounts: Record<string, number>;
+  buyBuilding: (buildingId: string) => void;
+
   // Interactive Tutorial / Highlight System
   focusedElement: string | null; // ID of the DOM element or World Entity to highlight
   setFocusedElement: (id: string | null) => void;
@@ -236,6 +240,7 @@ export const useGameStore = create<GameState>()(
           activeDialogueId: null,
           seenDialogues: [],
           focusedElement: null,
+          purchasedCounts: {},
         }),
 
       // Skill Tree
@@ -401,6 +406,19 @@ export const useGameStore = create<GameState>()(
       // Interactive Tutorial
       focusedElement: null,
       setFocusedElement: (id) => set({ focusedElement: id }),
+
+      // Shop
+      purchasedCounts: {},
+      buyBuilding: (buildingId: string) =>
+        set((state) => {
+          const current = state.purchasedCounts[buildingId] || 0;
+          return {
+            purchasedCounts: {
+              ...state.purchasedCounts,
+              [buildingId]: current + 1,
+            },
+          };
+        }),
     }),
     {
       name: "factory-game-storage", // name of the item in the storage (must be unique)
@@ -414,6 +432,7 @@ export const useGameStore = create<GameState>()(
         pendingUnlocks: state.pendingUnlocks,
         isUnlimitedResources: state.isUnlimitedResources,
         seenDialogues: state.seenDialogues,
+        purchasedCounts: state.purchasedCounts,
       }),
     },
   ),

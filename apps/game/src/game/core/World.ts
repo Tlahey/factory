@@ -12,6 +12,7 @@ import {
 } from "../buildings/BuildingConfig";
 import { createBuildingLogic } from "../buildings/BuildingFactory";
 import { IWorld, WorldData, SerializedBuilding } from "../entities/types";
+import { getAllowedCount } from "../buildings/hub/shop/ShopConfig";
 import {
   getDirectionOffset,
   getOppositeDirection,
@@ -118,13 +119,14 @@ export class World implements IWorld {
 
     // Check Max Count Limits
     const config = getBuildingConfig(type);
-    if (config?.maxCount) {
-      let count = 0;
-      this.buildings.forEach((b) => {
-        if (b.getType() === type) count++;
-      });
-      if (count >= config.maxCount) return false;
-    }
+    const purchasedCounts = useGameStore.getState().purchasedCounts;
+    const maxCount = getAllowedCount(type, purchasedCounts[type] || 0);
+
+    let count = 0;
+    this.buildings.forEach((b) => {
+      if (b.getType() === type) count++;
+    });
+    if (count >= maxCount) return false;
 
     const width = config?.width || 1;
     const height = config?.height || 1;

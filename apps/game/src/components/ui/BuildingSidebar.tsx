@@ -6,6 +6,7 @@ import ModelPreview from "./ModelPreview";
 import { getBuildingConfig } from "@/game/buildings/BuildingConfig";
 import { useState } from "react";
 import BuildingHoverCard from "./BuildingHoverCard";
+import { getAllowedCount } from "@/game/buildings/hub/shop/ShopConfig";
 
 export default function BuildingSidebar() {
   const selectedBuilding = useGameStore((state) => state.selectedBuilding);
@@ -15,6 +16,7 @@ export default function BuildingSidebar() {
   const hotbar = useGameStore((state) => state.hotbar);
   const setHotbarSlot = useGameStore((state) => state.setHotbarSlot);
   const buildingCounts = useGameStore((state) => state.buildingCounts);
+  const purchasedCounts = useGameStore((state) => state.purchasedCounts);
 
   // Subscribe to inventory to trigger re-renders when resources change
   const _inventory = useGameStore((state) => state.inventory);
@@ -70,22 +72,25 @@ export default function BuildingSidebar() {
           if (config) {
             canAfford = hasResources(config.cost);
 
-            if (config.maxCount) {
-              const current = buildingCounts[buildingId] || 0;
-              const isLimitReached = current >= config.maxCount;
-              countDisplay = (
-                <div
-                  className={clsx(
-                    "absolute -top-2 -right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md border shadow-sm z-20",
-                    isLimitReached
-                      ? "bg-red-900/90 text-red-200 border-red-500/50"
-                      : "bg-gray-800/90 text-gray-300 border-white/20",
-                  )}
-                >
-                  {current}/{config.maxCount}
-                </div>
-              );
-            }
+            const maxCount = getAllowedCount(
+              buildingId,
+              purchasedCounts[buildingId] || 0,
+            );
+            const current = buildingCounts[buildingId] || 0;
+            const isLimitReached = current >= maxCount;
+
+            countDisplay = (
+              <div
+                className={clsx(
+                  "absolute -top-2 -right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md border shadow-sm z-20",
+                  isLimitReached
+                    ? "bg-red-900/90 text-red-200 border-red-500/50"
+                    : "bg-gray-800/90 text-gray-300 border-white/20",
+                )}
+              >
+                {current}/{maxCount}
+              </div>
+            );
           }
         }
 

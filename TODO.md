@@ -1,12 +1,8 @@
 # Bugs
 
-# Features
+- Revoir le système des convoyeurs. Il doit y avoir une librairie qui gère les convoyeurs et les ports.
 
-- Ajouter un système qui permet d'avoir du texte à l'écran. Il sera utilisé comme tutoriel et pour afficher des messages importants (on y ajoutera un personnage qui parle avec une image animée). Tous les textes seront stockés dans un fichier pour faciliter la traduction mais aussi avoir un bon système qui permet de modifier les dialogues.
-  - Exemple: quand on commence la partie il nous parle de certaines choses
-  - Quand on clique la permière fois sur un élement il va nous dire à quoi ça sert
-  - Expliquer le système de consomation d'électricité
-    etc ...
+# Features
 
 - Il faudrait trouver un moyen de récupérer de la roche au départ du jeu sans forcément avoir d'équipement.
   - On pourrait penser à un scénario scripté de départ où une personne nous parle et nous dit ce qu'il faut faire
@@ -17,48 +13,54 @@
 
 - Les resources doivent avoir un ratio de production qui influe sur les extracteur. Par exemple les roches ont aléatoirement un extraction en *0.5 ou *1. D'autres ressources par la suite pourront avoir du 1.5 etc ...
 
-Le hub doit avoir un arbre de compétences
-
-- l'arbre de compétence est visible quand on clique sur le hub. Ca sera une interface qui prendre une partie de l'écran avec un arbre dans lequell on pourra naviger et hover les éléments
-- L'arbre de compétences permet de stocker plus d'éléments / de débloquer de nouveaux éléments. Il faut forcément que les éléments précédent soient débloqués pour débloquer les suivants.
-  Les éléments qui ne sont pas encore déblocable sont caché à l'utilisateur. Donc on ne voit que les éléments qui sont actuellement débloquable. La configuration de l'arbre de compétence doit être dans un fichier JSON ou autre (graph ?) pour qu'il soit simple de le modifier.
-
-Comment je vois le truc.
-Dans les buidling on a des upgrades. Il faudrait que chaque position du tableau soit l'upgrade.
-index 0: Initial
-index 1: amélioration 1
-index 2: amélioration 2
-etc ...
-
-Chaque amélioration va appliquer un multiplicateur (*1.1 , *1.2 etc ....) en fonction de son amélioration dans le hub.
-De ce fait, l'arbre de compétence vient prendre l'ID de l'élément qu'on améliore ainsi que le niveau de l'amélioration. De la on passe au building son niveau d'amélioration, on vient récupérer dans les updates quel est le multiplication (et autre types d'amélio) et on l'applique aux formules.
-De ce fait, l'arbre est assez facile d'exploration, c'est juste des identifiants (extractor, hub etc ...) et niveau d'amélioration.
-
-Attention il faut forcément qu'on voit ce qu'on gagne en amélioration et qu'on doivent forcément passé par un niveau avant d'aller à un autre.
-
-Chaque amélioration a aussi un cout en ressource qu'il faudra définir dans le upgrades du builing
+---
 
 - Ajouter un système quand on hover un élément et on appuie sur la touche "c" ça vient sélectionner l'élément comme si je l'avait fait depuis le menu de construction.
+
+---
 
 - Ajouter une minimap en haut à droite de l'écran qui montre la carte entière avec la position du joueur et des bâtiments construits.
   - La minimap doit être cliquable pour permettre au joueur de se déplacer rapidement sur la carte.
 
-- Le hub doit avoir un shop
-  - Le shop permet d'acheter des éléments avec les ressources collectées en jeu. Par exemple, au départ on a une seule foreuse, par la suite, avec les améliorations il sera possible d'en stocker plus, et on pourra en acheter d'autres dans le shop.
+---
+
+Le hub doit avoir un shop
+
+- Le shop permet d'acheter des éléments avec les ressources collectées en jeu. Par exemple, au départ on a une seule foreuse, par la suite, avec les améliorations il sera possible d'en stocker plus, et on pourra en acheter d'autres dans le shop.
+
+- Le but est qu'il est possible de débloquer des buildings sur l'arbre de compétence mais le débloquer ne dit pas qu'on peut le créer.
+  Quand on débloque le batiment il devient disponible dans le shop pour l'acheter.
+  Chaque achat augmente le prix du même building dans le shop de façon drastique pour éviter d'en acheter trop facilement. Mais ça dépendra des batiments.
+
+Par exemple les extracteurs / containers seront beaucoup plus chère que le reste pour ajouter du challenge.
+Où on peut penser à que chaque évolution permet de débloquer l'élément dans le shop.
+
+Pense à rajouter le dialog et le guidance system sur la page pour le shop.
+
+Information importante, le shop se trouve sur le Hub dans un nouvel onglet qui remplace l'arbre d'upgrade au click
+
+---
 
 - Implémenter un building battery qui stocke l'énergie produite par les panneaux solaires et les éoliennes. Cette énergie pourra être utilisée par d'autres bâtiments pour fonctionner plus efficacement.
   - Au click sur la battery, on affiche son taux de charge (en pourcentage) et la quantité d'énergie stockée (en unités d'énergie Kw). Cette batterie pourra être améliorée dans l'arbre de compétences pour augmenter sa capacité de stockage et son taux de charge/décharge.
   - Il faut obligatoirement que la battery soit reliée à au moins un panneau solaire ou une éolienne pour fonctionner.
   - La battery peut avoir un disjoncteur qui permet de couper l'alimentation des bâtiments qui y sont reliés.
 
+---
+
 - Les poteaux électriques ont un nombre limité de connexion qui est de 3. ils pourront être améliorés par la suite pour augmenter ce nombre.
 
-- Ajouter le système d'input/ output pour les batiments
-  - Foreuse à une sortie (output) qui envoie les ressources extraites aux convoyeurs
-  - Le container a une entrée (input) qui reçoit les ressources des convoyeurs et une sortie (output) qui permet de récupérer les ressources stockées dans le container (la sortie est toujours à l'oposé de l'entrée)
-  - NB: dans le futur, les batiments pourrant avoir plusieurs entrées (qui seront toutes côté à côte sur le batiment) et toujours une seule sortie (à l'opposé des entrées)
-  - On matérialisera les entrées par une flèche verte et les sorties par une flèche rouge sur le batiment.
-  - Tout convoyeur qui n'est pas lié à une entrée ou une sortie d'un batiment ne fonctionnera pas
+---
+
+Ajouter le système d'input/ output pour les batiments
+
+- Foreuse à une sortie (output) qui envoie les ressources extraites aux convoyeurs
+- Le container a une entrée (input) qui reçoit les ressources des convoyeurs et une sortie (output) qui permet de récupérer les ressources stockées dans le container (la sortie est toujours à l'oposé de l'entrée)
+- NB: dans le futur, les batiments pourrant avoir plusieurs entrées (qui seront toutes côté à côte sur le batiment) et toujours une seule sortie (à l'opposé des entrées)
+- On matérialisera les entrées par une flèche verte et les sorties par une flèche rouge sur le batiment.
+- Tout convoyeur qui n'est pas lié à une entrée ou une sortie d'un batiment ne fonctionnera pas
+
+---
 
 - Ajouter dans la configuration de la foreuse une gestion du rate de la foreuse. Par exemple, on pourra améliorer la foreuse pour augmenter sa vitesse de production.
 
@@ -120,3 +122,12 @@ Chaque amélioration a aussi un cout en ressource qu'il faudra définir dans le 
 
 - Il faudra cacher des éléments dans la roche qui quand elle sera totalement consommé rélèvera une nouvelle amélioration.
   - exemple, miner va permettre de débloquer un item spécial qui permettra de faire évoluer la foreuse. On prendra des minéraux rare existants pour faire évoluer les éléments. et il faudra vraiment que ça soit rare ! 0.1% de chance.
+
+---
+
+- Créer un système de trade qui pourra être débloqué dans l'arbre de compétences.
+  - Il faudra créer un nouveau building qui sera un marché qui permettra de vendre des ressources et d'acheter des ressources.
+  - Par défaut on va pouvoir trade les ressources contre des monnaies
+  - Les échanges doivent être débloqués dans l'arbre de compétences
+  - Par défaut on peut trade la roche pour des pièces par exemple 10 roches = 1 pièce
+  - On pourra acheter par la suite avec les pièces des ressources via un marché géré automatiquement (comme age of empires)

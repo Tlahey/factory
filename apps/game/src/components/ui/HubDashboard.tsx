@@ -22,6 +22,7 @@ import {
   Clock,
   Loader2,
   Sparkles,
+  ShoppingBag,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
@@ -32,6 +33,8 @@ import {
 import { skillTreeManager } from "@/game/buildings/hub/skill-tree/SkillTreeManager";
 import { Hub } from "@/game/buildings/hub/Hub";
 import ModelPreview from "./ModelPreview";
+import ShopView from "./ShopView";
+import clsx from "clsx";
 
 // Grid configuration for skill tree layout
 const GRID_CELL_SIZE = 150;
@@ -381,8 +384,10 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
   const unlockedSkills = useGameStore((state) => state.unlockedSkills);
   const pendingUnlocks = useGameStore((state) => state.pendingUnlocks);
   const inventory = useGameStore((state) => state.inventory);
+  const showDialogue = useGameStore((state) => state.showDialogue);
 
   const [hoveredNode, setHoveredNode] = useState<SkillNode | null>(null);
+  const [activeTab, setActiveTab] = useState<"tree" | "shop">("tree");
   const [_, forceUpdate] = useState(0);
 
   // Periodically check for completed unlocks and update UI
@@ -729,124 +734,179 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
             )}
           </div>
 
-          {/* Center Panel - Skill Tree (React Flow) */}
+          {/* Center Panel - Skill Tree or Shop */}
           <div
-            id="hub-skill-tree-panel"
-            className="flex-1 overflow-hidden relative bg-gray-900"
+            id="hub-dashboard-main-content"
+            className="flex-1 overflow-hidden relative bg-gray-900 flex flex-col"
           >
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4 absolute top-4 left-4 z-40 bg-gray-900/50 backdrop-blur px-2 py-1 rounded">
-              Arbre d&apos;upgrade
-            </h3>
-
-            <div className="w-full h-full">
-              <ReactFlowProvider>
-                <ReactFlow
-                  nodes={nodes}
-                  edges={edges}
-                  nodeTypes={nodeTypes}
-                  fitView
-                  minZoom={0.5}
-                  maxZoom={2}
-                  nodesConnectable={false}
-                  nodesDraggable={false}
-                  proOptions={{ hideAttribution: true }}
-                >
-                  <Background color="#374151" gap={30} size={1} />
-                </ReactFlow>
-              </ReactFlowProvider>
+            {/* Tab Navigation */}
+            <div className="flex bg-black/40 border-b border-white/5">
+              <button
+                onClick={() => setActiveTab("tree")}
+                className={clsx(
+                  "px-6 py-3 text-xs font-bold uppercase tracking-widest transition-all border-b-2",
+                  activeTab === "tree"
+                    ? "text-indigo-400 border-indigo-500 bg-white/5"
+                    : "text-gray-500 border-transparent hover:text-gray-300 hover:bg-white/5",
+                )}
+              >
+                {t("shop.tab_tree") || "Evolution Tree"}
+              </button>
+              <button
+                id="hub-shop-tab"
+                onClick={() => {
+                  setActiveTab("shop");
+                  showDialogue("hub_shop_intro");
+                }}
+                className={clsx(
+                  "px-6 py-3 text-xs font-bold uppercase tracking-widest transition-all border-b-2 flex items-center gap-2",
+                  activeTab === "shop"
+                    ? "text-indigo-400 border-indigo-500 bg-white/5"
+                    : "text-gray-500 border-transparent hover:text-gray-300 hover:bg-white/5",
+                )}
+              >
+                <ShoppingBag className="w-3.5 h-3.5" />
+                {t("shop.tab_shop") || "Shop"}
+              </button>
             </div>
 
-            {/* Tooltip (kept from previous version) */}
-            {hoveredNode && hoveredNode.id !== "root" && (
-              <div className="absolute bottom-4 left-4 right-4 p-3 bg-gray-800/95 border border-white/10 rounded-xl shadow-xl animate-in fade-in duration-100 z-50 w-auto max-w-md mx-auto">
-                <div className="flex gap-3">
-                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-black/30 flex-shrink-0">
-                    <ModelPreview
-                      type="building"
-                      id={hoveredNode.buildingId}
-                      width={48}
-                      height={48}
-                      static
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-white text-sm">
-                      {hoveredNode.type === "unlock"
-                        ? `${t("skill_tree.unlock")} ${t(
-                            `building.${hoveredNode.buildingId}.name`,
-                          )}`
-                        : hoveredUpgrade
-                          ? t(hoveredUpgrade.name)
-                          : `${t(`building.${hoveredNode.buildingId}.name`)} Lv.${
-                              hoveredNode.level
-                            }`}
-                    </h3>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {hoveredNode.type === "unlock"
-                        ? t(`building.${hoveredNode.buildingId}.description`)
-                        : hoveredUpgrade
-                          ? t(hoveredUpgrade.description)
-                          : ""}
-                    </p>
+            <div className="flex-1 relative overflow-hidden">
+              {activeTab === "tree" ? (
+                <div
+                  id="hub-skill-tree-panel"
+                  className="w-full h-full relative"
+                >
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4 absolute top-4 left-4 z-40 bg-gray-900/50 backdrop-blur px-2 py-1 rounded">
+                    Arbre d&apos;upgrade
+                  </h3>
 
-                    {/* Effects */}
-                    {hoveredUpgrade && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {hoveredUpgrade.effects.map((effect, i) => (
-                          <span
-                            key={i}
-                            className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-indigo-500/20 text-indigo-300"
-                          >
-                            {effect.type === "multiplier"
-                              ? `${effect.stat} ×${effect.value}`
-                              : effect.type === "additive"
-                                ? `${effect.stat} +${effect.value}`
-                                : `Unlock: ${effect.stat}`}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                  <div className="w-full h-full">
+                    <ReactFlowProvider>
+                      <ReactFlow
+                        nodes={nodes}
+                        edges={edges}
+                        nodeTypes={nodeTypes}
+                        fitView
+                        minZoom={0.5}
+                        maxZoom={2}
+                        nodesConnectable={false}
+                        nodesDraggable={false}
+                        proOptions={{ hideAttribution: true }}
+                      >
+                        <Background color="#374151" gap={30} size={1} />
+                      </ReactFlow>
+                    </ReactFlowProvider>
                   </div>
 
-                  {/* Cost & Action */}
-                  <div className="flex-shrink-0 text-right">
-                    {hoveredNode.unlockDuration > 0 && (
-                      <div className="flex items-center gap-1 text-[10px] text-gray-500 justify-end mb-1">
-                        <Clock className="w-2.5 h-2.5" />
-                        {formatTime(hoveredNode.unlockDuration)}
-                      </div>
-                    )}
-                    {hoveredCost &&
-                      Object.entries(hoveredCost).map(([resource, amount]) => {
-                        const current = getResourceCount(resource);
-                        const canAfford = current >= amount;
-                        return (
-                          <div
-                            key={resource}
-                            className={`text-xs font-mono ${
-                              canAfford ? "text-green-400" : "text-red-400"
-                            }`}
-                          >
-                            {current}/{amount} {t(`common.${resource}`)}
+                  {/* Tooltip (kept from previous version) */}
+                  {hoveredNode && hoveredNode.id !== "root" && (
+                    <div className="absolute bottom-4 left-4 right-4 p-3 bg-gray-800/95 border border-white/10 rounded-xl shadow-xl animate-in fade-in duration-100 z-50 w-auto max-w-md mx-auto">
+                      <div className="flex gap-3">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-black/30 flex-shrink-0">
+                          <ModelPreview
+                            type="building"
+                            id={hoveredNode.buildingId}
+                            width={48}
+                            height={48}
+                            static
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-white text-sm">
+                            {hoveredNode.type === "unlock"
+                              ? `${t("skill_tree.unlock")} ${t(
+                                  `building.${hoveredNode.buildingId}.name`,
+                                )}`
+                              : hoveredUpgrade
+                                ? t(hoveredUpgrade.name)
+                                : `${t(`building.${hoveredNode.buildingId}.name`)} Lv.${hoveredNode.level}`}
+                          </h3>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {hoveredNode.type === "unlock"
+                              ? t(
+                                  `building.${hoveredNode.buildingId}.description`,
+                                )
+                              : hoveredUpgrade
+                                ? t(hoveredUpgrade.description)
+                                : ""}
+                          </p>
+
+                          {/* Effects */}
+                          {hoveredUpgrade && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {hoveredUpgrade.effects.map((effect, i) => (
+                                <span
+                                  key={i}
+                                  className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-indigo-500/20 text-indigo-300"
+                                >
+                                  {effect.type === "multiplier"
+                                    ? `${effect.stat} ×${effect.value}`
+                                    : effect.type === "additive"
+                                      ? `${effect.stat} +${effect.value}`
+                                      : `Unlock: ${effect.stat}`}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Cost & Action */}
+                          <div className="mt-2 pt-2 border-t border-white/5 flex items-end justify-between gap-4">
+                            <div className="flex-1 grid grid-cols-2 gap-x-2 gap-y-1">
+                              {hoveredCost &&
+                                Object.entries(hoveredCost).map(
+                                  ([resource, amount]) => {
+                                    const current = getResourceCount(resource);
+                                    const canAfford = current >= amount;
+                                    return (
+                                      <div
+                                        key={resource}
+                                        className={`text-[10px] font-mono flex justify-between ${canAfford ? "text-emerald-400" : "text-red-400"}`}
+                                      >
+                                        <span className="opacity-60">
+                                          {t(`common.${resource}`)}
+                                        </span>
+                                        <span className="font-bold">
+                                          {current}/{amount}
+                                        </span>
+                                      </div>
+                                    );
+                                  },
+                                )}
+                            </div>
+
+                            <div className="flex-shrink-0 text-right">
+                              {hoveredNode.unlockDuration > 0 && (
+                                <div className="flex items-center gap-1 text-[10px] text-gray-500 justify-end mb-1">
+                                  <Clock className="w-2.5 h-2.5" />
+                                  {formatTime(hoveredNode.unlockDuration)}
+                                </div>
+                              )}
+                              {!unlockedSkills.includes(hoveredNode.id) &&
+                                !skillTreeManager.isPending(hoveredNode.id) &&
+                                skillTreeManager.canUnlock(hoveredNode.id) &&
+                                skillTreeManager.canAfford(hoveredNode.id) && (
+                                  <button
+                                    onClick={() =>
+                                      handleStartUnlock(hoveredNode.id)
+                                    }
+                                    className="px-3 py-1.5 text-[10px] bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded transition-colors uppercase tracking-wider"
+                                  >
+                                    {t("skill_tree.start_unlock")}
+                                  </button>
+                                )}
+                            </div>
                           </div>
-                        );
-                      })}
-
-                    {!unlockedSkills.includes(hoveredNode.id) &&
-                      !skillTreeManager.isPending(hoveredNode.id) &&
-                      skillTreeManager.canUnlock(hoveredNode.id) &&
-                      skillTreeManager.canAfford(hoveredNode.id) && (
-                        <button
-                          onClick={() => handleStartUnlock(hoveredNode.id)}
-                          className="mt-1 px-3 py-1 text-xs bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded transition-colors"
-                        >
-                          {t("skill_tree.start_unlock")}
-                        </button>
-                      )}
-                  </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div id="hub-shop-panel" className="w-full h-full">
+                  <ShopView onPurchased={() => forceUpdate((n) => n + 1)} />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

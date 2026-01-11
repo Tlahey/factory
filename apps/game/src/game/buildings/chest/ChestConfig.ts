@@ -16,7 +16,6 @@ export const CHEST_CONFIG: ChestConfigType = {
     inputSide: "front", // Input where chest faces
     outputSide: "back", // Output opposite to input
   },
-  maxCount: 1,
   maxSlots: 5,
   upgrades: [
     {

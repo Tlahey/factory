@@ -16,7 +16,6 @@ export const EXTRACTOR_CONFIG: ExtractorConfigType = {
     showArrow: true,
     outputSide: "front", // Output in direction extractor faces
   },
-  maxCount: 3,
   extractionRate: 60, // items per minute
   powerConfig: {
     type: "consumer",

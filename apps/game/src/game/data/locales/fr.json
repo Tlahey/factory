@@ -80,6 +80,17 @@
       "logistics_tech_desc": "Débloque des méthodes de transport et de stockage avancées."
     }
   },
+  "shop": {
+    "title": "Boutique Intergalactique",
+    "description": "Achetez des licences de construction supplémentaires avec vos ressources.",
+    "empty": "Aucun bâtiment disponible pour le moment.",
+    "empty_desc": "Débloquez plus de bâtiments dans l'Arbre de Compétences pour les voir ici.",
+    "owned": "Licences",
+    "buy": "Acheter Licence",
+    "insufficient_resources": "Ressources Insuffisantes",
+    "tab_tree": "Évolution",
+    "tab_shop": "Boutique"
+  },
   "upgrade": {
     "extractor": {
       "speed_1": {
@@ -168,6 +179,11 @@
       "text_1": "À droite se trouve la liste des bâtiments disponibles. Vous avez la possibilité de les glisser-déposer dans votre barre d'outils en bas pour un accès rapide.",
       "text_2": "À gauche, les informations s'affichent lorsque vous survolez un bâtiment. Lisez-les attentivement, elles expliquent le fonctionnement spécifique de chaque structure.",
       "text_3": "Essayez d'ajouter le Hub en cliquant dessus pour commencer."
+    },
+    "hub_shop_intro": {
+      "title": "Fournitures d'Usine",
+      "text_1": "Bienvenue dans la Boutique du Hub. Ici, vous pouvez acheter des licences de construction supplémentaires avec vos ressources excédentaires.",
+      "text_2": "Notez que chaque achat augmente le prix des futures licences de ce bâtiment. Gérez votre budget avec soin !"
     }
   },
   "building_menu": {

@@ -88,4 +88,14 @@ export const DIALOGUES: Record<string, DialogueConfig> = {
     blocking: false,
     repeatable: true,
   },
+  hub_shop_intro: {
+    id: "hub_shop_intro",
+    titleKey: "dialogue.hub_shop_intro.title",
+    textKey: [
+      "dialogue.hub_shop_intro.text_1",
+      "dialogue.hub_shop_intro.text_2",
+    ],
+    focusElement: ["hub-shop-tab", "hub-shop-panel"],
+    blocking: false,
+  },
 };

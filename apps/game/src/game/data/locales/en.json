@@ -80,6 +80,17 @@
       "logistics_tech_desc": "Unlocks advanced transportation and storage methods."
     }
   },
+  "shop": {
+    "title": "Intergalactic Shop",
+    "description": "Purchase additional building licenses with gathered resources.",
+    "empty": "No buildings available in the shop yet.",
+    "empty_desc": "Unlock more buildings in the Skill Tree to see them here.",
+    "owned": "Licenses",
+    "buy": "Purchase License",
+    "insufficient_resources": "Insufficient Resources",
+    "tab_tree": "Skill Tree",
+    "tab_shop": "Shop"
+  },
   "upgrade": {
     "extractor": {
       "speed_1": {
@@ -168,6 +179,11 @@
       "text_1": "On the right is the list of available buildings. You can drag and drop them to your hotbar below for quick access.",
       "text_2": "On the left, information appears when you hover over a building. Read carefully, it explains how each structure works.",
       "text_3": "Try adding the Hub by clicking on it to start."
+    },
+    "hub_shop_intro": {
+      "title": "Factory Supplies",
+      "text_1": "Welcome to the Hub Shop. Here you can purchase additional building licenses using your surplus resources.",
+      "text_2": "Note that each purchase increases the price of future licenses for that building. Manage your budget carefully!"
     }
   },
   "building_menu": {

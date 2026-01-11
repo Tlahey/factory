@@ -62,6 +62,7 @@ export default function ControlBar() {
         return (
           <button
             key={c.id}
+            id={`control-bar-${c.id}`}
             onClick={c.action}
             className={clsx(
               "w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 relative group",

@@ -9,6 +9,8 @@ import {
 import { Direction4 } from "../entities/BuildingEntity";
 import { getBuildingConfig } from "../buildings/BuildingConfig";
 
+import { DIALOGUES } from "../data/Dialogues";
+
 export class InputSystem {
   private domElement: HTMLElement;
   private camera: THREE.PerspectiveCamera;
@@ -40,6 +42,7 @@ export class InputSystem {
   private onConveyorDrag?: (
     path: { x: number; y: number; isValid: boolean }[],
   ) => void;
+  private onInteract?: (x: number, y: number, buildingId: string) => void;
 
   // Camera Controls
   private isDragging = false;
@@ -82,6 +85,7 @@ export class InputSystem {
     onConveyorDrag?: (
       path: { x: number; y: number; isValid: boolean }[],
     ) => void,
+    onInteract?: (x: number, y: number, buildingId: string) => void,
   ) {
     this.domElement = domElement;
     this.camera = camera;
@@ -91,6 +95,7 @@ export class InputSystem {
     this.onCableDrag = onCableDrag;
     this.onDeleteHover = onDeleteHover;
     this.onConveyorDrag = onConveyorDrag;
+    this.onInteract = onInteract;
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
 
@@ -178,6 +183,9 @@ export class InputSystem {
   }
 
   private handleKeyDown(e: KeyboardEvent) {
+    const activeId = useGameStore.getState().activeDialogueId;
+    if (activeId && DIALOGUES[activeId]?.blocking !== false) return;
+
     if (e.key === "Escape") {
       this.cancelCableDrag();
       this.cancelConveyorDrag();
@@ -250,6 +258,9 @@ export class InputSystem {
   }
 
   private onPointerDown(event: PointerEvent) {
+    const activeId = useGameStore.getState().activeDialogueId;
+    if (activeId && DIALOGUES[activeId]?.blocking !== false) return;
+
     if (event.button === 0) {
       // Left Click
       this.mouseDownPosition = { x: event.clientX, y: event.clientY };
@@ -956,9 +967,14 @@ export class InputSystem {
     const tile = this.world.getTile(gridX, gridY);
 
     const building = this.world.getBuilding(gridX, gridY);
-    if (building && building.hasInteractionMenu()) {
-      useGameStore.getState().setOpenedEntityKey(`${gridX},${gridY}`);
-      return;
+    if (building) {
+      if (this.onInteract) {
+        this.onInteract(gridX, gridY, `${building.x},${building.y}`);
+      }
+      if (building.hasInteractionMenu()) {
+        useGameStore.getState().setOpenedEntityKey(`${gridX},${gridY}`);
+        return;
+      }
     }
 
     if (tile.isStone()) {

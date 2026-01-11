@@ -503,7 +503,10 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
         {/* Main Content - Two Column Layout */}
         <div className="flex-1 flex overflow-hidden">
           {/* Left Panel - Overview */}
-          <div className="w-80 border-r border-white/10 p-4 overflow-y-auto flex-shrink-0 z-10 bg-gray-900/95">
+          <div
+            id="hub-overview-panel"
+            className="w-80 border-r border-white/10 p-4 overflow-y-auto flex-shrink-0 z-10 bg-gray-900/95"
+          >
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4">
               {t("common.overview")}
             </h3>
@@ -727,7 +730,10 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
           </div>
 
           {/* Center Panel - Skill Tree (React Flow) */}
-          <div className="flex-1 overflow-hidden relative bg-gray-900">
+          <div
+            id="hub-skill-tree-panel"
+            className="flex-1 overflow-hidden relative bg-gray-900"
+          >
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4 absolute top-4 left-4 z-40 bg-gray-900/50 backdrop-blur px-2 py-1 rounded">
               Arbre d&apos;upgrade
             </h3>

@@ -35,6 +35,8 @@ vi.mock("../state/store", () => ({
     getState: vi.fn(() => ({
       selectedBuilding: "extractor",
       setCameraAngles: vi.fn(),
+      hasResources: vi.fn(() => true), // Added required mock
+      unlockedBuildings: ["extractor"], // Added for lock check
     })),
     subscribe: vi.fn(() => vi.fn()), // returns unsubscribe fn
   },

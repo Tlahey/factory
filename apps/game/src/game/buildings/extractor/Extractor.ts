@@ -13,6 +13,7 @@ import {
 } from "../BuildingConfig";
 import { updateBuildingConnectivity } from "../BuildingIOHelper";
 import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
+import { gameEventManager } from "../../events/GameEventManager";
 
 export class Extractor
   extends BuildingEntity
@@ -119,6 +120,11 @@ export class Extractor
     if (canMine && this.accumTime >= interval) {
       if (tile instanceof ResourceTile) {
         tile.deplete(1);
+        gameEventManager.emit("RESOURCE_MINED", {
+          resource: tile.getResourceType(),
+          amount: 1,
+          position: { x: this.x, y: this.y },
+        });
       }
       this.internalStorage += 1;
       this.accumTime -= interval;

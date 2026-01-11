@@ -91,7 +91,7 @@ export default function HUD() {
         ref={elementRef}
         style={isInventoryOpen ? { left: position.x, top: position.y } : {}}
         className={`
-                    fixed z-40 pointer-events-auto
+                    fixed z-hud pointer-events-auto
                     bg-slate-900/95 backdrop-blur-xl border border-white/20 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.5)]
                     transition-opacity duration-300 ease-out origin-left
                     flex flex-col p-4 w-auto min-w-[200px]
@@ -171,7 +171,7 @@ export default function HUD() {
 
               {/* Tooltip */}
               {slot.type && (
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg shadow-xl border border-white/20 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-2 group-hover:translate-y-0 whitespace-nowrap z-50 pointer-events-none">
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg shadow-xl border border-white/20 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-2 group-hover:translate-y-0 whitespace-nowrap z-tooltip pointer-events-none">
                   <div className="font-bold capitalize mb-0.5 text-amber-300">
                     {slot.type}
                   </div>

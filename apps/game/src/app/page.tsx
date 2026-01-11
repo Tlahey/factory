@@ -12,6 +12,8 @@ import HUD from "@/components/ui/HUD";
 import PendingUnlocksHUD from "@/components/ui/PendingUnlocksHUD";
 import { useGameStore } from "@/game/state/store";
 import DebugMenu from "@/components/ui/DebugMenu";
+import DialogueOverlay from "@/components/ui/DialogueOverlay";
+import HighlightOverlay from "@/components/ui/HighlightOverlay";
 
 const GameCanvas = dynamic(() => import("@/components/GameCanvas"), {
   ssr: false,
@@ -154,6 +156,8 @@ export default function Home() {
         className={`transition-opacity duration-300 ${isPaused ? "opacity-0 pointer-events-none" : "opacity-100"}`}
       >
         <HUD />
+        <DialogueOverlay />
+        <HighlightOverlay />
         <PendingUnlocksHUD />
         <BuildingInfoPanel />
         <BuildingMenu />

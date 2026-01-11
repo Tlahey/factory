@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { SKILL_TREE } from "@/game/buildings/hub/skill-tree/SkillTreeConfig";
+import { DIALOGUES } from "../data/Dialogues";
+import { SKILL_TREE } from "../buildings/hub/skill-tree/SkillTreeConfig";
 
 export interface InventorySlot {
   type: string | null;
@@ -68,6 +69,17 @@ interface GameState {
   isUnlimitedResources: boolean;
   toggleUnlimitedResources: () => void;
   unlockAllSkills: () => void;
+
+  // Dialogue / Tutorial
+  activeDialogueId: string | null;
+  seenDialogues: string[];
+  showDialogue: (id: string) => void;
+  hideDialogue: () => void;
+  markDialogueSeen: (id: string) => void;
+
+  // Interactive Tutorial / Highlight System
+  focusedElement: string | null; // ID of the DOM element or World Entity to highlight
+  setFocusedElement: (id: string | null) => void;
 }
 
 const INVENTORY_SIZE = 10;
@@ -221,6 +233,9 @@ export const useGameStore = create<GameState>()(
           unlockedBuildings: ["hub"],
           pendingUnlocks: [],
           isUnlimitedResources: false,
+          activeDialogueId: null,
+          seenDialogues: [],
+          focusedElement: null,
         }),
 
       // Skill Tree
@@ -340,6 +355,52 @@ export const useGameStore = create<GameState>()(
             pendingUnlocks: [], // Clear any pending
           };
         }),
+
+      // Dialogue
+      activeDialogueId: null,
+      seenDialogues: [],
+      showDialogue: (id) =>
+        set((state) => {
+          if (state.activeDialogueId) return state; // Block if something is active
+
+          const config = DIALOGUES[id];
+          const isSeen = state.seenDialogues.includes(id);
+
+          // Allow if not seen OR if repeatable
+          if (isSeen && !config?.repeatable) return state;
+
+          return { activeDialogueId: id };
+        }),
+      hideDialogue: () =>
+        set((state) => {
+          if (!state.activeDialogueId) return { activeDialogueId: null };
+
+          const currentId = state.activeDialogueId;
+          const currentConfig = DIALOGUES[currentId];
+          const newSeen = state.seenDialogues.includes(currentId)
+            ? state.seenDialogues
+            : [...state.seenDialogues, currentId];
+
+          // Check for next in sequence
+          if (currentConfig?.next && !newSeen.includes(currentConfig.next)) {
+            return {
+              activeDialogueId: currentConfig.next,
+              seenDialogues: newSeen,
+            };
+          }
+
+          return { activeDialogueId: null, seenDialogues: newSeen };
+        }),
+      markDialogueSeen: (id) =>
+        set((state) => ({
+          seenDialogues: state.seenDialogues.includes(id)
+            ? state.seenDialogues
+            : [...state.seenDialogues, id],
+        })),
+
+      // Interactive Tutorial
+      focusedElement: null,
+      setFocusedElement: (id) => set({ focusedElement: id }),
     }),
     {
       name: "factory-game-storage", // name of the item in the storage (must be unique)
@@ -352,6 +413,7 @@ export const useGameStore = create<GameState>()(
         unlockedBuildings: state.unlockedBuildings,
         pendingUnlocks: state.pendingUnlocks,
         isUnlimitedResources: state.isUnlimitedResources,
+        seenDialogues: state.seenDialogues,
       }),
     },
   ),

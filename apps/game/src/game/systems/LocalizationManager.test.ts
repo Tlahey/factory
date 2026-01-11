@@ -25,9 +25,13 @@ vi.mock("../data/locales/fr.json", () => ({
 describe("LocalizationManager", () => {
   beforeEach(async () => {
     // Reset to English
-    localization.setLocale("en");
-    // Give time for async load (simulated)
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    // Force load because setLocale checks if locale is already same and might skip
+    // And constructor promise is floating.
+    await localization.loadTranslations("en");
+    // Also ensure internal locale state is sync
+    if (localization.getLocale() !== "en") {
+      await localization.setLocale("en");
+    }
   });
 
   it("should return key if translation missing", () => {
@@ -37,8 +41,7 @@ describe("LocalizationManager", () => {
   it("should translate simple keys", async () => {
     // We need to wait for the mocked import to "load"
     // effectively forcing a reload or just ensuring state
-    localization.setLocale("en");
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await localization.setLocale("en");
 
     expect(localization.t("hello")).toBe("Hello");
   });
@@ -54,8 +57,7 @@ describe("LocalizationManager", () => {
   });
 
   it("should switch locales", async () => {
-    localization.setLocale("fr");
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await localization.setLocale("fr");
 
     expect(localization.t("hello")).toBe("Bonjour");
     expect(localization.t("nested.key")).toBe("Valeur Imbriquée");
@@ -65,8 +67,7 @@ describe("LocalizationManager", () => {
     const callback = vi.fn();
     const unsubscribe = localization.subscribe(callback);
 
-    localization.setLocale("fr");
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await localization.setLocale("fr");
 
     expect(callback).toHaveBeenCalled();
 

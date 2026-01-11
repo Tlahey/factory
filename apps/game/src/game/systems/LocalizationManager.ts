@@ -19,10 +19,10 @@ class LocalizationManager {
     return LocalizationManager.instance;
   }
 
-  public setLocale(locale: Locale) {
+  public async setLocale(locale: Locale): Promise<void> {
     if (this.locale === locale) return;
     this.locale = locale;
-    this.loadTranslations(locale);
+    await this.loadTranslations(locale);
     this.notifyListeners();
   }
 
@@ -39,7 +39,7 @@ class LocalizationManager {
     this.listeners.forEach((listener) => listener());
   }
 
-  private async loadTranslations(locale: Locale) {
+  public async loadTranslations(locale: Locale) {
     try {
       // Dynamic import for code splitting and easy expansion
       // Note: In Next.js/Webpack, dynamic imports with template strings need to be statically analyzable to some extent.

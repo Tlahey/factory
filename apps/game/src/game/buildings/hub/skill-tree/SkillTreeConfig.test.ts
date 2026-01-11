@@ -80,7 +80,8 @@ describe("SkillTreeConfig", () => {
     it("should return undefined for hub (no unlock node, always available)", () => {
       // Hub uses root as unlock effectively
       const node = getBuildingUnlockNode("cable");
-      expect(node).toBeUndefined();
+      expect(node).toBeDefined();
+      expect(node?.type).toBe("unlock");
     });
   });
 });

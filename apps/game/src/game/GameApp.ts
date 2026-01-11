@@ -6,6 +6,7 @@ import { World } from "./core/World";
 import { WORLD_HEIGHT, WORLD_WIDTH } from "./constants";
 import { FactorySystem } from "./systems/FactorySystem";
 import { PowerSystem } from "./systems/PowerSystem";
+import { GuidanceSystem } from "./systems/GuidanceSystem";
 import { InputSystem } from "./systems/InputSystem";
 import { CableVisual } from "./buildings/electric-pole/CableVisual";
 import { getGrassGeometry } from "./environment/grass/GrassGeometry";
@@ -36,6 +37,7 @@ export class GameApp {
   public world: World;
   private factorySystem: FactorySystem;
   public powerSystem: PowerSystem;
+  private guidanceSystem: GuidanceSystem;
   private inputSystem!: InputSystem;
   private isDestroyed = false;
 
@@ -63,6 +65,7 @@ export class GameApp {
     this.world = new World();
     this.factorySystem = new FactorySystem(this.world);
     this.powerSystem = new PowerSystem(this.world);
+    this.guidanceSystem = new GuidanceSystem(this.world);
 
     // Three.js Setup
     this.scene = new THREE.Scene();
@@ -170,6 +173,17 @@ export class GameApp {
             if (visual && visual.setHighlight) {
               visual.setHighlight(true);
             }
+
+            // Tutorial Triggers
+            const state = useGameStore.getState();
+
+            // 1. First Selection
+            if (!state.seenDialogues.includes("first_selection")) {
+              state.showDialogue("first_selection");
+            }
+
+            // 2. Power System & Hub Info
+            // Tutorial triggers removed (Moved to GuidanceSystem onInteract)
           }
         }
       },
@@ -180,6 +194,9 @@ export class GameApp {
         } else {
           this.placementVisuals.clearConveyorDragPreview();
         }
+      },
+      (x, y, id) => {
+        this.guidanceSystem.onBuildingClicked(id);
       },
     );
 
@@ -195,6 +212,14 @@ export class GameApp {
       if (res) {
         this.syncBuildings();
         this.powerSystem.rebuildNetworks();
+
+        // Tutorial: Hub Placed
+        if (type === "hub") {
+          const state = useGameStore.getState();
+          if (!state.seenDialogues.includes("hub_placed")) {
+            state.showDialogue("hub_placed");
+          }
+        }
       }
       return res;
     };
@@ -308,6 +333,9 @@ export class GameApp {
       // 5. Sync Buildings (should be empty now)
       console.log(`App: [Instance ${this.instanceId}] Syncing buildings...`);
       this.syncBuildings();
+
+      // Trigger Welcome Dialogue
+      useGameStore.getState().showDialogue("welcome");
 
       console.log(
         `App: [Instance ${this.instanceId}] New Game procedure completed!`,
@@ -913,6 +941,7 @@ export class GameApp {
     this.world.tick(delta);
     this.factorySystem.update(delta);
     this.powerSystem.update(delta);
+    this.guidanceSystem.update(delta);
 
     if (this.inputSystem) {
       this.inputSystem.update(delta);
@@ -958,6 +987,7 @@ export class GameApp {
     });
 
     // Update Particles
+    this.guidanceSystem.update(delta);
     this.particleSystem.update(delta);
 
     this.scene.traverse((obj) => {

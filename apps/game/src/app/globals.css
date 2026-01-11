@@ -5,6 +5,25 @@
   --foreground: #ffffff;
 }
 
+@theme {
+  /* Z-Index Hierarchy */
+  --z-index-world: 10;
+  /* Canvas/World elements */
+  --z-index-hud: 40;
+  /* Base HUD (Inventory, Bottom Bar) */
+  --z-index-panel: 100;
+  /* Info Panels, Windows */
+  --z-index-panel: 100;
+  /* Tutorial Highlight Background */
+  --z-index-overlay: 150;
+  /* Dialogues, Modals */
+  --z-index-dialog: 200;
+  --z-index-menu: 300;
+  /* Pause Menu, Main Menu */
+  --z-index-tooltip: 1000;
+  /* Tooltips, Context Menus */
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

@@ -32,7 +32,10 @@
       "idle": "EN ATTENTE"
     },
     "select_item": "Sélectionnez un élément pour voir les détails",
-    "free": "Gratuit"
+    "free": "Gratuit",
+    "skip": "PASSER",
+    "acknowledge": "COMPRIS",
+    "next": "SUIVANT >>"
   },
   "building": {
     "extractor": {
@@ -112,5 +115,64 @@
         "description": "Augmente la production d'énergie de 50%"
       }
     }
+  },
+  "dialogue": {
+    "welcome_intro": {
+      "title": "Bienvenue Pionnier",
+      "text": "Bienvenue à la surface ! Je suis ADA, votre assistante. Les ressources planétaires sont prêtes pour l'extraction."
+    },
+    "welcome_task": {
+      "title": "Objectif de Mission",
+      "text": "Votre objectif est de construire une usine autonome. Ouvrez le Menu de Construction (Appuyez sur B) et placez le Hub pour établir votre base."
+    },
+    "first_selection": {
+      "title": "Sélection d'Objet",
+      "text": "Vous avez sélectionné un objet ! Le panneau d'information à droite affiche ses détails. Vous pouvez voir les taux de production, l'inventaire et le statut."
+    },
+    "electricity": {
+      "title": "Système Électrique",
+      "text": "Les machines ont besoin d'énergie. Construisez des éoliennes (au Hub) et connectez-les aux machines avec des poteaux et câbles. Surveillez votre réseau !"
+    },
+    "hub_placed": {
+      "title": "Hub Établi",
+      "text": "Excellent travail ! Le Hub est le cœur de votre usine. Il génère l'énergie initiale et permet de fabriquer des composants de base. Cliquez dessus pour accéder à son interface."
+    },
+    "hub_info_overview": {
+      "title": "Aperçu du Hub",
+      "text_1": "Bienvenue dans le panneau principal du Hub. À gauche, vous pouvez voir la production d'énergie actuelle et l'état général de votre base.",
+      "text_2": "À droite se trouve l'Arbre d'Évolution. C'est ici que vous débloquerez de nouvelles technologies et améliorations.",
+      "text_3": "Pour débloquer les prochaines évolutions, vous devrez collecter les ressources requises affichées. Commencez à extraire !"
+    },
+    "hub_info_tree": {
+      "title": "Arbre de Technologies",
+      "text": "Voici l'Arbre d'Upgrade. Utilisez les ressources collectées pour débloquer de nouvelles technologies, bâtiments et améliorations pour votre usine."
+    },
+    "extractor_no_power": {
+      "title": "Énergie Requise",
+      "text": "Votre Foreuse s'est arrêtée ! Elle a besoin d'électricité. Connectez-la à une source d'énergie (Éolienne ou Hub) avec un Câble."
+    },
+    "extractor_no_resources": {
+      "title": "Ressource Épuisée",
+      "text": "Cette Foreuse n'a plus de ressources à extraire. Vous devriez la déconstruire (Outil Suppression) et la déplacer vers un nouveau gisement."
+    },
+    "mined_stone": {
+      "title": "Pierre Extraite",
+      "text": "Vous extrayez de la Pierre. C'est un matériau de base pour les fondations et composants simples."
+    },
+    "mined_iron": {
+      "title": "Minerai de Fer",
+      "text": "Vous avez trouvé du Fer ! Fondez-le en lingots pour créer des structures et machines plus résistantes."
+    },
+    "building_menu_intro": {
+      "title": "Menu de Construction",
+      "text_1": "À droite se trouve la liste des bâtiments disponibles. Vous avez la possibilité de les glisser-déposer dans votre barre d'outils en bas pour un accès rapide.",
+      "text_2": "À gauche, les informations s'affichent lorsque vous survolez un bâtiment. Lisez-les attentivement, elles expliquent le fonctionnement spécifique de chaque structure.",
+      "text_3": "Essayez d'ajouter le Hub en cliquant dessus pour commencer."
+    }
+  },
+  "building_menu": {
+    "intro_title": "Plans de Construction",
+    "intro_text": "Sur la droite se trouve votre catalogue de bâtiments disponibles. Glissez-les dans votre barre de raccourcis ou cliquez pour construire.",
+    "intro_hub": "Commencez par placer le Hub. Vous avez 1 unité disponible pour établir votre base principale."
   }
 }

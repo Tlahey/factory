@@ -87,8 +87,71 @@ export default function BuildingMenu() {
 
         {/* Content Area */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Main Grid (Left) */}
+          {/* Details Panel (Left) */}
           <div
+            id="building-menu-details-panel"
+            className="w-80 shrink-0 border-r border-white/10 bg-gray-900/80 p-6 flex flex-col overflow-y-auto"
+          >
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-6 flex items-center gap-2">
+              {hoveredBuildingId ? t("common.building") : t("common.overview")}
+            </h3>
+
+            {hoveredBuildingId && BUILDINGS[hoveredBuildingId] ? (
+              <div className="flex-1 space-y-3">
+                {/* Limit Reached Warning */}
+                {(() => {
+                  const b = BUILDINGS[hoveredBuildingId];
+                  const currentCount = buildingCounts[b.type] || 0;
+                  const isLimitReached = b.maxCount
+                    ? currentCount >= b.maxCount
+                    : false;
+
+                  if (!isLimitReached) return null;
+
+                  return (
+                    <div className="bg-slate-800/60 border border-slate-700/50 rounded-lg p-3 flex items-center gap-3">
+                      <Ban className="w-5 h-5 text-slate-400 shrink-0" />
+                      <span className="text-xs font-medium text-slate-300">
+                        Max limit reached ({currentCount}/{b.maxCount})
+                      </span>
+                    </div>
+                  );
+                })()}
+
+                {/* Insufficient Resources Warning */}
+                {!hasResources(BUILDINGS[hoveredBuildingId].cost) && (
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex items-center gap-3">
+                    <TriangleAlert className="w-5 h-5 text-amber-400 shrink-0" />
+                    <span className="text-xs font-medium text-amber-200/90">
+                      Insufficient resources
+                    </span>
+                  </div>
+                )}
+
+                <BuildingHoverCard
+                  config={BUILDINGS[hoveredBuildingId]}
+                  variant="full"
+                  className="!static !w-full !mr-0 !bg-transparent !border-0 !shadow-none !p-0"
+                />
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col items-start justify-center space-y-4 text-gray-300">
+                <div className="p-3 rounded-full bg-blue-500/10 mb-2">
+                  <Hammer size={32} className="text-blue-400" />
+                </div>
+                <h4 className="text-lg font-bold text-white">
+                  {t("building_menu.intro_title")}
+                </h4>
+                <p className="text-sm leading-relaxed text-gray-400">
+                  {t("building_menu.intro_text")}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Main Grid (Right) */}
+          <div
+            id="building-menu-grid"
             className="flex-1 p-6 overflow-y-auto bg-gray-900/50"
             onDragOver={handleDragOver}
             onDrop={handleDrop}
@@ -113,6 +176,7 @@ export default function BuildingMenu() {
                   return (
                     <div
                       key={b.type}
+                      id={b.type === "hub" ? "hub-card" : undefined}
                       className={clsx(
                         "aspect-square rounded-xl border transition-all duration-200 group relative flex flex-col items-center justify-center gap-2 p-2",
                         isDisabled
@@ -190,60 +254,6 @@ export default function BuildingMenu() {
                   );
                 })}
             </div>
-          </div>
-
-          {/* Details Panel (Right) */}
-          <div className="w-80 shrink-0 border-l border-white/10 bg-gray-900/80 p-6 flex flex-col overflow-y-auto">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-6 flex items-center gap-2">
-              Building Details
-            </h3>
-
-            {hoveredBuildingId && BUILDINGS[hoveredBuildingId] ? (
-              <div className="flex-1 space-y-3">
-                {/* Limit Reached Warning */}
-                {(() => {
-                  const b = BUILDINGS[hoveredBuildingId];
-                  const currentCount = buildingCounts[b.type] || 0;
-                  const isLimitReached = b.maxCount
-                    ? currentCount >= b.maxCount
-                    : false;
-
-                  if (!isLimitReached) return null;
-
-                  return (
-                    <div className="bg-slate-800/60 border border-slate-700/50 rounded-lg p-3 flex items-center gap-3">
-                      <Ban className="w-5 h-5 text-slate-400 shrink-0" />
-                      <span className="text-xs font-medium text-slate-300">
-                        Max limit reached ({currentCount}/{b.maxCount})
-                      </span>
-                    </div>
-                  );
-                })()}
-
-                {/* Insufficient Resources Warning */}
-                {!hasResources(BUILDINGS[hoveredBuildingId].cost) && (
-                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex items-center gap-3">
-                    <TriangleAlert className="w-5 h-5 text-amber-400 shrink-0" />
-                    <span className="text-xs font-medium text-amber-200/90">
-                      Insufficient resources
-                    </span>
-                  </div>
-                )}
-
-                <BuildingHoverCard
-                  config={BUILDINGS[hoveredBuildingId]}
-                  variant="full"
-                  className="!static !w-full !mr-0 !bg-transparent !border-0 !shadow-none !p-0"
-                />
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-gray-500 text-sm italic opacity-50 border-2 border-dashed border-white/5 rounded-xl">
-                <div className="mb-2 p-3 rounded-full bg-white/5">
-                  <Hammer size={24} />
-                </div>
-                {t("common.select_item")}
-              </div>
-            )}
           </div>
         </div>
       </div>

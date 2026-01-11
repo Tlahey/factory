@@ -22,7 +22,7 @@ export default function GameMenu({
   if (!isPaused) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-menu flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-gray-900 border border-white/20 p-8 rounded-2xl shadow-2xl flex flex-col gap-4 w-72 relative animate-scale-in">
         <h2 className="text-2xl font-bold text-white text-center mb-4">
           PAUSED

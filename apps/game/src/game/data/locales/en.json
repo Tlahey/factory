@@ -32,7 +32,10 @@
       "idle": "IDLE"
     },
     "select_item": "Select an item to view details",
-    "free": "Free"
+    "free": "Free",
+    "skip": "SKIP",
+    "acknowledge": "ACKNOWLEDGE",
+    "next": "NEXT >>"
   },
   "building": {
     "extractor": {
@@ -112,5 +115,64 @@
         "description": "Increases power generation by 50%"
       }
     }
+  },
+  "dialogue": {
+    "welcome_intro": {
+      "title": "Welcome Pioneer",
+      "text": "Welcome to the surface! I am ADA, your automated assistant. The planetary resources are ripe for extraction."
+    },
+    "welcome_task": {
+      "title": "Mission Objective",
+      "text": "Your goal is to build a self-sustaining factory. Open the Build Menu (Press B) and place the Hub to establish your base."
+    },
+    "first_selection": {
+      "title": "Object Selection",
+      "text": "You have selected an object! The Info Panel on the right shows details about it. You can see production rates, inventory, and status."
+    },
+    "electricity": {
+      "title": "Power System",
+      "text": "Machines need power to run. Build Wind Turbines (at the Hub) and connect them to machines using Electric Poles and Cables. Monitor your grid status!"
+    },
+    "hub_placed": {
+      "title": "Hub Established",
+      "text": "Excellent work! The Hub is the heart of your factory. It generates initial power and allows you to craft basic components. Click on it to access its interface."
+    },
+    "hub_info_overview": {
+      "title": "Hub Overview",
+      "text_1": "Welcome to the main Hub dashboard. On the left, you can see your current power production and the overall status of your base.",
+      "text_2": "On the right is the Evolution Tree. This is where you will unlock new technologies and upgrades.",
+      "text_3": "To unlock the next evolutions, you will need to collect the required resources shown. Start mining!"
+    },
+    "hub_info_tree": {
+      "title": "Technology Tree",
+      "text": "Here is the Upgrade Tree. Use collected resources to unlock new technologies, buildings, and upgrades for your factory."
+    },
+    "extractor_no_power": {
+      "title": "Power Required",
+      "text": "Your Drill has stopped! It needs electricity to function. Connect it to a power source (Wind Turbine or Hub) using a Cable."
+    },
+    "extractor_no_resources": {
+      "title": "Resource Depleted",
+      "text": "This Drill has run out of resources to mine. You should deconstruct it (Delete Tool) and move it to a fresh resource node."
+    },
+    "mined_stone": {
+      "title": "Stone Extracted",
+      "text": "You are extracting Stone. This is a basic building material used for foundations and basic components."
+    },
+    "mined_iron": {
+      "title": "Iron Ore",
+      "text": "You found Iron! Smelt this into Iron Ingots to craft stronger structures and machinery."
+    },
+    "building_menu_intro": {
+      "title": "Construction Menu",
+      "text_1": "On the right is the list of available buildings. You can drag and drop them to your hotbar below for quick access.",
+      "text_2": "On the left, information appears when you hover over a building. Read carefully, it explains how each structure works.",
+      "text_3": "Try adding the Hub by clicking on it to start."
+    }
+  },
+  "building_menu": {
+    "intro_title": "Construction Blueprints",
+    "intro_text": "On the right is your catalog of available buildings. Drag them to your hotbar or click to build.",
+    "intro_hub": "Start by placing the Hub. You have 1 unit available to establish your main base."
   }
 }

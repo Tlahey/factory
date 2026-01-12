@@ -78,19 +78,22 @@ export default function BuildingSidebar() {
             );
             const current = buildingCounts[buildingId] || 0;
             const isLimitReached = current >= maxCount;
+            const isInfinite = maxCount === Infinity;
 
-            countDisplay = (
-              <div
-                className={clsx(
-                  "absolute -top-2 -right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md border shadow-sm z-20",
-                  isLimitReached
-                    ? "bg-red-900/90 text-red-200 border-red-500/50"
-                    : "bg-gray-800/90 text-gray-300 border-white/20",
-                )}
-              >
-                {current}/{maxCount}
-              </div>
-            );
+            if (!isInfinite) {
+              countDisplay = (
+                <div
+                  className={clsx(
+                    "absolute -top-2 -right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md border shadow-sm z-20",
+                    isLimitReached
+                      ? "bg-red-900/90 text-red-200 border-red-500/50"
+                      : "bg-gray-800/90 text-gray-300 border-white/20",
+                  )}
+                >
+                  {current}/{maxCount}
+                </div>
+              );
+            }
           }
         }
 

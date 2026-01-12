@@ -65,5 +65,5 @@ export function getAllowedCount(
 
   // Fallback to static config if not a shop item
   const buildingConfig = getBuildingConfig(buildingId);
-  return buildingConfig?.maxCount ?? 999;
+  return buildingConfig?.maxCount ?? Infinity;
 }

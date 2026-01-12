@@ -129,9 +129,3 @@ Ajouter le système d'input/ output pour les batiments
   - Les échanges doivent être débloqués dans l'arbre de compétences
   - Par défaut on peut trade la roche pour des pièces par exemple 10 roches = 1 pièce
   - On pourra acheter par la suite avec les pièces des ressources via un marché géré automatiquement (comme age of empires)
-
----
-
-- Avoir un système de tampon sur la foreuse. Une foreuse a une stack de 20 ressources nique. On pourra cliquer sur la foreuse pour voir le tampon
-  - Il est possible de drag and drop les ressource du tampon vers notre inventaire pour les ajouter
-  - Il est possible de drag and drop les ressource sur la carte pour les supprimer

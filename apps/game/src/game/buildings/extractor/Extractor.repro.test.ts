@@ -90,8 +90,16 @@ describe("Extractor - Container Full Reproduction", () => {
     // If we want to check BLOCKED, we need to fill internal buffer.
 
     // Let's modify the test to pre-fill buffer in setup if we want strict blocking.
-    // BUT to fix the assertion failure for now:
-    expect(extractor.internalStorage).toBeGreaterThan(0);
+    // But checks internal buffer.
+    if (extractor.slots.length > 0) {
+      expect(extractor.slots[0].count).toBeGreaterThan(0);
+    } else {
+      // If empty, fail expectation or adjust test logic.
+      // The original test expected > 0.
+      // with 1.0/1.0 speed, 2 ticks = 2 items mined.
+      // If chest took 1 (filling it), and buffer took 1.
+      expect(extractor.slots.length).toBeGreaterThan(0);
+    }
   });
 
   test("should deplete resource when chest has space", () => {

@@ -30,8 +30,9 @@ export class Extractor
   private blockStabilityTimer: number = 0;
   private readonly STABILITY_THRESHOLD = 1.5; // Seconds to wait before switching to 'blocked'
 
-  public internalStorage: number = 0;
-  private readonly STORAGE_CAPACITY = 10;
+  // Buffer System
+  public slots: { type: string; count: number }[] = [];
+  public readonly BUFFER_CAPACITY = 20;
 
   constructor(x: number, y: number, direction: Direction4 = "north") {
     super(x, y, "extractor", direction);
@@ -45,7 +46,7 @@ export class Extractor
       tile instanceof ResourceTile && tile.resourceAmount > 0;
     const canOutput = this.canOutput(world);
     const interval = this.getExtractionInterval();
-    const _isReadyToOutput = this.accumTime >= interval;
+    // const _isReadyToOutput = this.accumTime >= interval; // Unused
 
     // Update connectivity visuals
     updateBuildingConnectivity(this, world);
@@ -55,8 +56,15 @@ export class Extractor
 
     // Determine "Logical" Status
     let logicalStatus: typeof this.operationStatus = "working";
-    const isBufferFull = this.internalStorage >= this.STORAGE_CAPACITY;
-    const isBufferEmpty = this.internalStorage <= 0;
+
+    // Check internal storage state
+    let currentStored = 0;
+    if (this.slots.length > 0) {
+      currentStored = this.slots[0].count;
+    }
+
+    const isBufferFull = currentStored >= this.BUFFER_CAPACITY;
+    const isBufferEmpty = currentStored <= 0;
 
     if (!hasResources && isBufferEmpty) {
       logicalStatus = "no_resources";
@@ -120,24 +128,55 @@ export class Extractor
     if (canMine && this.accumTime >= interval) {
       if (tile instanceof ResourceTile) {
         tile.deplete(1);
+        const resourceType = tile.getResourceType();
+
+        // Add to buffer
+        this.addToBuffer(resourceType, 1);
+
         gameEventManager.emit("RESOURCE_MINED", {
-          resource: tile.getResourceType(),
+          resource: resourceType,
           amount: 1,
           position: { x: this.x, y: this.y },
         });
       }
-      this.internalStorage += 1;
       this.accumTime -= interval;
     }
 
     // Output Step (Independent of mining interval, but dependent on checkOutputClear which we called earlier)
     // We try to output every tick if we have items.
-    // However, usually machines output at a specific rate or instantly?
-    // Let's assume it attempts output every tick if there is storage.
-    if (this.internalStorage > 0) {
+    if (this.slots.length > 0 && this.slots[0].count > 0) {
       if (this.tryOutput(world)) {
-        this.internalStorage -= 1;
+        this.removeFromBuffer(1);
       }
+    }
+  }
+
+  // --- Buffer Helpers ---
+
+  private addToBuffer(type: string, amount: number): void {
+    if (this.slots.length === 0) {
+      this.slots.push({ type, count: amount });
+    } else if (this.slots[0].type === type) {
+      this.slots[0].count = Math.min(
+        this.slots[0].count + amount,
+        this.BUFFER_CAPACITY,
+      );
+    }
+  }
+
+  private removeFromBuffer(amount: number): void {
+    if (this.slots.length > 0) {
+      this.slots[0].count -= amount;
+      if (this.slots[0].count <= 0) {
+        this.slots = [];
+      }
+    }
+  }
+
+  // Public helper for UI interaction (removing slot)
+  public removeSlot(index: number): void {
+    if (index === 0) {
+      this.slots = [];
     }
   }
 
@@ -317,6 +356,9 @@ export class Extractor
   }
 
   private tryOutputResource(world: IWorld): boolean {
+    if (this.slots.length === 0) return false;
+    const itemToOutput = this.slots[0].type;
+
     let tx = this.x;
     let ty = this.y;
 
@@ -328,7 +370,7 @@ export class Extractor
     const target = world.getBuilding(tx, ty);
     if (target && target instanceof Conveyor) {
       if (!target.currentItem) {
-        target.currentItem = "stone";
+        target.currentItem = itemToOutput;
         // Generate unique ID for visual persistence
         target.itemId = Math.floor(Math.random() * 1000000);
         target.transportProgress = 0;
@@ -336,7 +378,7 @@ export class Extractor
       }
     } else if (target && target instanceof Chest) {
       // Return result of addItem (true if added, false if full)
-      return target.addItem("stone");
+      return target.addItem(itemToOutput);
     }
     return false;
   }

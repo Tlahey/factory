@@ -46,6 +46,7 @@ export default function HUD() {
 
   const handleDrop = (e: React.DragEvent, targetIndex: number) => {
     e.preventDefault();
+    e.stopPropagation();
     const source = e.dataTransfer.getData("source");
     const sourceIndex = parseInt(e.dataTransfer.getData("index"));
     const type = e.dataTransfer.getData("type");

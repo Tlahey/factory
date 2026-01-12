@@ -55,23 +55,23 @@ export default function BuildingInfoPanel() {
   useEffect(() => {
     const handleInventoryDrop = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (!building || !(building instanceof Chest)) return;
+      if (
+        !building ||
+        (!(building instanceof Chest) && !(building instanceof Extractor))
+      )
+        return;
 
       const { source, sourceIndex, targetIndex, type } = detail;
 
-      // Only handle if this panel is open for the source chest?
-      // Actually, if we drag from THIS panel, 'source' is 'chest'.
-      // We assume single open container model for now.
       if (source === "chest") {
-        // The event details come from HUD drop handler
-        const chestSlot = building.slots[sourceIndex];
-        if (!chestSlot) return; // Sync issue?
+        const slot = building.slots[sourceIndex];
+        if (!slot) return;
 
-        // 1. Add to Player Inventory (Handle Stack Merging)
+        // 1. Add to Player Inventory
         const currentInv = useGameStore.getState().inventory;
         const existingSlot = currentInv[targetIndex];
 
-        let finalCount = chestSlot.count;
+        let finalCount = slot.count;
         if (existingSlot && existingSlot.type === type) {
           finalCount += existingSlot.count;
         }
@@ -80,20 +80,45 @@ export default function BuildingInfoPanel() {
           .getState()
           .updateInventorySlot(targetIndex, { type, count: finalCount });
 
-        // 2. Remove from Chest
+        // 2. Remove from Chest/Extractor
         if (building.removeSlot) {
           building.removeSlot(sourceIndex);
         } else {
           building.slots.splice(sourceIndex, 1);
         }
-        setBuilding(building); // Force re-render
+        setBuilding(building);
+        forceUpdate((n) => n + 1);
+      }
+    };
+
+    const handleItemDelete = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (
+        !building ||
+        (!(building instanceof Chest) && !(building instanceof Extractor))
+      )
+        return;
+
+      const { source, sourceIndex } = detail;
+
+      if (source === "chest") {
+        // Just remove
+        if (building.removeSlot) {
+          building.removeSlot(sourceIndex);
+        } else {
+          building.slots.splice(sourceIndex, 1);
+        }
+        setBuilding(building);
         forceUpdate((n) => n + 1);
       }
     };
 
     window.addEventListener("GAME_INVENTORY_DROP", handleInventoryDrop);
-    return () =>
+    window.addEventListener("GAME_ITEM_DELETE", handleItemDelete);
+    return () => {
       window.removeEventListener("GAME_INVENTORY_DROP", handleInventoryDrop);
+      window.removeEventListener("GAME_ITEM_DELETE", handleItemDelete);
+    };
   }, [building]);
 
   if (!openedEntityKey || !building) return null;
@@ -175,7 +200,17 @@ export default function BuildingInfoPanel() {
   }
 
   return (
-    <div className="fixed right-6 top-24 w-80 bg-gray-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl text-white overflow-hidden z-panel animate-in slide-in-from-right-10 fade-in duration-200">
+    <div
+      className="fixed right-6 top-24 w-80 bg-gray-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl text-white overflow-hidden z-panel animate-in slide-in-from-right-10 fade-in duration-200"
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+    >
       {/* Header */}
       <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
         <div className="flex items-center gap-3">
@@ -363,6 +398,73 @@ export default function BuildingInfoPanel() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Dedicated Buffer Visual */}
+              <div className="p-4 bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-white/10 rounded-xl relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-1 bg-white/5">
+                  <div
+                    className="h-full bg-orange-500 transition-all duration-300 ease-out"
+                    style={{
+                      width: `${((building.slots[0]?.count || 0) / building.BUFFER_CAPACITY) * 100}%`,
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                    <Box size={12} className="text-orange-400" />
+                    Output Buffer
+                  </h4>
+                  <span className="text-[10px] font-mono text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded border border-orange-500/20">
+                    {building.slots[0]?.count || 0} / {building.BUFFER_CAPACITY}
+                  </span>
+                </div>
+
+                <div className="flex justify-center py-2">
+                  <div
+                    className={`
+                           w-20 h-20 bg-black/40 rounded-xl border-2 flex items-center justify-center relative 
+                           transition-all duration-200
+                           ${
+                             building.slots.length > 0
+                               ? "border-orange-500/50 shadow-[0_0_15px_rgba(249,115,22,0.2)] cursor-grab active:cursor-grabbing hover:border-orange-400 hover:scale-105"
+                               : "border-white/5 border-dashed"
+                           }
+                        `}
+                    draggable={building.slots.length > 0}
+                    onDragStart={(e) => {
+                      if (building.slots.length > 0) {
+                        handleDragStart(e, "chest", 0, building.slots[0]);
+                      }
+                    }}
+                    onDragOver={handleDragOver}
+                  >
+                    {building.slots.length > 0 ? (
+                      <>
+                        <div className="absolute inset-0 bg-orange-500/5 rounded-xl animate-pulse" />
+                        <ModelPreview
+                          type="item"
+                          id={building.slots[0].type}
+                          width={64}
+                          height={64}
+                          static
+                          seed={0}
+                        />
+                        <div className="absolute -bottom-2 -right-2 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-md shadow-lg border border-orange-400">
+                          {building.slots[0].count}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-white/10 text-xs font-medium uppercase tracking-widest">
+                        Empty
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <p className="text-[10px] text-center text-gray-500 mt-1">
+                  Drag to take items
+                </p>
               </div>
             </div>
           )}

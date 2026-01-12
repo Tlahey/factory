@@ -130,8 +130,29 @@ export default function Home() {
     };
   }, [togglePause, handleSave, resetInventory, setInventory]);
 
+  const handleGlobalDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const source = e.dataTransfer.getData("source");
+    // If dropped on the map (global), and source is chest/extractor, we delete it.
+    if (source === "chest") {
+      const sourceIndex = parseInt(e.dataTransfer.getData("index"));
+      window.dispatchEvent(
+        new CustomEvent("GAME_ITEM_DELETE", {
+          detail: {
+            source: "chest",
+            sourceIndex: sourceIndex,
+          },
+        }),
+      );
+    }
+  };
+
   return (
-    <main className="w-full h-screen overflow-hidden bg-black relative">
+    <main
+      className="w-full h-screen overflow-hidden bg-black relative"
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={handleGlobalDrop}
+    >
       <div className="absolute inset-0 z-0 text-white">
         <GameCanvas />
       </div>

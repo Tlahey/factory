@@ -32,8 +32,8 @@ const ARROW_HEAD_SIZE = 0.15;
 const ARROW_SHAFT_LENGTH = 0.2;
 const ARROW_SHAFT_RADIUS = 0.04;
 const ARROW_HEIGHT = 0.5;
-const INPUT_COLOR = 0x00ff00; // Green
-const OUTPUT_COLOR = 0xff0000; // Red
+const INPUT_COLOR = 0x00ff88; // Bright vivid green
+const OUTPUT_COLOR = 0xff4444; // Bright vivid red
 
 function createArrowMesh(color: number, pointsInward: boolean): THREE.Group {
   const arrowGroup = new THREE.Group();
@@ -126,6 +126,9 @@ export class PlacementVisuals {
   private ghostType: string | null = null;
   private ioArrowGroup: THREE.Group | null = null;
 
+  // For conveyor: track current visual type to detect changes
+  private conveyorVisualType: "straight" | "left" | "right" = "straight";
+
   // Conveyor drag preview
   private conveyorDragMeshes: THREE.Object3D[] = [];
 
@@ -194,6 +197,95 @@ export class PlacementVisuals {
     return group.children.length > 0 ? group : null;
   }
 
+  /**
+   * Detect what type of conveyor (straight/left/right) should be shown based on adjacent input sources.
+   * Finds any building outputting to the placement position and calculates the turn type.
+   * Uses calculateTurnType for consistency with actual Conveyor.updateVisualState logic.
+   */
+  private detectConveyorTurnType(
+    x: number,
+    y: number,
+    outputDirection: Direction4,
+    world: IWorld,
+  ): "straight" | "left" | "right" {
+    // Check all 4 directions for a building whose output points to our position
+    const directions: Direction4[] = ["north", "south", "east", "west"];
+    const offsets: Record<Direction4, { dx: number; dy: number }> = {
+      north: { dx: 0, dy: -1 },
+      south: { dx: 0, dy: 1 },
+      east: { dx: 1, dy: 0 },
+      west: { dx: -1, dy: 0 },
+    };
+
+    for (const checkDir of directions) {
+      const offset = offsets[checkDir];
+      const neighborX = x + offset.dx;
+      const neighborY = y + offset.dy;
+      const neighbor = world.getBuilding(neighborX, neighborY);
+
+      if (!neighbor) continue;
+
+      // Check if neighbor has an output that targets our position
+      if ("getOutputPosition" in neighbor) {
+        const getOutputPos = neighbor as {
+          getOutputPosition: () => { x: number; y: number } | null;
+        };
+        const neighborOutput = getOutputPos.getOutputPosition();
+
+        if (
+          neighborOutput &&
+          neighborOutput.x === x &&
+          neighborOutput.y === y
+        ) {
+          // Found input source!
+          // flowIn = neighbor's direction (the direction flow is traveling)
+          const flowIn = neighbor.direction as Direction4;
+          // flowOut = our output direction
+          const flowOut = outputDirection;
+
+          // Use same logic as Conveyor.updateVisualState
+          return this.calculateTurnTypeLocal(flowIn, flowOut);
+        }
+      }
+    }
+
+    // No adjacent input source found, default to straight
+    return "straight";
+  }
+
+  /**
+   * Calculate turn type based on flow directions (same logic as ConveyorLogicSystem.calculateTurnType)
+   */
+  private calculateTurnTypeLocal(
+    flowIn: Direction4,
+    flowOut: Direction4,
+  ): "straight" | "left" | "right" {
+    if (flowIn === flowOut) {
+      return "straight";
+    }
+
+    // Turn mappings: given flowIn, which direction is left/right
+    const turnMappings: Record<
+      Direction4,
+      { left: Direction4; right: Direction4 }
+    > = {
+      north: { left: "west", right: "east" },
+      south: { left: "east", right: "west" },
+      east: { left: "north", right: "south" },
+      west: { left: "south", right: "north" },
+    };
+
+    const mapping = turnMappings[flowIn];
+    if (mapping.left === flowOut) {
+      return "left";
+    } else if (mapping.right === flowOut) {
+      return "right";
+    }
+
+    // 180° turn - invalid but return straight as fallback
+    return "straight";
+  }
+
   // updateIOArrows is no longer needed - arrows inherit ghost mesh rotation
 
   public update(
@@ -219,7 +311,18 @@ export class PlacementVisuals {
 
     // Handle Ghost
     if (ghostType) {
-      if (this.ghostType !== ghostType) {
+      // For conveyors, detect the visual type based on adjacent buildings
+      let neededConveyorType: "straight" | "left" | "right" = "straight";
+      if (ghostType === "conveyor" && world) {
+        neededConveyorType = this.detectConveyorTurnType(x, y, rotation, world);
+      }
+
+      // Check if we need to recreate the ghost mesh
+      const conveyorTypeChanged =
+        ghostType === "conveyor" &&
+        this.conveyorVisualType !== neededConveyorType;
+
+      if (this.ghostType !== ghostType || conveyorTypeChanged) {
         // Remove old ghost
         if (this.ghostMesh) {
           this.scene.remove(this.ghostMesh);
@@ -237,7 +340,8 @@ export class PlacementVisuals {
           mesh = createChestModel();
         } else if (ghostType === "conveyor") {
           const texture = createConveyorTexture();
-          mesh = createConveyorModel("straight", texture);
+          mesh = createConveyorModel(neededConveyorType, texture);
+          this.conveyorVisualType = neededConveyorType;
         } else if (ghostType === "hub") {
           mesh = createHubModel();
         } else if (ghostType === "electric_pole") {
@@ -272,8 +376,23 @@ export class PlacementVisuals {
         this.ghostMesh.visible = true;
         this.ghostMesh.position.set(x, 0, y);
 
-        // Apply rotation for all buildings (including conveyor preview)
-        this.ghostMesh.rotation.y = directionToRotation[rotation] ?? 0;
+        // Apply rotation for all buildings
+        let baseRotation = directionToRotation[rotation] ?? 0;
+
+        // For conveyor turn pieces, apply additional rotation adjustments
+        if (ghostType === "conveyor") {
+          // Reset scale first for all types except right
+          this.ghostMesh.scale.set(1, 1, 1);
+
+          if (this.conveyorVisualType === "left") {
+            baseRotation -= Math.PI / 2;
+          } else if (this.conveyorVisualType === "right") {
+            this.ghostMesh.scale.set(-1, 1, 1); // Mirror for right turns
+            baseRotation += Math.PI / 2;
+          }
+        }
+
+        this.ghostMesh.rotation.y = baseRotation;
 
         // IO arrows are children of ghostMesh and inherit its rotation automatically
         // No separate positioning needed
@@ -317,6 +436,8 @@ export class PlacementVisuals {
 
         this.ghostMesh.traverse((child) => {
           if (child instanceof THREE.Mesh) {
+            // Skip IO arrows - preserve their green/red colors
+            if (child.parent?.name === "ghost_io_arrows") return;
             child.material = ghostMat;
           }
         });
@@ -329,14 +450,27 @@ export class PlacementVisuals {
 
   /**
    * Update conveyor drag preview with multiple segments
+   * @param path - Array of segments with positions and validity
+   * @param rotation - User's rotation for the LAST segment
    */
   public updateConveyorDragPreview(
     path: { x: number; y: number; isValid: boolean }[],
+    rotation: Direction4 = "north",
   ) {
     // Clear existing drag meshes
     this.clearConveyorDragPreview();
 
     if (path.length === 0) return;
+
+    console.log(
+      `[DEBUG] updateConveyorDragPreview: path.length=${path.length}, rotation=${rotation}`,
+    );
+    console.log(
+      `[DEBUG] Path: ${path.map((p, i) => `[${i}](${p.x},${p.y})`).join(" -> ")}`,
+    );
+    console.log(
+      `[DEBUG] First: (${path[0].x},${path[0].y}), Last: (${path[path.length - 1].x},${path[path.length - 1].y})`,
+    );
 
     const texture = createConveyorTexture();
 
@@ -345,33 +479,76 @@ export class PlacementVisuals {
       const segment = path[i];
       const prev = i > 0 ? path[i - 1] : null;
       const next = i < path.length - 1 ? path[i + 1] : null;
+      const isFirst = i === 0;
+      const isLast = i === path.length - 1;
+      const isSingle = path.length === 1;
 
-      // Determine conveyor type (straight, left, right) based on neighbors
+      // Determine direction and conveyor type
+      let direction: Direction4;
       let conveyorType: "straight" | "left" | "right" = "straight";
-      if (prev && next) {
-        conveyorType = detectConveyorType(
-          prev.x,
-          prev.y,
+
+      if (isSingle) {
+        // SINGLE ELEMENT: Use user's rotation, no turn
+        direction = rotation;
+        conveyorType = "straight";
+        console.log(
+          `[DEBUG] Segment ${i} SINGLE: dir=${direction}, type=${conveyorType}`,
+        );
+      } else if (isFirst) {
+        // FIRST ELEMENT of multi-element path: point toward next, always straight
+        direction = getSegmentDirection(
           segment.x,
           segment.y,
-          next.x,
-          next.y,
+          next!.x,
+          next!.y,
+          null,
+          null,
+        ) as Direction4;
+        conveyorType = "straight"; // First element is always straight
+        console.log(
+          `[DEBUG] Segment ${i} FIRST: dir=${direction}, type=${conveyorType}`,
+        );
+      } else if (isLast) {
+        // LAST ELEMENT: Use user's rotation, calculate turn from prev
+        direction = rotation;
+        const prevDirection = getSegmentDirection(
+          prev!.x,
+          prev!.y,
+          segment.x,
+          segment.y,
+          null,
+          null,
+        ) as Direction4;
+        conveyorType = this.calculateTurnTypeLocal(prevDirection, direction);
+        console.log(
+          `[DEBUG] Segment ${i} LAST: prevDir=${prevDirection}, dir=${direction}, type=${conveyorType}`,
+        );
+      } else {
+        // MIDDLE ELEMENT: Calculate from path positions
+        direction = getSegmentDirection(
+          segment.x,
+          segment.y,
+          next!.x,
+          next!.y,
+          prev!.x,
+          prev!.y,
+        ) as Direction4;
+        conveyorType = detectConveyorType(
+          prev!.x,
+          prev!.y,
+          segment.x,
+          segment.y,
+          next!.x,
+          next!.y,
+        );
+        console.log(
+          `[DEBUG] Segment ${i} MIDDLE: dir=${direction}, type=${conveyorType}`,
         );
       }
 
       // Create mesh with correct type
       const mesh = createConveyorModel(conveyorType, texture);
       mesh.position.set(segment.x, 0, segment.y);
-
-      // Calculate rotation based on output direction
-      const direction = getSegmentDirection(
-        segment.x,
-        segment.y,
-        next ? next.x : null,
-        next ? next.y : null,
-        prev ? prev.x : null,
-        prev ? prev.y : null,
-      );
 
       // Map direction to rotation (same as ConveyorVisual.ts logic)
       const getRot = (dir: string) => {

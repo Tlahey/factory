@@ -31,6 +31,42 @@ class MockEntity {
   getType() {
     return this.type;
   }
+
+  /**
+   * Returns the position this entity outputs TO (the cell its output targets).
+   * Based on direction: output is in the direction the entity faces.
+   */
+  getOutputPosition(): { x: number; y: number } | null {
+    const offsets: Record<Direction, { dx: number; dy: number }> = {
+      north: { dx: 0, dy: -1 },
+      south: { dx: 0, dy: 1 },
+      east: { dx: 1, dy: 0 },
+      west: { dx: -1, dy: 0 },
+    };
+    const offset = offsets[this.direction];
+    return { x: this.x + offset.dx, y: this.y + offset.dy };
+  }
+
+  /**
+   * Returns the position this entity receives input FROM (the cell behind it).
+   */
+  getInputPosition(): { x: number; y: number } | null {
+    const opposites: Record<Direction, Direction> = {
+      north: "south",
+      south: "north",
+      east: "west",
+      west: "east",
+    };
+    const offsets: Record<Direction, { dx: number; dy: number }> = {
+      north: { dx: 0, dy: -1 },
+      south: { dx: 0, dy: 1 },
+      east: { dx: 1, dy: 0 },
+      west: { dx: -1, dy: 0 },
+    };
+    const backDir = opposites[this.direction];
+    const offset = offsets[backDir];
+    return { x: this.x + offset.dx, y: this.y + offset.dy };
+  }
 }
 
 class MockWorld {
@@ -219,14 +255,15 @@ describe("ConveyorLogicSystem", () => {
       expect(flow).toBe("east");
     });
 
-    test("Ignores Unresolved Conveyor", () => {
+    test("Finds Unresolved Conveyor for turn detection", () => {
       const conv = new MockEntity("conveyor", 0, 0, "east");
       conv.isResolved = false;
       world.add(conv);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const flow = determineFlowInputDirection(1, 0, "east", world as any);
-      expect(flow).toBeNull();
+      // Now we detect any conveyor pointing at us for turn visuals, regardless of resolution
+      expect(flow).toBe("east");
     });
 
     test("Ignores Conveyor not pointing at us", () => {

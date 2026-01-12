@@ -9,6 +9,7 @@ import { ElectricPole } from "../buildings/electric-pole/ElectricPole";
 import {
   getBuildingConfig,
   ChestConfigType,
+  IIOBuilding,
 } from "../buildings/BuildingConfig";
 import { createBuildingLogic } from "../buildings/BuildingFactory";
 import { IWorld, WorldData, SerializedBuilding } from "../entities/types";
@@ -18,6 +19,7 @@ import {
   getOppositeDirection,
   Direction,
 } from "../buildings/conveyor/ConveyorLogicSystem";
+import { updateBuildingConnectivity } from "../buildings/BuildingIOHelper";
 
 import { Tile } from "./Tile";
 import { ResourceTile } from "./ResourceTile";
@@ -183,62 +185,48 @@ export class World implements IWorld {
   }
 
   public updateConveyorNetwork(): void {
-    const runPass = () => {
-      // Re-orient
-      this.buildings.forEach((b) => {
-        if (b instanceof Conveyor) {
-          b.autoOrientToNeighbor(this);
-        }
-      });
-
-      // Resolve (Backwards from Chests)
-      const queue: { x: number; y: number }[] = [];
-      this.buildings.forEach((b) => {
-        if (b instanceof Chest) queue.push({ x: b.x, y: b.y });
-      });
-
-      const processed = new Set<string>();
-      while (queue.length > 0) {
-        const { x, y } = queue.shift()!;
-        const key = `${x},${y}`;
-        if (processed.has(key)) continue;
-        processed.add(key);
-
-        const dirs: { dx: number; dy: number; dir: Direction }[] = [
-          { dx: 0, dy: 1, dir: "north" },
-          { dx: 0, dy: -1, dir: "south" },
-          { dx: 1, dy: 0, dir: "west" },
-          { dx: -1, dy: 0, dir: "east" },
-        ];
-
-        for (const d of dirs) {
-          const nx = x + d.dx;
-          const ny = y + d.dy;
-          const neighbor = this.getBuilding(nx, ny);
-
-          if (neighbor && neighbor instanceof Conveyor) {
-            if (neighbor.direction === d.dir) {
-              if (!neighbor.isResolved) {
-                neighbor.isResolved = true;
-                queue.push({ x: nx, y: ny });
-              }
-            }
-          }
-        }
-      }
-    };
-
-    // 1. Reset
+    // 1. Reset all conveyors to unresolved
     this.buildings.forEach((b) => {
       if (b instanceof Conveyor) b.isResolved = false;
     });
 
-    // 2. Pass 1 (Establish basic resolution)
-    runPass();
+    // 2. Propagate resolution backwards from Chests
+    const queue: { x: number; y: number }[] = [];
+    this.buildings.forEach((b) => {
+      if (b instanceof Chest) queue.push({ x: b.x, y: b.y });
+    });
 
-    // 3. Pass 2 (Optimize orientation towards resolved paths)
-    // We do NOT reset isResolved here, so autoOrient uses the info from Pass 1
-    runPass();
+    const processed = new Set<string>();
+    while (queue.length > 0) {
+      const { x, y } = queue.shift()!;
+      const key = `${x},${y}`;
+      if (processed.has(key)) continue;
+      processed.add(key);
+
+      // Check all 4 directions for conveyors pointing at this cell
+      const dirs: { dx: number; dy: number; dir: Direction }[] = [
+        { dx: 0, dy: 1, dir: "north" },
+        { dx: 0, dy: -1, dir: "south" },
+        { dx: 1, dy: 0, dir: "west" },
+        { dx: -1, dy: 0, dir: "east" },
+      ];
+
+      for (const d of dirs) {
+        const nx = x + d.dx;
+        const ny = y + d.dy;
+        const neighbor = this.getBuilding(nx, ny);
+
+        if (neighbor && neighbor instanceof Conveyor) {
+          // If the conveyor points at us (x, y), mark it resolved
+          if (neighbor.direction === d.dir) {
+            if (!neighbor.isResolved) {
+              neighbor.isResolved = true;
+              queue.push({ x: nx, y: ny });
+            }
+          }
+        }
+      }
+    }
   }
 
   public reset(): void {
@@ -370,41 +358,22 @@ export class World implements IWorld {
       }
     }
 
-    // Auto-orient conveyors to connect to neighbors
-    // 1. If we are a conveyor, look around
+    // Direction is now fixed at placement time via ConveyorPlacementHelper
+    // No runtime auto-orientation needed for conveyors
+
+    // For conveyors, compute visual state (turns) and connectivity
     if (building instanceof Conveyor) {
-      building.autoOrientToNeighbor(this);
+      building.updateVisualState(this);
+      updateBuildingConnectivity(building, this);
+
+      // Also update neighbors' connectivity (they may now be connected to us)
+      this.updateNeighborConnectivity(x, y);
     }
 
-    // 2. IMPORTANT: Notify ALL identifiable neighbors to re-check their orientation
-    // This allows existing conveyors to react when we place a Chest or Extractor next to them
-    const directions: Direction[] = ["north", "south", "east", "west"];
-
-    for (const dir of directions) {
-      const offset = getDirectionOffset(dir);
-      const nx = building.x + offset.dx;
-      const ny = building.y + offset.dy;
-      const neighbor = this.getBuilding(nx, ny);
-
-      // Update neighbor logic
-      if (neighbor) {
-        if (neighbor.getType() === "conveyor") {
-          (neighbor as Conveyor).autoOrientToNeighbor(this);
-        } else {
-          // Try to auto-orient other neighbors (e.g. Extractors)
-          this.autoOrientBuilding(nx, ny);
-        }
-      }
-    }
-
-    // CRITICAL: Propagate flow direction from sources BEFORE network update
-    // This ensures all conveyors point AWAY from extractors
-    this.propagateFlowFromSources();
-
-    // Update Network
+    // Update conveyor network resolution (which conveyors lead to chests)
     this.updateConveyorNetwork();
 
-    // Auto-orient other buildings (like Extractors)
+    // Auto-orient other buildings (like Extractors) - NOT conveyors
     if (type !== "conveyor") {
       this.autoOrientBuilding(x, y);
     }
@@ -419,6 +388,29 @@ export class World implements IWorld {
     const b = this.getBuilding(x, y);
     if (b && "autoOrient" in b) {
       (b as unknown as AutoOrientable).autoOrient(this);
+    }
+  }
+
+  /**
+   * Update connectivity of all neighboring IO buildings at (x, y).
+   * Called when a new building is placed to update arrow visibility.
+   */
+  public updateNeighborConnectivity(x: number, y: number): void {
+    const directions = [
+      { dx: 0, dy: -1 },
+      { dx: 0, dy: 1 },
+      { dx: 1, dy: 0 },
+      { dx: -1, dy: 0 },
+    ];
+
+    for (const dir of directions) {
+      const neighbor = this.getBuilding(x + dir.dx, y + dir.dy);
+      if (neighbor && "io" in neighbor) {
+        updateBuildingConnectivity(
+          neighbor as BuildingEntity & IIOBuilding,
+          this,
+        );
+      }
     }
   }
   // ...

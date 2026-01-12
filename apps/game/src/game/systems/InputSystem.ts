@@ -6,6 +6,8 @@ import {
   calculateConveyorPath,
   getSegmentDirection,
 } from "../buildings/conveyor/ConveyorPathHelper";
+import { isValidConveyorDirection } from "../buildings/conveyor/ConveyorPlacementHelper";
+import { Conveyor } from "../buildings/conveyor/Conveyor";
 import { Direction4 } from "../entities/BuildingEntity";
 import { getBuildingConfig } from "../buildings/BuildingConfig";
 
@@ -41,6 +43,7 @@ export class InputSystem {
   ) => void;
   private onConveyorDrag?: (
     path: { x: number; y: number; isValid: boolean }[],
+    rotation: Direction4,
   ) => void;
   private onInteract?: (x: number, y: number, buildingId: string) => void;
 
@@ -84,6 +87,7 @@ export class InputSystem {
     ) => void,
     onConveyorDrag?: (
       path: { x: number; y: number; isValid: boolean }[],
+      rotation: Direction4,
     ) => void,
     onInteract?: (x: number, y: number, buildingId: string) => void,
   ) {
@@ -160,6 +164,9 @@ export class InputSystem {
   // Conveyor Drag State
   private conveyorDragStart: { x: number; y: number } | null = null;
   private isDraggingConveyor = false;
+  private lastConveyorDragPath: { x: number; y: number; isValid: boolean }[] =
+    [];
+  private lastConveyorDragPosition: { x: number; y: number } | null = null;
 
   // Deletion State
   private isDeleting = false;
@@ -450,9 +457,12 @@ export class InputSystem {
         }
       }
 
+      // Store path for rotation updates
+      this.lastConveyorDragPath = validatedPath;
+
       // Call preview callback
       if (this.onConveyorDrag) {
-        this.onConveyorDrag(validatedPath);
+        this.onConveyorDrag(validatedPath, this.currentRotation);
       }
     } else {
       // Standard Hover
@@ -753,7 +763,8 @@ export class InputSystem {
   private cancelConveyorDrag() {
     this.conveyorDragStart = null;
     this.isDraggingConveyor = false;
-    if (this.onConveyorDrag) this.onConveyorDrag([]);
+    this.lastConveyorDragPath = [];
+    if (this.onConveyorDrag) this.onConveyorDrag([], this.currentRotation);
   }
 
   private handleConveyorDragEnd(endX: number, endY: number) {
@@ -815,18 +826,37 @@ export class InputSystem {
         const current = path[i];
         const next = i < path.length - 1 ? path[i + 1] : null;
         const prev = i > 0 ? path[i - 1] : null;
+        const isLast = i === path.length - 1;
 
-        // Calculate direction based on next segment, or maintain prev direction if end
-        const direction = getSegmentDirection(
-          current.x,
-          current.y,
-          next ? next.x : null,
-          next ? next.y : null,
-          prev ? prev.x : null,
-          prev ? prev.y : null,
-        );
+        let direction: Direction4;
+
+        // For the LAST conveyor, use user's rotation (scroll wheel)
+        // This allows user to control the end direction of the chain
+        if (isLast) {
+          direction = this.currentRotation;
+        } else {
+          // For other segments, calculate direction toward next position
+          direction = getSegmentDirection(
+            current.x,
+            current.y,
+            next ? next.x : null,
+            next ? next.y : null,
+            prev ? prev.x : null,
+            prev ? prev.y : null,
+          );
+        }
 
         this.world.placeBuilding(current.x, current.y, "conveyor", direction);
+      }
+
+      // Update ALL placed conveyors' visual state now that all neighbors exist
+      // This is needed because placeBuilding calls updateVisualState immediately,
+      // but at that point not all conveyors in the path are placed yet
+      for (const segment of path) {
+        const conveyor = this.world.getBuilding(segment.x, segment.y);
+        if (conveyor && "updateVisualState" in conveyor) {
+          (conveyor as Conveyor).updateVisualState(this.world);
+        }
       }
 
       // Update conveyor network to orient all conveyors correctly
@@ -936,27 +966,29 @@ export class InputSystem {
         return;
       }
 
+      // Determine direction - use user's rotation (Fix 3)
+      const direction = this.currentRotation;
+
+      // Validate conveyor direction - block backwards placement (Fix 1)
+      if (selectedBuilding === "conveyor") {
+        if (!isValidConveyorDirection(gridX, gridY, direction, this.world)) {
+          console.log(
+            "Cannot place conveyor facing backwards toward input source",
+          );
+          return;
+        }
+      }
+
       const success = this.world.placeBuilding(
         gridX,
         gridY,
         selectedBuilding,
-        this.currentRotation,
+        direction,
       );
       if (success) {
         // Deduct Resources
         if (config.cost) {
           removeResources(config.cost);
-        }
-
-        this.world.autoOrientBuilding(gridX, gridY);
-        const dirs = [
-          [0, 1],
-          [0, -1],
-          [1, 0],
-          [-1, 0],
-        ];
-        for (const [dx, dy] of dirs) {
-          this.world.autoOrientBuilding(gridX + dx, gridY + dy);
         }
 
         this.onWorldChange?.();
@@ -1083,8 +1115,18 @@ export class InputSystem {
       // deltaY > 0 = scroll down = counter-clockwise
       const clockwise = event.deltaY < 0;
       this.rotateSelection(clockwise);
-      // Recall onHover to update ghost rotation
-      if (this.lastHoverPosition && this.onHover) {
+
+      // If dragging conveyors, update the preview with new rotation
+      if (
+        this.isDraggingConveyor &&
+        this.lastConveyorDragPath.length > 0 &&
+        this.onConveyorDrag
+      ) {
+        this.onConveyorDrag(this.lastConveyorDragPath, this.currentRotation);
+      }
+
+      // Recall onHover to update ghost rotation (only if NOT dragging conveyor)
+      if (!this.isDraggingConveyor && this.lastHoverPosition && this.onHover) {
         const { x, y, isValid, ghost } = this.lastHoverPosition;
         this.onHover(x, y, isValid, ghost, this.currentRotation);
       }

@@ -1,15 +1,74 @@
 import { BuildingEntity } from "../entities/BuildingEntity";
 import { IWorld } from "../entities/types";
-import {
-  IIOBuilding,
-  IOSide,
-  Direction,
-  getDirectionFromSide,
-  getDirectionOffset,
-} from "./BuildingConfig";
+import { IIOBuilding, Direction, getDirectionOffset } from "./BuildingConfig";
 
 /**
- * Checks if a port is physically connected to another compatible port.
+ * SIMPLIFIED ARROW VISIBILITY RULES:
+ *
+ * OUTPUT ARROW (red):
+ * - Hide if ANY building exists at the output position
+ *
+ * INPUT ARROW (green):
+ * - Hide if a neighbor's output points at us (conveyor/extractor facing us)
+ */
+
+/**
+ * Check if output is connected (any building at output position)
+ */
+function isOutputConnectedInternal(
+  world: IWorld,
+  x: number,
+  y: number,
+  outputDirection: Direction,
+): boolean {
+  const offset = getDirectionOffset(outputDirection);
+  const targetX = x + offset.dx;
+  const targetY = y + offset.dy;
+  const neighbor = world.getBuilding(targetX, targetY);
+
+  // Simple rule: output connected if ANY building at output position
+  return neighbor !== undefined && neighbor !== null;
+}
+
+/**
+ * Check if input is connected (any neighbor's output points at us)
+ * Checks ALL adjacent positions, not just the canonical input direction,
+ * to handle 90° angle connections properly.
+ */
+function isInputConnectedInternal(
+  world: IWorld,
+  x: number,
+  y: number,
+  _inputDirection: Direction,
+): boolean {
+  // Check ALL adjacent positions for any building whose output points to us
+  const directions: Direction[] = ["north", "south", "east", "west"];
+
+  for (const checkDir of directions) {
+    const offset = getDirectionOffset(checkDir);
+    const neighborX = x + offset.dx;
+    const neighborY = y + offset.dy;
+    const neighbor = world.getBuilding(neighborX, neighborY);
+
+    if (!neighbor) continue;
+
+    // Check if neighbor has an output that targets our position
+    if ("getOutputPosition" in neighbor) {
+      const neighborOutput = (
+        neighbor as { getOutputPosition: () => { x: number; y: number } | null }
+      ).getOutputPosition();
+      // Neighbor's output should equal OUR position
+      if (neighborOutput && neighborOutput.x === x && neighborOutput.y === y) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Exported function for external use (e.g., PlacementVisuals)
  */
 export function isPortConnected(
   world: IWorld,
@@ -18,65 +77,10 @@ export function isPortConnected(
   portDirection: Direction,
   isOutput: boolean,
 ): boolean {
-  const offset = getDirectionOffset(portDirection);
-  const targetX = x + offset.dx;
-  const targetY = y + offset.dy;
-  const neighbor = world.getBuilding(targetX, targetY);
-
-  if (!neighbor) return false;
-
   if (isOutput) {
-    // We are checking our output. Neighbor must have an input at our location.
-
-    // 1. Structural Check: Coordinate match with getInputPosition
-    // We check this FIRST because it confirms physical alignment regardless of logic state (e.g. full inventory)
-    if ("getInputPosition" in neighbor) {
-      const neighborInput = (
-        neighbor as { getInputPosition: () => { x: number; y: number } | null }
-      ).getInputPosition();
-      if (neighborInput && neighborInput.x === x && neighborInput.y === y) {
-        return true;
-      }
-    }
-
-    // 2. Logic Check: Generic canInput (Fallback for multi-tile/variable inputs like Hub)
-    if (
-      "canInput" in neighbor &&
-      typeof (
-        neighbor as unknown as { canInput: (x: number, y: number) => boolean }
-      ).canInput === "function"
-    ) {
-      try {
-        if (
-          (
-            neighbor as unknown as {
-              canInput: (x: number, y: number) => boolean;
-            }
-          ).canInput(x, y)
-        )
-          return true;
-      } catch (_) {
-        /* ignore */
-      }
-    }
-
-    return false;
+    return isOutputConnectedInternal(world, x, y, portDirection);
   } else {
-    // We are checking our input. Neighbor must have an output at our location.
-
-    // 1. Structural Check
-    if ("getOutputPosition" in neighbor) {
-      const neighborOutput = (
-        neighbor as { getOutputPosition: () => { x: number; y: number } | null }
-      ).getOutputPosition();
-      if (neighborOutput && neighborOutput.x === x && neighborOutput.y === y) {
-        return true;
-      }
-    }
-
-    // 2. Logic warning: We don't have a standard canOutput(x,y) yet, but if we did, it would go here.
-
-    return false;
+    return isInputConnectedInternal(world, x, y, portDirection);
   }
 }
 
@@ -89,33 +93,57 @@ export function updateBuildingConnectivity(
 ): void {
   const io = building.io;
 
-  // Handle Input
-  if (io.hasInput) {
-    const side: IOSide = io.inputSide || "front";
-    const absoluteDir = getDirectionFromSide(side, building.direction);
-    building.isInputConnected = isPortConnected(
-      world,
-      building.x,
-      building.y,
-      absoluteDir,
-      false,
-    );
-  } else {
-    building.isInputConnected = false;
-  }
-
-  // Handle Output
-  if (io.hasOutput) {
-    const side: IOSide = io.outputSide || "front";
-    const absoluteDir = getDirectionFromSide(side, building.direction);
-    building.isOutputConnected = isPortConnected(
-      world,
-      building.x,
-      building.y,
-      absoluteDir,
-      true,
-    );
+  // Handle Output - simple: any building at output = connected
+  if (io.hasOutput && "getOutputPosition" in building) {
+    const outputPos = (
+      building as unknown as {
+        getOutputPosition: () => { x: number; y: number } | null;
+      }
+    ).getOutputPosition();
+    if (outputPos) {
+      const neighbor = world.getBuilding(outputPos.x, outputPos.y);
+      building.isOutputConnected = neighbor !== undefined && neighbor !== null;
+    } else {
+      building.isOutputConnected = false;
+    }
   } else {
     building.isOutputConnected = false;
+  }
+
+  // Handle Input - check ALL adjacent neighbors for any output pointing to us
+  // This handles 90° angle connections properly
+  if (io.hasInput) {
+    const directions: Direction[] = ["north", "south", "east", "west"];
+    let isConnected = false;
+
+    for (const checkDir of directions) {
+      const offset = getDirectionOffset(checkDir);
+      const neighborX = building.x + offset.dx;
+      const neighborY = building.y + offset.dy;
+      const neighbor = world.getBuilding(neighborX, neighborY);
+
+      if (!neighbor) continue;
+
+      // Check if neighbor has an output that targets our position
+      if ("getOutputPosition" in neighbor) {
+        const neighborOutput = (
+          neighbor as unknown as {
+            getOutputPosition: () => { x: number; y: number } | null;
+          }
+        ).getOutputPosition();
+        if (
+          neighborOutput &&
+          neighborOutput.x === building.x &&
+          neighborOutput.y === building.y
+        ) {
+          isConnected = true;
+          break;
+        }
+      }
+    }
+
+    building.isInputConnected = isConnected;
+  } else {
+    building.isInputConnected = false;
   }
 }

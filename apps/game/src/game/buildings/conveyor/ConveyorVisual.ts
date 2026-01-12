@@ -7,6 +7,8 @@ import {
   createItemRockModel,
   updateRockVisuals,
 } from "../../environment/rock/RockModel";
+import { createIOArrows, updateIOArrows } from "../../visuals/IOArrowHelper";
+import type { IIOBuilding } from "../../buildings/BuildingConfig";
 
 export class ConveyorVisual implements VisualEntity {
   public mesh: THREE.Object3D;
@@ -17,6 +19,7 @@ export class ConveyorVisual implements VisualEntity {
   private itemMesh: THREE.Group;
   private lastItemId: number | null = null;
   private lastDirection: string;
+  private ioArrows: THREE.Group;
 
   constructor(conveyor: Conveyor) {
     this.type = conveyor.visualType;
@@ -28,15 +31,10 @@ export class ConveyorVisual implements VisualEntity {
     this.mesh = createConveyorModel(this.type, texture);
     this.mesh.name = "conveyor";
 
-    // Setup Belt Material
+    // Setup Belt Material - always animated
     const belt = this.mesh.getObjectByName("belt");
     if (belt && belt instanceof THREE.Mesh) {
-      if (this.lastResolved) {
-        this.beltMaterial = belt.material as THREE.MeshLambertMaterial;
-      } else {
-        // Static grey if unresolved
-        belt.material = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
-      }
+      this.beltMaterial = belt.material as THREE.MeshLambertMaterial;
     }
 
     // Setup Item Container & Mesh
@@ -53,6 +51,12 @@ export class ConveyorVisual implements VisualEntity {
     } else {
       this.itemContainer.scale.set(1, 1, 1);
     }
+
+    // Create IO arrows for direction indication
+    this.ioArrows = createIOArrows(
+      conveyor as unknown as Conveyor & IIOBuilding,
+    );
+    this.mesh.add(this.ioArrows);
 
     // Initial Rotation/Scale based on props
     this.setOrientation(this.type, conveyor.direction);
@@ -84,33 +88,18 @@ export class ConveyorVisual implements VisualEntity {
   }
 
   /**
-   * Update the resolved status of the conveyor, changing belt material to enable/disable animation
+   * Update the resolved status - visual feedback only (color tint), animation always runs
    */
   public setResolved(isResolved: boolean): void {
+    // Animation now always runs. We could add visual feedback here (e.g., color tint)
+    // but belt always moves to show direction.
     const belt = this.mesh.getObjectByName("belt");
-    if (belt && belt instanceof THREE.Mesh) {
+    if (belt && belt instanceof THREE.Mesh && this.beltMaterial) {
+      // Optionally tint unresolved belts slightly darker
       if (isResolved) {
-        // Enable animated belt - get the texture from current material or create new one
-        if (!this.beltMaterial) {
-          // Belt was previously unresolved, create a new texture
-          const currentMat = belt.material as THREE.MeshLambertMaterial;
-          let texture = currentMat.map; // Try to preserve texture if exists
-
-          // If no texture exists (e.g., was unresolved grey material), create a new one
-          if (!texture) {
-            texture = createConveyorTexture();
-          }
-
-          this.beltMaterial = new THREE.MeshLambertMaterial({
-            map: texture,
-            side: THREE.DoubleSide,
-          });
-          belt.material = this.beltMaterial;
-        }
+        this.beltMaterial.color.setHex(0xffffff); // Normal
       } else {
-        // Disable animation, set to static grey
-        belt.material = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
-        this.beltMaterial = null;
+        this.beltMaterial.color.setHex(0xcccccc); // Slightly darker when unresolved
       }
     }
   }
@@ -134,6 +123,12 @@ export class ConveyorVisual implements VisualEntity {
       this.setResolved(conveyor.isResolved);
       this.lastResolved = conveyor.isResolved;
     }
+
+    // Update IO arrows visibility based on connections
+    updateIOArrows(
+      this.ioArrows,
+      conveyor as unknown as Conveyor & IIOBuilding,
+    );
 
     // 2. Animate Belt
     if (this.beltMaterial && this.beltMaterial.map) {

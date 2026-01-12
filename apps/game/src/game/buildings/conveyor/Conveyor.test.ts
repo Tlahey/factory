@@ -5,6 +5,7 @@ import {
   getDirectionOffset,
   getOppositeDirection,
 } from "./ConveyorLogicSystem";
+import { determineConveyorDirection } from "./ConveyorPlacementHelper";
 
 class MockEntity {
   x: number;
@@ -42,11 +43,9 @@ class MockWorld {
     return this.buildings.get(`${x},${y}`);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getTile(_x: number, _y: number): any {
+  getTile(_x: number, _y: number): unknown {
     // Mock Tile
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return { isStone: () => false, isWater: () => false } as any;
+    return { isStone: () => false, isWater: () => false };
   }
 
   hasPathTo(
@@ -143,25 +142,28 @@ describe("Conveyor Orientation & Flow", () => {
     world = new MockWorld();
   });
 
-  test("Side Loading Priority: Straight conveyor next to Extractor", () => {
-    // Setup: Extractor(East) -> C1(North) -> C2(South)
+  test("Side Loading Priority: Conveyor at Extractor output uses extractor direction", () => {
+    // Setup: Extractor(East) at (0,10). Conveyor placed at (1,10) where extractor outputs.
     const ext = new MockEntity("extractor", 0, 10, "east");
-    const c1 = new Conveyor(1, 10, "north");
-    const c2 = new Conveyor(1, 11, "south");
+    // Mock getOutputPosition for extractor
+    (
+      ext as unknown as {
+        getOutputPosition: () => { x: number; y: number } | null;
+      }
+    ).getOutputPosition = () => ({ x: 1, y: 10 });
 
     world.add(ext);
-    world.add(c1);
-    world.add(c2);
 
-    // Run Logic on C1
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    c1.autoOrientToNeighbor(world as any);
+    // Test placement-time direction determination
+    const direction = determineConveyorDirection(
+      1,
+      10,
+      world as unknown as IWorld,
+      "north",
+    );
 
-    if (c1.direction !== "south") {
-      console.log(`DEBUG FAILURE: Expected 'south', got '${c1.direction}'`);
-    }
-
-    expect(c1.direction).toBe("south");
+    // Should continue in extractor's direction (east), not user's rotation (north)
+    expect(direction).toBe("east");
   });
 
   test("Flow Propagation: Reversing a Chain", () => {
@@ -198,39 +200,40 @@ describe("Conveyor Orientation & Flow", () => {
     expect(c1.direction).toBe("south");
   });
 
-  test("Crash Safety: Conflicting Conveyors (Head-to-Head)", () => {
+  test("Crash Safety: Conflicting Conveyors do not cause issues", () => {
     // Setup: C1(East) -> C2(West). They point at each other.
-    // This scenario previously caused issues. We ensure it doesn't crash/stack overflow.
+    // With placement-based system, this just means they were placed
+    // with conflicting directions - no crash expected.
     const c1 = new Conveyor(0, 0, "east");
     const c2 = new Conveyor(1, 0, "west");
 
     world.add(c1);
     world.add(c2);
 
-    // Trigger updates
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    c1.autoOrientToNeighbor(world as any);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    c2.autoOrientToNeighbor(world as any);
-
-    // Expect no crash. Directions might be anything, but we check execution finishes.
-    expect(true).toBe(true);
+    // Direction determination at placement time should work without crash
+    // Should not throw
+    expect(() => {
+      determineConveyorDirection(0, 0, world as unknown as IWorld, "north");
+      determineConveyorDirection(1, 0, world as unknown as IWorld, "north");
+    }).not.toThrow();
   });
 
   test("Placement: Can't be placed on Stone", () => {
     const c = new Conveyor(0, 0);
     // Mock tile as Stone
     const tile = { isStone: () => true, isWater: () => false };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect(c.isValidPlacement(tile as any)).toBe(false);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    expect(c.isValidPlacement(tile)).toBe(false);
   });
 
   test("Placement: Can't be placed on Water", () => {
     const c = new Conveyor(0, 0);
     // Mock tile as Water
     const tile = { isStone: () => false, isWater: () => true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect(c.isValidPlacement(tile as any)).toBe(false);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    expect(c.isValidPlacement(tile)).toBe(false);
   });
 
   describe("Connectivity Logic", () => {

@@ -14,8 +14,8 @@ const ARROW_HEAD_SIZE = 0.15;
 const ARROW_SHAFT_LENGTH = 0.2;
 const ARROW_SHAFT_RADIUS = 0.04;
 const ARROW_HEIGHT = 0.3;
-const INPUT_COLOR = 0x00ff00; // Green
-const OUTPUT_COLOR = 0xff0000; // Red
+const INPUT_COLOR = 0x00ff88; // Bright vivid green
+const OUTPUT_COLOR = 0xff4444; // Bright vivid red
 
 /**
  * Create an arrow mesh that points in +Z direction (outward from center by default)

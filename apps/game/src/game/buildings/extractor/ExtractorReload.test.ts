@@ -25,7 +25,7 @@ describe("Extractor - Reload after Resource Depletion", () => {
     world.setTile(x, y, new Rock(1)); // Only 1 resource
 
     // 2. Place extractor
-    const placed = world.placeBuilding(x, y, "extractor");
+    const placed = world.placeBuilding(x, y, "extractor", "north", true);
     expect(placed).toBe(true);
     expect(world.getBuilding(x, y)).toBeDefined();
 

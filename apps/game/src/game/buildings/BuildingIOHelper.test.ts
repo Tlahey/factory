@@ -131,4 +131,32 @@ describe("BuildingIOHelper", () => {
     expect(main.isInputConnected).toBe(false);
     expect(main.isOutputConnected).toBe(false);
   });
+
+  test("connects input when 90° angled neighbor outputs to us", () => {
+    // Main building at (5, 5) facing north - has input on back (south side at 5, 6)
+    const main = new MockBuilding(5, 5, "north", {
+      hasInput: true,
+      hasOutput: true,
+      inputSide: "back",
+      outputSide: "front",
+    });
+
+    // Neighbor at (4, 5) facing east - outputs to (5, 5) which is our position!
+    const neighbor = new MockBuilding(4, 5, "east", {
+      hasInput: true,
+      hasOutput: true,
+      inputSide: "back",
+      outputSide: "front",
+    });
+
+    // Override positions to simulate 90° connection
+    main.getInputPosition = () => ({ x: 5, y: 6 }); // back side
+    neighbor.getOutputPosition = () => ({ x: 5, y: 5 }); // outputs to main's position
+
+    world.buildings.set("4,5", neighbor);
+
+    updateBuildingConnectivity(main, world as unknown as IWorld);
+    // Input should be connected because neighbor's output points to our position
+    expect(main.isInputConnected).toBe(true);
+  });
 });

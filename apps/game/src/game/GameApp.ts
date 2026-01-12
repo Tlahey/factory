@@ -187,10 +187,10 @@ export class GameApp {
           }
         }
       },
-      (path) => {
+      (path, rotation) => {
         // Conveyor Drag Preview
         if (path.length > 0) {
-          this.placementVisuals.updateConveyorDragPreview(path);
+          this.placementVisuals.updateConveyorDragPreview(path, rotation);
         } else {
           this.placementVisuals.clearConveyorDragPreview();
         }

@@ -11,7 +11,7 @@ export const CONVEYOR_CONFIG: ConveyorConfigType = {
   io: {
     hasInput: true,
     hasOutput: true,
-    showArrow: false,
+    showArrow: true,
     inputSide: "back",
     outputSide: "front",
   },

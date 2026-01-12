@@ -1,5 +1,7 @@
 import { describe, test, expect, beforeEach } from "vitest";
 import { World } from "./World";
+import { TileFactory } from "../TileFactory";
+import { TileType } from "../constants";
 
 describe("Cable Deletion on Building Removal", () => {
   let world: World;
@@ -14,6 +16,10 @@ describe("Cable Deletion on Building Removal", () => {
       y1 = 10;
     const x2 = 15,
       y2 = 10;
+
+    // Ensure tiles are valid for ElectricPole (Grass) to avoid flakiness from random World generation (Stone)
+    world.setTile(x1, y1, TileFactory.createTile(TileType.GRASS));
+    world.setTile(x2, y2, TileFactory.createTile(TileType.GRASS));
 
     world.placeBuilding(x1, y1, "electric_pole");
     world.placeBuilding(x2, y2, "electric_pole");
@@ -38,6 +44,10 @@ describe("Cable Deletion on Building Removal", () => {
     // Place a pole nearby
     const px = 15,
       py = 10;
+
+    // Ensure tile is valid (Grass)
+    world.setTile(px, py, TileFactory.createTile(TileType.GRASS));
+
     world.placeBuilding(px, py, "electric_pole");
 
     // Connect cable to one of the Hub's tiles (not the origin)

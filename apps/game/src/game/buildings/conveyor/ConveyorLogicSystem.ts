@@ -197,13 +197,14 @@ export function findOutputDestination(
  * A conveyor receives flow from:
  * 1. An Extractor pointing toward it (flow direction = extractor's facing direction)
  * 2. Another resolved Conveyor pointing toward it (flow direction = that conveyor's direction)
- * 3. A conveyor whose output position is adjacent to us (perpendicular connection)
  *
- * NOTE: Chests are NOT flow sources by default (they are destinations/inputs)
- *       Phase 2 will add explicit output sides to chests
+ * CRITICAL: We now validate using explicit output port positions.
+ * A neighbor only counts as an input source if its OUTPUT PORT targets our position.
+ * This prevents false positives from adjacent entities that aren't actually connected.
  *
  * @param conveyorX - X position of this conveyor
  * @param conveyorY - Y position of this conveyor
+ * @param myDirection - This conveyor's output direction
  * @param world - World instance to query neighbors
  * @returns The direction flow enters this conveyor, or null if no valid input
  */
@@ -219,20 +220,29 @@ export function determineFlowInputDirection(
     "east",
     "west",
   ];
-  // We use the exported functions from this same file to avoid circular require issues
-  // getDirectionOffset and getOppositeDirection are defined above in this file
 
   for (const checkDir of directions) {
     // Don't check the direction we are outputting to
     if (checkDir === myDirection) continue;
 
     const offset = getDirectionOffset(checkDir);
-    const neighbor = world.getBuilding(
-      conveyorX + offset.dx,
-      conveyorY + offset.dy,
-    );
+    const neighborX = conveyorX + offset.dx;
+    const neighborY = conveyorY + offset.dy;
+    const neighbor = world.getBuilding(neighborX, neighborY);
 
     if (!neighbor) continue;
+
+    // CRITICAL: Validate that neighbor's OUTPUT PORT targets our position
+    if (
+      !hasOutputPortAt(
+        neighbor as unknown as {
+          getOutputPosition?: () => { x: number; y: number } | null;
+        },
+        conveyorX,
+        conveyorY,
+      )
+    )
+      continue;
 
     const neighborType = neighbor.getType();
     const neighborDirection = neighbor.direction as
@@ -241,29 +251,60 @@ export function determineFlowInputDirection(
       | "east"
       | "west";
 
-    // Calculate the direction neighbor would need to face to point at us
-    const directionToUs = getOppositeDirection(checkDir);
+    // Valid input sources: Extractors or Conveyors pointing at us
+    if (neighborType === "extractor") {
+      return neighborDirection;
+    }
 
-    // Check if neighbor points at us (its output is toward us)
-    if (neighborDirection === directionToUs) {
-      // Valid input sources: Extractors or Resolved Conveyors
-      if (neighborType === "extractor") {
-        return neighborDirection;
-      }
-
-      if (neighborType === "conveyor") {
-        // Check if resolved without casting to any
-        // We assume if it's a conveyor, it might have isResolved property
-        // But BuildingEntity doesn't have it.
-        // We use a safe check.
-        const isResolved = (neighbor as unknown as { isResolved: boolean })
-          .isResolved;
-        if (isResolved) {
-          return neighborDirection;
-        }
-      }
+    // Any conveyor pointing at us counts as input for turn detection
+    if (neighborType === "conveyor") {
+      return neighborDirection;
     }
   }
 
   return null;
+}
+
+/**
+ * Check if a building has its OUTPUT port at the given target position.
+ * This validates that the building is actually outputting TO our cell.
+ *
+ * @param building - The building to check
+ * @param targetX - The X position we expect the output to target
+ * @param targetY - The Y position we expect the output to target
+ * @returns True if the building's output port targets this position
+ */
+export function hasOutputPortAt(
+  building: { getOutputPosition?: () => { x: number; y: number } | null },
+  targetX: number,
+  targetY: number,
+): boolean {
+  if (!building.getOutputPosition) return false;
+
+  const outputPos = building.getOutputPosition();
+  if (!outputPos) return false;
+
+  return outputPos.x === targetX && outputPos.y === targetY;
+}
+
+/**
+ * Check if a building has its INPUT port at the given target position.
+ * This validates that the building can receive input FROM our cell.
+ *
+ * @param building - The building to check
+ * @param sourceX - The X position we're checking from
+ * @param sourceY - The Y position we're checking from
+ * @returns True if the building's input port is at the source position
+ */
+export function hasInputPortAt(
+  building: { getInputPosition?: () => { x: number; y: number } | null },
+  sourceX: number,
+  sourceY: number,
+): boolean {
+  if (!building.getInputPosition) return false;
+
+  const inputPos = building.getInputPosition();
+  if (!inputPos) return false;
+
+  return inputPos.x === sourceX && inputPos.y === sourceY;
 }

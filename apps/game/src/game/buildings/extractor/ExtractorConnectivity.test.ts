@@ -97,18 +97,20 @@ describe("Extractor Connectivity Reproduction", () => {
     expect(ext.isOutputConnected).toBe(true);
   });
 
-  test("Extractor disconnects if Conveyor points AT the extractor (Head-to-Head)", () => {
+  test("Extractor shows connected even if Conveyor points AT the extractor (Head-to-Head)", () => {
     const ext = new Extractor(0, 0, "east");
     // Extractor outputs to (1,0).
 
     const conv = new Conveyor(1, 0, "west");
     // Conveyor at (1,0) facing West outputs to (0,0).
-    // This is a head-to-head collision. Should NOT be a valid input for the conveyor.
+    // This is a head-to-head collision. With simplified logic, ANY building at output = connected.
+    // The arrow hides because there's a building at the output position.
 
     world.buildings.set("0,0", ext);
     world.buildings.set("1,0", conv);
 
     ext.tick(0.1, world as unknown as IWorld);
-    expect(ext.isOutputConnected).toBe(false);
+    // New simplified rule: any building at output = output connected (arrow hidden)
+    expect(ext.isOutputConnected).toBe(true);
   });
 });

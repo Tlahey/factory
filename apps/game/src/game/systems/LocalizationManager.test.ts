@@ -38,6 +38,15 @@ describe("LocalizationManager", () => {
     expect(localization.t("missing.key")).toBe("missing.key");
   });
 
+  it("should warn if translation missing", () => {
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    localization.t("missing.key.unique");
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Key not found: "missing.key.unique"'),
+    );
+    consoleSpy.mockRestore();
+  });
+
   it("should translate simple keys", async () => {
     // We need to wait for the mocked import to "load"
     // effectively forcing a reload or just ensuring state

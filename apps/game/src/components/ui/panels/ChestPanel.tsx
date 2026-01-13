@@ -4,6 +4,8 @@ import { Chest } from "@/game/buildings/chest/Chest";
 import { InventorySlot } from "@/game/state/store";
 import ModelPreview from "../ModelPreview";
 
+import { useTranslation } from "@/hooks/useTranslation";
+
 interface ChestPanelProps {
   building: Chest;
   onDragStart: (
@@ -26,14 +28,16 @@ export function ChestPanel({
   onDrop,
   onDragOver,
 }: ChestPanelProps) {
+  const { t } = useTranslation();
+
   return (
     <div>
       <div className="flex justify-between items-center mb-3">
         <h4 className="text-xs font-bold text-gray-400 uppercase">
-          Container Storage
+          {t("building.chest.name")} {t("common.storage")}
         </h4>
         <span className="text-xs font-mono text-gray-500">
-          {building.slots.length}/{building.maxSlots} Slots
+          {building.slots.length}/{building.maxSlots} {t("common.slots")}
         </span>
       </div>
       <div className="grid grid-cols-5 gap-2">

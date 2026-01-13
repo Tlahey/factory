@@ -21,6 +21,7 @@ export const BATTERY_CONFIG: BatteryConfigType = {
   id: "battery",
   name: "Battery",
   type: "battery",
+  category: "power",
   cost: { copper: 20, iron: 10 },
   locked: true,
   hasMenu: true,

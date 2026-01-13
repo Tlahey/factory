@@ -196,7 +196,25 @@ export class GameApp {
         }
       },
       (x, y, id) => {
-        this.guidanceSystem.onBuildingClicked(id);
+        // Selection Logic
+        const state = useGameStore.getState();
+
+        // 1. If in "delete" mode, handle deletion (InputSystem handles hover, but click confirms?)
+        // Actually InputSystem handles click for delete separately usually or via this callback?
+        // InputSystem.ts has specific onMouseDown logic. This callback is "onSelect".
+
+        // If we clicked a building
+        if (id) {
+          // Check if it's an electric pole or other selectable building
+          // Update store
+          state.setOpenedEntityKey(id);
+          state.setSelectedBuilding(null); // Deselect placement tool if any
+
+          this.guidanceSystem.onBuildingClicked(id);
+        } else {
+          // Clicked nothing/ground -> Deselect
+          state.setOpenedEntityKey(null);
+        }
       },
     );
 

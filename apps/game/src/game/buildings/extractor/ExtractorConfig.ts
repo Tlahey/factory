@@ -6,6 +6,7 @@ export const EXTRACTOR_CONFIG: ExtractorConfigType = {
   id: "extractor",
   name: "Extractor",
   type: "extractor",
+  category: "production",
   cost: { iron: 10 },
   locked: true,
   hasMenu: true,

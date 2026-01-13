@@ -29,7 +29,7 @@ describe("ExtractorPanel", () => {
         false,
         t,
       );
-      expect(status).toBe("common.status.no_power");
+      expect(status).toBe("common.statuses.no_power");
       expect(color).toContain("bg-red-500");
     });
 
@@ -41,7 +41,7 @@ describe("ExtractorPanel", () => {
         true,
         t,
       );
-      expect(status).toBe("common.status.blocked");
+      expect(status).toBe("common.statuses.blocked");
       expect(color).toContain("bg-orange-500");
     });
 
@@ -53,7 +53,7 @@ describe("ExtractorPanel", () => {
         true,
         t,
       );
-      expect(status).toBe("common.status.operational");
+      expect(status).toBe("common.statuses.operational");
       expect(color).toContain("bg-green-500");
     });
   });

@@ -4,6 +4,7 @@ export const HUB_CONFIG: HubConfigType = {
   id: "hub",
   name: "Central Hub",
   type: "hub",
+  category: "special",
   cost: { stone: 0 }, // First one is free logic handled in input system, this is replacement cost? Or maybe logic overrides.
   // Actually, let's make it cost 0 for now as it's the starter. The "only 1" logic handles abuse.
   locked: false,

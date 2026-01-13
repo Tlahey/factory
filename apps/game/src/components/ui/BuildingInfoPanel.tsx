@@ -18,6 +18,7 @@ import {
   ExtractorPanel,
   BatteryPanel,
   UpgradeReminder,
+  ElectricPolePanel,
 } from "./panels";
 
 export default function BuildingInfoPanel() {
@@ -267,11 +268,18 @@ export default function BuildingInfoPanel() {
             />
           )}
 
-          {!isChest && !isExtractor && !isBattery && (
-            <div className="flex items-center justify-center h-full text-gray-500 text-sm italic py-8 text-center uppercase tracking-widest opacity-50">
-              No statistics available
-            </div>
+          {building.getType() === "electric_pole" && (
+            <ElectricPolePanel building={building} />
           )}
+
+          {!isChest &&
+            !isExtractor &&
+            !isBattery &&
+            building.getType() !== "electric_pole" && (
+              <div className="flex items-center justify-center h-full text-gray-500 text-sm italic py-8 text-center uppercase tracking-widest opacity-50">
+                No statistics available
+              </div>
+            )}
 
           {/* Upgrade Level Reminder for non-Hub buildings */}
           {upgradeLevel > 0 && activeUpgrade && (

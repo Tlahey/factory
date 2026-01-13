@@ -52,9 +52,20 @@ export interface ShopBuildingConfig {
   initialCount?: number;
 }
 
+/**
+ * Building Categories for Visual Grouping
+ */
+export type BuildingCategory =
+  | "production"
+  | "logistics"
+  | "storage"
+  | "power"
+  | "special";
+
 export interface BaseBuildingConfig {
   name: string;
   type: string;
+  category: BuildingCategory;
   cost: Record<string, number>;
   locked?: boolean;
   hasMenu: boolean;
@@ -193,7 +204,8 @@ export type ChestConfigType = BaseBuildingConfig &
 export type HubConfigType = BaseBuildingConfig &
   ConfigOf<IPowered> &
   ConfigOf<IIOBuilding> & { upgrades: BuildingUpgrade[] };
-export type ElectricPoleConfigType = BaseBuildingConfig & ConfigOf<IPowered>;
+export type ElectricPoleConfigType = BaseBuildingConfig &
+  ConfigOf<IPowered> & { maxConnections: number; upgrades: BuildingUpgrade[] };
 
 // Union of all specialized configs
 export type BuildingConfig =
@@ -216,6 +228,7 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     id: "cable",
     name: "Cable",
     type: "cable",
+    category: "power",
     cost: { copper: 1 },
     locked: true,
     hasMenu: false,

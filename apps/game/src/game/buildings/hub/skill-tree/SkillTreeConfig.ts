@@ -191,6 +191,16 @@ export const SKILL_TREE: SkillNode[] = [
     position: { x: 5, y: 4 },
     unlockDuration: 90,
   },
+  // Electric Pole Upgrades
+  {
+    id: "electric_pole_connections",
+    type: "upgrade",
+    buildingId: "electric_pole",
+    level: 1,
+    requires: ["electric_pole_unlock"],
+    position: { x: 2, y: 5 },
+    unlockDuration: 45,
+  },
 ];
 
 /**

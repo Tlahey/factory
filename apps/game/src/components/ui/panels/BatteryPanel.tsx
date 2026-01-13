@@ -2,6 +2,7 @@
 
 import { Battery } from "@/game/buildings/battery/Battery";
 import { Zap, Box } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface BatteryPanelProps {
   building: Battery;
@@ -9,6 +10,7 @@ interface BatteryPanelProps {
 }
 
 export function BatteryPanel({ building, forceUpdate }: BatteryPanelProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4 py-2">
       {/* 1. Breaker Panel (Heavy Construction Style) */}
@@ -24,7 +26,7 @@ export function BatteryPanel({ building, forceUpdate }: BatteryPanelProps) {
           {/* Header */}
           <div className="text-center mb-5 border-b border-white/10 pb-2">
             <h3 className="text-xl font-black text-white/40 tracking-[0.2em] font-mono uppercase drop-shadow-md">
-              BREAKER
+              {t("common.breaker")}
             </h3>
           </div>
 
@@ -40,10 +42,10 @@ export function BatteryPanel({ building, forceUpdate }: BatteryPanelProps) {
             >
               {/* Backplate Labels */}
               <div className="absolute top-2 left-0 w-full text-center text-[9px] font-bold text-zinc-600 uppercase tracking-wider font-mono">
-                ON
+                {t("common.on")}
               </div>
               <div className="absolute bottom-2 left-0 w-full text-center text-[9px] font-bold text-zinc-600 uppercase tracking-wider font-mono">
-                OFF
+                {t("common.off")}
               </div>
 
               {/* The Moving Handle */}
@@ -70,7 +72,7 @@ export function BatteryPanel({ building, forceUpdate }: BatteryPanelProps) {
                 <span
                   className={`text-xs font-bold tracking-wider font-mono ${building.isEnabled ? "text-green-400" : "text-zinc-700"}`}
                 >
-                  ON
+                  {t("common.on")}
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -80,7 +82,7 @@ export function BatteryPanel({ building, forceUpdate }: BatteryPanelProps) {
                 <span
                   className={`text-xs font-bold tracking-wider font-mono ${!building.isEnabled ? "text-red-400" : "text-zinc-700"}`}
                 >
-                  OFF
+                  {t("common.off")}
                 </span>
               </div>
             </div>
@@ -98,10 +100,10 @@ export function BatteryPanel({ building, forceUpdate }: BatteryPanelProps) {
             />
             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
               {building.lastFlowRate > 0.1
-                ? "CHARGING"
+                ? t("common.charging")
                 : building.lastFlowRate < -0.1
-                  ? "DISCHARGING"
-                  : "IDLE"}
+                  ? t("common.discharging")
+                  : t("common.statuses.idle")}
             </span>
           </div>
           <span
@@ -120,7 +122,7 @@ export function BatteryPanel({ building, forceUpdate }: BatteryPanelProps) {
         <div className="mb-4">
           <div className="flex justify-between items-end mb-1">
             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-              Charge
+              {t("common.charge")}
             </span>
             <span className="text-sm font-mono font-bold text-white">
               {((building.currentCharge / building.capacity) * 100).toFixed(1)}%
@@ -140,7 +142,7 @@ export function BatteryPanel({ building, forceUpdate }: BatteryPanelProps) {
         <div className="grid grid-cols-2 gap-4">
           <div className="p-3 bg-black/20 rounded-lg border border-white/5">
             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-              <Zap size={10} className="text-yellow-500" /> Stored
+              <Zap size={10} className="text-yellow-500" /> {t("common.stored")}
             </div>
             <div className="text-lg font-mono font-bold text-white">
               {Math.floor(building.currentCharge)}{" "}
@@ -149,7 +151,7 @@ export function BatteryPanel({ building, forceUpdate }: BatteryPanelProps) {
           </div>
           <div className="p-3 bg-black/20 rounded-lg border border-white/5">
             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-              <Box size={10} className="text-blue-500" /> Capacity
+              <Box size={10} className="text-blue-500" /> {t("common.capacity")}
             </div>
             <div className="text-lg font-mono font-bold text-white">
               {building.capacity}{" "}
@@ -164,6 +166,7 @@ export function BatteryPanel({ building, forceUpdate }: BatteryPanelProps) {
 
 /** Flow Graph sub-component */
 function BatteryFlowGraph({ building }: { building: Battery }) {
+  const { t } = useTranslation();
   const history = building.flowHistory || [];
 
   if (history.length < 2) {
@@ -173,7 +176,9 @@ function BatteryFlowGraph({ building }: { building: Battery }) {
           Power Flow
         </div>
         <div className="h-24 bg-black/40 rounded border border-white/10 relative overflow-hidden flex items-center justify-center">
-          <div className="text-xs text-gray-600">Gathering Data...</div>
+          <div className="text-xs text-gray-600">
+            {t("skill_tree.in_progress")}...
+          </div>
         </div>
       </div>
     );
@@ -191,10 +196,10 @@ function BatteryFlowGraph({ building }: { building: Battery }) {
         <div className="absolute left-0 right-0 top-1/2 h-px bg-white/20" />
         {/* Labels */}
         <div className="absolute left-1 top-1 text-[8px] text-green-500/70 font-mono">
-          +Charge
+          +{t("common.charge")}
         </div>
         <div className="absolute left-1 bottom-1 text-[8px] text-red-500/70 font-mono">
-          -Discharge
+          -{t("common.discharging")}
         </div>
 
         <svg
@@ -285,8 +290,12 @@ function BatteryFlowGraph({ building }: { building: Battery }) {
         </svg>
       </div>
       <div className="flex justify-between px-1 mt-1">
-        <span className="text-[9px] text-gray-600 font-mono">60s ago</span>
-        <span className="text-[9px] text-gray-600 font-mono">Now</span>
+        <span className="text-[9px] text-gray-600 font-mono">
+          {t("common.time_ago", { time: "60s" })}
+        </span>
+        <span className="text-[9px] text-gray-600 font-mono">
+          {t("common.now")}
+        </span>
       </div>
     </div>
   );

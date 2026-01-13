@@ -5,6 +5,7 @@ export const CHEST_CONFIG: ChestConfigType = {
   id: "chest",
   name: "Chest",
   type: "chest",
+  category: "storage",
   cost: { wood: 10 },
   locked: true,
   hasMenu: true,

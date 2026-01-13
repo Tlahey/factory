@@ -1,4 +1,5 @@
-export { ChestPanel } from "./ChestPanel";
-export { ExtractorPanel } from "./ExtractorPanel";
-export { BatteryPanel } from "./BatteryPanel";
-export { UpgradeReminder } from "./UpgradeReminder";
+export * from "./ChestPanel";
+export * from "./ExtractorPanel";
+export * from "./BatteryPanel";
+export * from "./ElectricPolePanel";
+export * from "./UpgradeReminder";

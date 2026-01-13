@@ -28,22 +28,22 @@ export function getExtractorStatusInfo(
   let color = "bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]";
 
   if (!hasPowerSource) {
-    status = t("common.status.no_power");
+    status = t("common.statuses.no_power");
     color = "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]";
   } else if (operationStatus === "blocked") {
-    status = t("common.status.blocked");
+    status = t("common.statuses.blocked");
     color = "bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]";
   } else if (operationStatus === "no_resources") {
-    status = t("common.status.no_resources");
+    status = t("common.statuses.no_resources");
     color = "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]";
   } else if (powerStatus === "warn") {
-    status = t("common.status.low_power");
+    status = t("common.statuses.low_power");
     color = "bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]";
   } else if (isActive) {
-    status = t("common.status.operational");
+    status = t("common.statuses.operational");
     color = "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]";
   } else {
-    status = t("common.status.idle");
+    status = t("common.statuses.idle");
     color = "bg-gray-500 shadow-[0_0_10px_rgba(107,114,128,0.5)]";
   }
 

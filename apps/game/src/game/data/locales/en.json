@@ -23,7 +23,8 @@
     "performance": "Performance",
     "efficiency": "Efficiency",
     "overclock": "Overclock",
-    "status": {
+    "status": "Status",
+    "statuses": {
       "no_power": "NO POWER",
       "blocked": "BLOCKED",
       "no_resources": "NO RESOURCES",
@@ -39,7 +40,22 @@
     "disable": "DISABLE",
     "skip": "SKIP",
     "acknowledge": "ACKNOWLEDGE",
-    "next": "NEXT >>"
+    "next": "NEXT >>",
+    "connections": "Connections",
+    "range": "Range",
+    "tiles": "tiles",
+    "storage": "Storage",
+    "slots": "Slots",
+    "breaker": "Breaker",
+    "on": "ON",
+    "off": "OFF",
+    "charging": "CHARGING",
+    "discharging": "DISCHARGING",
+    "charge": "Charge",
+    "stored": "Stored",
+    "capacity": "Capacity",
+    "time_ago": "{time} ago",
+    "now": "Now"
   },
   "building": {
     "extractor": {
@@ -60,7 +76,13 @@
     },
     "electric_pole": {
       "name": "Electric Pole",
-      "description": "Connects power lines over a distance."
+      "description": "Connects power lines over a distance.",
+      "upgrade": {
+        "connections": {
+          "name": "Pole Connections",
+          "description": "Increases the maximum number of connections by +1"
+        }
+      }
     },
     "cable": {
       "name": "Cable",

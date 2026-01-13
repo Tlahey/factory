@@ -11,6 +11,7 @@ import { Conveyor } from "../buildings/conveyor/Conveyor";
 import { Direction4 } from "../entities/BuildingEntity";
 import { getBuildingConfig } from "../buildings/BuildingConfig";
 import { getAllowedCount } from "../buildings/hub/shop/ShopConfig";
+import { ElectricPole } from "../buildings/electric-pole/ElectricPole";
 
 import { DIALOGUES } from "../data/Dialogues";
 
@@ -57,6 +58,8 @@ export class InputSystem {
   private boundOnPointerDown = this.onPointerDown.bind(this);
   private boundOnPointerMove = this.onPointerMove.bind(this);
   private boundOnPointerUp = this.onPointerUp.bind(this);
+  private boundOnPointerLeave = this.onPointerLeave.bind(this);
+  private boundOnPointerEnter = this.onPointerEnter.bind(this);
   private boundOnWheel = this.onWheel.bind(this);
   private boundOnKeyDown = this.handleKeyDown.bind(this);
 
@@ -184,6 +187,8 @@ export class InputSystem {
     this.domElement.addEventListener("pointerdown", this.boundOnPointerDown);
     this.domElement.addEventListener("pointermove", this.boundOnPointerMove);
     this.domElement.addEventListener("pointerup", this.boundOnPointerUp);
+    this.domElement.addEventListener("pointerleave", this.boundOnPointerLeave);
+    this.domElement.addEventListener("pointerenter", this.boundOnPointerEnter);
     this.domElement.addEventListener("wheel", this.boundOnWheel, {
       passive: false,
     });
@@ -376,7 +381,9 @@ export class InputSystem {
             intersection.x,
             intersection.y,
           );
-          if (endConns >= 3) isValid = false;
+          // Use config limit if available
+          const max = endB instanceof ElectricPole ? endB.maxConnections : 3;
+          if (endConns >= max) isValid = false;
         } else if (endB.getType() === "extractor") {
           // Extractor Limit: 1 connection total
           // We need to check ALL tiles? Extractor is 1x1.
@@ -394,7 +401,8 @@ export class InputSystem {
           this.cableStart.x,
           this.cableStart.y,
         );
-        if (startConns >= 3) isValid = false;
+        const max = startB instanceof ElectricPole ? startB.maxConnections : 3;
+        if (startConns >= max) isValid = false;
       } else if (startB?.getType() === "extractor") {
         const startConns = this.world.getConnectionsCount(
           this.cableStart.x,
@@ -585,9 +593,19 @@ export class InputSystem {
               this.currentRotation,
             );
           } else {
+            // Check for existing building to hover
+            const key =
+              intersection && intersection.x >= 0
+                ? `${intersection.x},${intersection.y}`
+                : null;
+            const building = key
+              ? this.world.getBuilding(intersection.x, intersection.y)
+              : null;
+            useGameStore.getState().setHoveredEntityKey(building ? key : null);
+
             this.onHover(
-              intersection.x,
-              intersection.y,
+              intersection && intersection.x >= 0 ? intersection.x : -1,
+              intersection && intersection.x >= 0 ? intersection.y : -1,
               true,
               null,
               this.currentRotation,
@@ -595,6 +613,7 @@ export class InputSystem {
             if (this.onDeleteHover) this.onDeleteHover(null);
           }
         } else {
+          useGameStore.getState().setHoveredEntityKey(null);
           this.onHover(-1, -1, false, null, this.currentRotation);
           if (this.onDeleteHover) this.onDeleteHover(null);
         }
@@ -713,10 +732,13 @@ export class InputSystem {
 
     // Pole Limit
     if (startB?.getType() === "electric_pole") {
-      if (this.world.getConnectionsCount(startX, startY) >= 3) isValid = false;
+      const max = startB instanceof ElectricPole ? startB.maxConnections : 3;
+      if (this.world.getConnectionsCount(startX, startY) >= max)
+        isValid = false;
     }
     if (endB?.getType() === "electric_pole") {
-      if (this.world.getConnectionsCount(endX, endY) >= 3) isValid = false;
+      const max = endB instanceof ElectricPole ? endB.maxConnections : 3;
+      if (this.world.getConnectionsCount(endX, endY) >= max) isValid = false;
     }
 
     // Extractor Limit
@@ -767,6 +789,18 @@ export class InputSystem {
     this.cableStart = null;
     this.isDraggingCable = false;
     if (this.onCableDrag) this.onCableDrag(null, null, false);
+  }
+
+  private onPointerLeave() {
+    // Clear hover state when mouse leaves the canvas (usually means it's over UI or left window)
+    useGameStore.getState().setHoveredEntityKey(null);
+    if (this.onHover) this.onHover(-1, -1, false, null, this.currentRotation);
+    if (this.onDeleteHover) this.onDeleteHover(null);
+  }
+
+  private onPointerEnter() {
+    // Optional: could re-trigger hover if we have mouse pos,
+    // but usually pointermove will follow immediately.
   }
 
   private cancelConveyorDrag() {
@@ -1172,6 +1206,14 @@ export class InputSystem {
     this.domElement.removeEventListener("pointerdown", this.boundOnPointerDown);
     this.domElement.removeEventListener("pointermove", this.boundOnPointerMove);
     this.domElement.removeEventListener("pointerup", this.boundOnPointerUp);
+    this.domElement.removeEventListener(
+      "pointerleave",
+      this.boundOnPointerLeave,
+    );
+    this.domElement.removeEventListener(
+      "pointerenter",
+      this.boundOnPointerEnter,
+    );
     this.domElement.removeEventListener("wheel", this.boundOnWheel);
     window.removeEventListener("keydown", this.boundOnKeyDown);
   }

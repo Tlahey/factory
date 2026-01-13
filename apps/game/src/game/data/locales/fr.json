@@ -23,7 +23,8 @@
     "performance": "Performance",
     "efficiency": "Efficacité",
     "overclock": "Overclock",
-    "status": {
+    "status": "Statut",
+    "statuses": {
       "no_power": "SANS ÉNERGIE",
       "blocked": "BLOQUÉ",
       "no_resources": "VIDE",
@@ -39,7 +40,22 @@
     "disable": "DÉSACTIVER",
     "skip": "PASSER",
     "acknowledge": "COMPRIS",
-    "next": "SUIVANT >>"
+    "next": "SUIVANT >>",
+    "connections": "Connexions",
+    "range": "Portée",
+    "tiles": "tuiles",
+    "storage": "Stockage",
+    "slots": "Emplacements",
+    "breaker": "DISJONCTEUR",
+    "on": "ON",
+    "off": "OFF",
+    "charging": "CHARGE",
+    "discharging": "DÉCHARGE",
+    "charge": "Charge",
+    "stored": "Stocké",
+    "capacity": "Capacité",
+    "time_ago": "il y a {time}",
+    "now": "Maintenant"
   },
   "building": {
     "extractor": {
@@ -60,7 +76,13 @@
     },
     "electric_pole": {
       "name": "Poteau Électrique",
-      "description": "Connecte les lignes électriques sur une distance."
+      "description": "Connecte les lignes électriques sur une distance.",
+      "upgrade": {
+        "connections": {
+          "name": "Connexions Poteau",
+          "description": "Augmente le nombre maximum de connexions de +1"
+        }
+      }
     },
     "cable": {
       "name": "Câble",

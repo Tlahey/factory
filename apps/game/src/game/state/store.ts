@@ -25,6 +25,8 @@ interface GameState {
   setCameraAngles: (azimuth: number, elevation: number) => void;
   openedEntityKey: string | null;
   setOpenedEntityKey: (key: string | null) => void;
+  hoveredEntityKey: string | null;
+  setHoveredEntityKey: (key: string | null) => void;
   resetInventory: () => void;
   setInventory: (inventory: InventorySlot[]) => void;
   updateInventorySlot: (index: number, slot: InventorySlot) => void;
@@ -104,6 +106,8 @@ export const useGameStore = create<GameState>()(
       cameraElevation: Math.PI / 3,
       openedEntityKey: null,
       setOpenedEntityKey: (key) => set({ openedEntityKey: key }),
+      hoveredEntityKey: null,
+      setHoveredEntityKey: (key) => set({ hoveredEntityKey: key }),
       resetInventory: () =>
         set({
           inventory: Array(INVENTORY_SIZE)
@@ -233,6 +237,7 @@ export const useGameStore = create<GameState>()(
           buildingCounts: {},
           hotbar: Array(9).fill(null),
           openedEntityKey: null,
+          hoveredEntityKey: null,
           unlockedSkills: [],
           unlockedBuildings: ["hub"],
           pendingUnlocks: [],

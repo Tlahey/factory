@@ -3,6 +3,7 @@ export type Locale = "en" | "fr";
 class LocalizationManager {
   private static instance: LocalizationManager;
   private locale: Locale = "en";
+  private missingKeys: Set<string> = new Set();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private translations: Record<string, any> = {};
   private listeners: Set<() => void> = new Set();
@@ -39,11 +40,22 @@ class LocalizationManager {
     this.listeners.forEach((listener) => listener());
   }
 
+  /**
+   * Logs all missing keys gathered since startup
+   */
+  public logMissingKeys() {
+    if (this.missingKeys.size === 0) {
+      console.log("🌐 [Localization] No missing keys detected.");
+    } else {
+      console.warn(
+        `🌐 [Localization] Missing keys for locale "${this.locale}":`,
+        Array.from(this.missingKeys).sort(),
+      );
+    }
+  }
+
   public async loadTranslations(locale: Locale) {
     try {
-      // Dynamic import for code splitting and easy expansion
-      // Note: In Next.js/Webpack, dynamic imports with template strings need to be statically analyzable to some extent.
-      // We'll use a switch/map for now to be safe and explicit.
       let data;
       if (locale === "en") {
         data = await import("../data/locales/en.json");
@@ -53,7 +65,8 @@ class LocalizationManager {
 
       if (data) {
         this.translations = data.default || data;
-        this.notifyListeners(); // Notify again after load finishes
+        console.log(`🌐 [Localization] Loaded "${locale}" translations.`);
+        this.notifyListeners();
       }
     } catch (error) {
       console.error(`Failed to load translations for ${locale}:`, error);
@@ -69,11 +82,23 @@ class LocalizationManager {
       if (value && typeof value === "object" && k in value) {
         value = value[k];
       } else {
-        return key; // Return key if not found
+        if (!this.missingKeys.has(key)) {
+          this.missingKeys.add(key);
+          console.warn(
+            `🌐 [Localization] Key not found: "${key}" (locale: ${this.locale})`,
+          );
+        }
+        return key;
       }
     }
 
     if (typeof value !== "string") {
+      if (!this.missingKeys.has(key)) {
+        this.missingKeys.add(key);
+        console.warn(
+          `🌐 [Localization] Key is not a string: "${key}" (locale: ${this.locale})`,
+        );
+      }
       return key;
     }
 

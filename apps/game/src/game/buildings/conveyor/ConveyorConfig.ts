@@ -4,6 +4,7 @@ export const CONVEYOR_CONFIG: ConveyorConfigType = {
   id: "conveyor",
   name: "Conveyor Belt",
   type: "conveyor",
+  category: "logistics",
   cost: { iron: 1 },
   locked: true,
   hasMenu: false,

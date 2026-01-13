@@ -17,7 +17,6 @@ import {
   Lock,
   Unlock,
   Zap,
-  Box,
   Settings,
   Clock,
   Loader2,
@@ -32,59 +31,14 @@ import {
 } from "@/game/buildings/hub/skill-tree/SkillTreeConfig";
 import { skillTreeManager } from "@/game/buildings/hub/skill-tree/SkillTreeManager";
 import { Hub } from "@/game/buildings/hub/Hub";
+import { getBuildingConfig } from "@/game/buildings/BuildingConfig";
+import { getBuildingCategoryVisuals } from "@/game/buildings/BuildingVisuals";
 import ModelPreview from "./ModelPreview";
 import ShopView from "./ShopView";
 import clsx from "clsx";
 
 // Grid configuration for skill tree layout
 const GRID_CELL_SIZE = 150;
-
-// Building icons mapping
-const BUILDING_ICONS: Record<string, React.ReactNode> = {
-  extractor: <Settings className="w-3 h-3" />,
-  chest: <Box className="w-3 h-3" />,
-  hub: <Zap className="w-3 h-3" />,
-  conveyor: <Box className="w-3 h-3" />,
-  electric_pole: <Zap className="w-3 h-3" />,
-  cable: <Zap className="w-3 h-3" />,
-};
-
-// Building colors for nodes
-const BUILDING_COLORS: Record<
-  string,
-  { bg: string; border: string; glow: string; accent: string }
-> = {
-  extractor: {
-    bg: "bg-red-500/20",
-    border: "border-red-500/50",
-    glow: "shadow-red-500/30",
-    accent: "text-red-400",
-  },
-  chest: {
-    bg: "bg-amber-500/20",
-    border: "border-amber-500/50",
-    glow: "shadow-amber-500/30",
-    accent: "text-amber-400",
-  },
-  hub: {
-    bg: "bg-green-500/20",
-    border: "border-green-500/50",
-    glow: "shadow-green-500/30",
-    accent: "text-green-400",
-  },
-  conveyor: {
-    bg: "bg-blue-500/20",
-    border: "border-blue-500/50",
-    glow: "shadow-blue-500/30",
-    accent: "text-blue-400",
-  },
-  electric_pole: {
-    bg: "bg-yellow-500/20",
-    border: "border-yellow-500/50",
-    glow: "shadow-yellow-500/30",
-    accent: "text-yellow-400",
-  },
-};
 
 function formatTime(seconds: number): string {
   if (seconds < 60) return `${Math.ceil(seconds)}s`;
@@ -109,14 +63,21 @@ const SkillTreeNode = ({ data }: NodeProps) => {
 
   // Use "tech" ID check
   const isTechNode = node.id.includes("tech") || node.type === "tech";
-  const colors = isTechNode
+
+  const config = getBuildingConfig(node.buildingId);
+  const visuals = isTechNode
     ? {
-        bg: "bg-purple-500/20",
-        border: "border-purple-500/50",
-        glow: "shadow-purple-500/30",
-        accent: "text-purple-400",
+        colors: {
+          bg: "bg-purple-500/20",
+          border: "border-purple-500/50",
+          glow: "shadow-purple-500/30",
+          accent: "text-purple-400",
+        },
+        icon: <Settings className="w-3 h-3" />, // Fallback icon for tech
       }
-    : BUILDING_COLORS[node.buildingId] || BUILDING_COLORS.extractor;
+    : getBuildingCategoryVisuals(config?.category || "production");
+
+  const colors = visuals.colors;
 
   const isRoot = node.id === "root";
   const isUnlockNode = node.type === "unlock";
@@ -328,9 +289,7 @@ const SkillTreeNode = ({ data }: NodeProps) => {
             <div
               className={`w-5 h-5 rounded-full ${colors.bg} ${colors.border} border flex items-center justify-center shadow-lg`}
             >
-              <div className={colors.accent}>
-                {BUILDING_ICONS[node.buildingId]}
-              </div>
+              <div className={colors.accent}>{visuals.icon}</div>
             </div>
           </div>
         )}

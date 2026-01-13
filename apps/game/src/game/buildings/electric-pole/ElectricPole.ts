@@ -5,6 +5,7 @@ import {
   ElectricPoleConfigType,
   PowerConfig,
 } from "../BuildingConfig";
+import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
 
 export class ElectricPole extends BuildingEntity implements IPowered {
   constructor(x: number, y: number) {
@@ -15,6 +16,16 @@ export class ElectricPole extends BuildingEntity implements IPowered {
 
   public get powerConfig(): PowerConfig {
     return (this.getConfig() as ElectricPoleConfigType).powerConfig;
+  }
+
+  public get maxConnections(): number {
+    const config = this.getConfig() as ElectricPoleConfigType;
+    // Additive upgrade support
+    const additive = skillTreeManager.getStatAdditive(
+      this.getType(),
+      "maxConnections",
+    );
+    return (config.maxConnections || 3) + additive;
   }
 
   // --- IPowered ---

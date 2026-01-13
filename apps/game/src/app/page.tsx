@@ -14,6 +14,7 @@ import { useGameStore } from "@/game/state/store";
 import DebugMenu from "@/components/ui/DebugMenu";
 import DialogueOverlay from "@/components/ui/DialogueOverlay";
 import HighlightOverlay from "@/components/ui/HighlightOverlay";
+import WorldTooltip from "@/components/ui/WorldTooltip";
 
 const GameCanvas = dynamic(() => import("@/components/GameCanvas"), {
   ssr: false,
@@ -179,6 +180,7 @@ export default function Home() {
         <HUD />
         <DialogueOverlay />
         <HighlightOverlay />
+        <WorldTooltip />
         <PendingUnlocksHUD />
         <BuildingInfoPanel />
         <BuildingMenu />

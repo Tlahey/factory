@@ -21,6 +21,8 @@ export interface IBuilding extends IEntity {
 
 export interface IWorld {
   getBuilding(x: number, y: number): BuildingEntity | undefined;
+  getConnectionsCount(x: number, y: number): number;
+  getBuildingConnectionsCount(building: BuildingEntity): number;
   getTile(x: number, y: number): Tile;
   setTile(x: number, y: number, tile: Tile): void;
   hasPathTo(

@@ -7,7 +7,7 @@
   - Il partira chercher un peu de roche pour nous et quand on en aura assez il se fera électrocuter par un éclair et mourra.
   - Pour la suite de la partie ça sera son fantome qui nous parlera mais on aura assez de ressource pour commencer.
 
-- les batiments n'ont plus d'onglet d'amélioration, tout passe par le hub
+---
 
 - Les resources doivent avoir un ratio de production qui influe sur les extracteur. Par exemple les roches ont aléatoirement un extraction en *0.5 ou *1. D'autres ressources par la suite pourront avoir du 1.5 etc ...
 
@@ -19,36 +19,6 @@
 
 - Ajouter une minimap en haut à droite de l'écran qui montre la carte entière avec la position du joueur et des bâtiments construits.
   - La minimap doit être cliquable pour permettre au joueur de se déplacer rapidement sur la carte.
-
----
-
-Le hub doit avoir un shop
-
-- Le shop permet d'acheter des éléments avec les ressources collectées en jeu. Par exemple, au départ on a une seule foreuse, par la suite, avec les améliorations il sera possible d'en stocker plus, et on pourra en acheter d'autres dans le shop.
-
-- Le but est qu'il est possible de débloquer des buildings sur l'arbre de compétence mais le débloquer ne dit pas qu'on peut le créer.
-  Quand on débloque le batiment il devient disponible dans le shop pour l'acheter.
-  Chaque achat augmente le prix du même building dans le shop de façon drastique pour éviter d'en acheter trop facilement. Mais ça dépendra des batiments.
-
-Par exemple les extracteurs / containers seront beaucoup plus chère que le reste pour ajouter du challenge.
-Où on peut penser à que chaque évolution permet de débloquer l'élément dans le shop.
-
-Pense à rajouter le dialog et le guidance system sur la page pour le shop.
-
-Information importante, le shop se trouve sur le Hub dans un nouvel onglet qui remplace l'arbre d'upgrade au click
-
----
-
-Implémenter un building battery qui stocke l'énergie produite. Cette énergie pourra être réinjecter dans le réseau au besoin si la demande d'énergie est beaucoup trop importante.
-
-- Le modèle de la batterie doit être une sorte de grosse pile. Il faudrait que tu la face de façon pixl art.
-- Pour fonctionner il faut obligatoirement que la batterie soit relié a 2 cable (en série)
-- On peut mettre les batteries en série pour stocker plus de puissance
-- Les batteries sont déblocable dans l'arbre de compétence et des évolutions permettrons de stocker plus de puissance et de délivrer plus de puissance
-- La batterie fait office de disjoncteur. On peut l'activer / désactive pour
-- Au click sur la battery, on affiche son taux de charge (en pourcentage) et la quantité d'énergie stockée (en unités d'énergie Kw). Cette batterie pourra être améliorée dans l'arbre de compétences pour augmenter sa capacité de stockage et son taux de charge/décharge.
-- Il faut obligatoirement que la battery soit reliée à au moins un panneau solaire ou une éolienne pour fonctionner.
-- La battery peut avoir un disjoncteur qui permet de couper l'alimentation des bâtiments qui y sont reliés.
 
 ---
 
@@ -168,4 +138,10 @@ Ajouter le système d'input/ output pour les batiments
 
 ---
 
-- Mettre à jour le BuildingInfoPanel pour split les building à l'intérieur pour que ça soit beaucou plus facile à maintenir
+Certain batiments mettent du temps pour être construit. Par exemple la foreuse met 10 secondes à être construite.
+
+- On mettre un effet sur le modèle ou il se construira du bas vers le haut avec des particules qui viennent du haut
+- On affichera le % de construction au dessus du batiment
+- Il faudra un système générique qui permettra d'appliquer un temps de création dans le fichier de configuration
+- Le temps de construction sera affiché dans l'interface utilisateur
+- Le temps de construction pourra être modifié dans l'arbre de compétences. Augmenter par au déblocage d'une compétence (comme pour la puissance de la foreuse) ou litéralement une amélioration pour baisser le temps de construction

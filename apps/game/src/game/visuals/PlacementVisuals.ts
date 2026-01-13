@@ -8,6 +8,7 @@ import {
   getSegmentDirection,
 } from "../buildings/conveyor/ConveyorPathHelper";
 import { createHubModel } from "../buildings/hub/HubModel";
+import { createBatteryModel } from "../buildings/battery/BatteryModel";
 import { createElectricPoleModel } from "../buildings/electric-pole/ElectricPoleModel";
 import { Direction4 } from "../entities/BuildingEntity";
 import {
@@ -37,6 +38,7 @@ const OUTPUT_COLOR = 0xff4444; // Bright vivid red
 
 function createArrowMesh(color: number, pointsInward: boolean): THREE.Group {
   const arrowGroup = new THREE.Group();
+
   const material = new THREE.MeshBasicMaterial({
     color,
     transparent: true,
@@ -346,6 +348,8 @@ export class PlacementVisuals {
           mesh = createHubModel();
         } else if (ghostType === "electric_pole") {
           mesh = createElectricPoleModel();
+        } else if (ghostType === "battery") {
+          mesh = createBatteryModel();
         }
 
         if (mesh) {

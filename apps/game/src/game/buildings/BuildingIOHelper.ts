@@ -147,3 +147,64 @@ export function updateBuildingConnectivity(
     building.isInputConnected = false;
   }
 }
+
+/**
+ * Calculate the world position offset for a given relative IO side,
+ * accounting for building direction and dimensions.
+ *
+ * @param side - The relative side ('front', 'back', 'left', 'right')
+ * @param buildingDirection - The direction the building is facing
+ * @param width - Building width (default 1)
+ * @param height - Building height (default 1)
+ * @returns The offset { dx, dy } to add to the building position
+ */
+export function getIOOffset(
+  side: "front" | "back" | "left" | "right",
+  buildingDirection: Direction,
+  width: number = 1,
+  height: number = 1,
+): { dx: number; dy: number } {
+  const clockwiseOrder: Direction[] = ["north", "east", "south", "west"];
+  const currentIndex = clockwiseOrder.indexOf(buildingDirection);
+
+  // Map relative side to absolute direction index
+  let absDirIndex: number;
+  switch (side) {
+    case "front":
+      absDirIndex = currentIndex;
+      break;
+    case "right":
+      absDirIndex = (currentIndex + 1) % 4;
+      break;
+    case "back":
+      absDirIndex = (currentIndex + 2) % 4;
+      break;
+    case "left":
+      absDirIndex = (currentIndex + 3) % 4;
+      break;
+  }
+
+  const absDir = clockwiseOrder[absDirIndex];
+
+  // Adjust dimensions based on rotation
+  const w =
+    buildingDirection === "north" || buildingDirection === "south"
+      ? width
+      : height;
+  const h =
+    buildingDirection === "north" || buildingDirection === "south"
+      ? height
+      : width;
+
+  // Return offset based on absolute direction
+  switch (absDir) {
+    case "north":
+      return { dx: 0, dy: -1 };
+    case "south":
+      return { dx: 0, dy: h };
+    case "east":
+      return { dx: w, dy: 0 };
+    case "west":
+      return { dx: -1, dy: 0 };
+  }
+}

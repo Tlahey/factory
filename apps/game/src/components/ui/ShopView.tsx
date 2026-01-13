@@ -3,7 +3,7 @@
 import { useGameStore } from "@/game/state/store";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
-  SHOP_CONFIG,
+  getShopItems,
   getNextPurchaseCost,
   getAllowedCount,
 } from "@/game/buildings/hub/shop/ShopConfig";
@@ -32,7 +32,7 @@ export default function ShopView({ onPurchased }: ShopViewProps) {
   };
 
   // Filter items that are unlocked in the skill tree
-  const availableItems = Object.values(SHOP_CONFIG).filter((item) =>
+  const availableItems = getShopItems().filter((item) =>
     unlockedBuildings.includes(item.id),
   );
 

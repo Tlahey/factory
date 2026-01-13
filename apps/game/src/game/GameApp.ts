@@ -276,10 +276,18 @@ export class GameApp {
       this.newGame();
     };
 
+    this.boundRebuildPower = () => {
+      console.log(
+        `App: [Instance ${this.instanceId}] Received Rebuild Power event`,
+      );
+      this.powerSystem.rebuildNetworks();
+    };
+
     window.addEventListener("GAME_TOGGLE_PAUSE", this.boundTogglePause);
     window.addEventListener("GAME_SAVE", this.boundSave);
     window.addEventListener("GAME_LOAD", this.boundLoad);
     window.addEventListener("GAME_NEW", this.boundNew);
+    window.addEventListener("GAME_REBUILD_POWER", this.boundRebuildPower);
     (window as unknown as { game: GameApp }).game = this;
 
     // Auto-load if save exists (delayed to allow UI listeners to register)
@@ -295,6 +303,7 @@ export class GameApp {
   private boundSave: EventListener;
   private boundLoad: EventListener;
   private boundNew: EventListener;
+  private boundRebuildPower: EventListener;
 
   public newGame(): void {
     console.log(
@@ -373,6 +382,7 @@ export class GameApp {
     window.removeEventListener("GAME_SAVE", this.boundSave);
     window.removeEventListener("GAME_LOAD", this.boundLoad);
     window.removeEventListener("GAME_NEW", this.boundNew);
+    window.removeEventListener("GAME_REBUILD_POWER", this.boundRebuildPower);
     console.log(
       `App: [Instance ${this.instanceId}] Listeners removed and destroyed.`,
     );

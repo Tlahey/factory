@@ -5,6 +5,7 @@ import { Extractor } from "../buildings/extractor/Extractor";
 import { Conveyor } from "../buildings/conveyor/Conveyor";
 import { Chest } from "../buildings/chest/Chest";
 import { Hub } from "../buildings/hub/Hub";
+import { Battery } from "../buildings/battery/Battery";
 import { ElectricPole } from "../buildings/electric-pole/ElectricPole";
 import {
   getBuildingConfig,
@@ -128,27 +129,50 @@ export class World implements IWorld {
     this.buildings.forEach((b) => {
       if (b.getType() === type) count++;
     });
-    if (count >= maxCount) return false;
+    if (count >= maxCount) {
+      console.log(
+        `[World] Placement failed: Max count reached for ${type} (${count}/${maxCount})`,
+      );
+      return false;
+    }
 
     const width = config?.width || 1;
     const height = config?.height || 1;
 
     // Check bounds
-    if (x + width > WORLD_WIDTH || y + height > WORLD_HEIGHT) return false;
+    if (x + width > WORLD_WIDTH || y + height > WORLD_HEIGHT) {
+      console.log(`[World] Placement failed: Out of bounds`);
+      return false;
+    }
 
     // Create dummy for validation
     const dummy = createBuildingLogic(type, x, y);
-    if (!dummy) return false;
+    if (!dummy) {
+      console.log(
+        `[World] Placement failed: Could not create dummy logic for ${type}`,
+      );
+      return false;
+    }
 
     // Check collision and validity
     for (let dx = 0; dx < width; dx++) {
       for (let dy = 0; dy < height; dy++) {
-        if (this.buildings.has(`${x + dx},${y + dy}`)) return false;
+        if (this.buildings.has(`${x + dx},${y + dy}`)) {
+          console.log(
+            `[World] Placement failed: Tile occupied at ${x + dx},${y + dy}`,
+          );
+          return false;
+        }
 
         // Tile validity
         const tile = this.getTile(x + dx, y + dy);
 
-        if (!dummy.isValidPlacement(tile)) return false;
+        if (!dummy.isValidPlacement(tile)) {
+          console.log(
+            `[World] Placement failed: Invalid tile placement logic for ${type} at ${x + dx},${y + dy} (Tile: ${tile.getType()})`,
+          );
+          return false;
+        }
       }
     }
     return true;
@@ -347,7 +371,11 @@ export class World implements IWorld {
       case "electric_pole":
         building = new ElectricPole(x, y);
         break;
+      case "battery":
+        building = new Battery(x, y, direction);
+        break;
       default:
+        console.warn(`[World] Unknown building type: ${type}`);
         return false;
     }
 

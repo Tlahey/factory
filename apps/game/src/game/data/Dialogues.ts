@@ -98,4 +98,22 @@ export const DIALOGUES: Record<string, DialogueConfig> = {
     focusElement: ["hub-shop-tab", "hub-shop-panel"],
     blocking: false,
   },
+  error_locked: {
+    id: "error_locked",
+    titleKey: "dialogue.error_locked.title",
+    textKey: "dialogue.error_locked.text",
+    repeatable: true,
+  },
+  error_cost: {
+    id: "error_cost",
+    titleKey: "dialogue.error_cost.title",
+    textKey: "dialogue.error_cost.text",
+    repeatable: true,
+  },
+  error_limit: {
+    id: "error_limit",
+    titleKey: "dialogue.error_limit.title",
+    textKey: "dialogue.error_limit.text",
+    repeatable: true,
+  },
 };

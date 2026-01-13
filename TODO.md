@@ -39,10 +39,16 @@ Information importante, le shop se trouve sur le Hub dans un nouvel onglet qui r
 
 ---
 
-- Implémenter un building battery qui stocke l'énergie produite par les panneaux solaires et les éoliennes. Cette énergie pourra être utilisée par d'autres bâtiments pour fonctionner plus efficacement.
-  - Au click sur la battery, on affiche son taux de charge (en pourcentage) et la quantité d'énergie stockée (en unités d'énergie Kw). Cette batterie pourra être améliorée dans l'arbre de compétences pour augmenter sa capacité de stockage et son taux de charge/décharge.
-  - Il faut obligatoirement que la battery soit reliée à au moins un panneau solaire ou une éolienne pour fonctionner.
-  - La battery peut avoir un disjoncteur qui permet de couper l'alimentation des bâtiments qui y sont reliés.
+Implémenter un building battery qui stocke l'énergie produite. Cette énergie pourra être réinjecter dans le réseau au besoin si la demande d'énergie est beaucoup trop importante.
+
+- Le modèle de la batterie doit être une sorte de grosse pile. Il faudrait que tu la face de façon pixl art.
+- Pour fonctionner il faut obligatoirement que la batterie soit relié a 2 cable (en série)
+- On peut mettre les batteries en série pour stocker plus de puissance
+- Les batteries sont déblocable dans l'arbre de compétence et des évolutions permettrons de stocker plus de puissance et de délivrer plus de puissance
+- La batterie fait office de disjoncteur. On peut l'activer / désactive pour
+- Au click sur la battery, on affiche son taux de charge (en pourcentage) et la quantité d'énergie stockée (en unités d'énergie Kw). Cette batterie pourra être améliorée dans l'arbre de compétences pour augmenter sa capacité de stockage et son taux de charge/décharge.
+- Il faut obligatoirement que la battery soit reliée à au moins un panneau solaire ou une éolienne pour fonctionner.
+- La battery peut avoir un disjoncteur qui permet de couper l'alimentation des bâtiments qui y sont reliés.
 
 ---
 
@@ -62,10 +68,16 @@ Ajouter le système d'input/ output pour les batiments
 
 - Ajouter dans la configuration de la foreuse une gestion du rate de la foreuse. Par exemple, on pourra améliorer la foreuse pour augmenter sa vitesse de production.
 
+---
+
 - Au départ le container doit être forcément placé a côté du hub. On ne peut pas le déplacer ailleurs avant d'avoir débloqué une amélioration dans l'arbre de compétence.
+
+---
 
 - On démarre la partie avec le hub placé au milieu de la carte. Il ne doit pas avoir de roche a proximité immédiate du hub pour forcer le joueur à explorer la carte.
   - Il n'est pas possible de supprimer ou déplacer le hub, il doit aussi disparaitre de la liste des buildings constructibles.
+
+---
 
 - Implémenté un fourneau. Le fourneau permet de transformer les minerais bruts en lingots. Par exemple, le minerai de fer peut être transformé en lingot de fer. Le fourneau consomme de l'énergie pour fonctionner, et sa vitesse de production peut être améliorée dans l'arbre de compétences. (augmente la vitesse de transformation des minerais en lingots)
   - Le fourneau doit avoir une entrée et une sortie pour les minerais et les lingots respectivement.
@@ -74,12 +86,26 @@ Ajouter le système d'input/ output pour les batiments
   - Il doit être possible d'améliorer le fourneau pour augmenter sa capacité de transformation simultanée et réduire le temps de transformation.
   - Le fourneau ne démarre pas tant que l'utilisateur n'a pas sélectionné le type de lingot à produire (par exemple, fer, cuivre, or, etc.). On affiche une liste déroulante qui permet de sélectionner le type de lingot à produire. Pour le visuel, on voit la ressource nécessaire en entrée (modèle 3D) une glèche et la ressource produite en sortie (modèle 3D).
 
+---
+
+- Ajouter un système de merge de convoyeur. On peut avoir plusieurs entrées et une seule sortie. Chaque entrée est configurée pour recevoir tous les types de ressources.
+
+---
+
+- Ajouter un système de split où sur les convoyeurs. On a une entrée et on peut avoir plusieurs sorties. Chaque sortie est configurée pour recevoir un type de ressource spécifique.
+
+---
+
 - Implémenter sur la carte de départ un gisement de minerai de fer et un gisement de charbon. Ces gisements doivent être placés à des endroits stratégiques pour encourager l'exploration et la planification de la base. (il doit en avoir 1 de chaque au départ)
   - Les gisements de fer et de charbon doivent être en illimité pour permettre aux joueurs de collecter autant de ressources qu'ils le souhaitent.
   - Il doit y avoir des obstacles naturels (comme des rochers ou des arbres) autour des gisements pour rendre l'accès plus difficile.
   - Les gisements doivent être visuellement distincts pour que les joueurs puissent facilement les identifier.
 
+---
+
 - On ajoutera une amélioration du Hub pour que les panneaux solaires produisent plus d'énergie.
+
+---
 
 - Ajout d'un building éolienne qui produit de l'énergie en fonction de la vitesse du vent. L'éolienne doit être placée dans des zones spécifiques où le vent est plus fort pour maximiser la production d'énergie.
   - L'éolienne doit avoir une animation qui montre les pales en rotation, avec la vitesse de rotation variant en fonction de la vitesse du vent.
@@ -91,11 +117,15 @@ Ajouter le système d'input/ output pour les batiments
   - Chaque condition météorologique doit avoir un impact spécifique sur la production d'énergie des bâtiments concernés.
   - Le système météorologique doit être visible pour le joueur, avec des effets visuels et sonores appropriés.
 
+---
+
 - Implémenter un building panneau solaire qui produit de l'énergie en fonction de l'ensoleillement. Le panneau solaire doit être placé dans des zones spécifiques où l'ensoleillement est optimal pour maximiser la production d'énergie.
   - Le panneau solaire doit être relié au réseau pour fournir de l'énergie aux autres bâtiments et le surplus doit être stocké dans les batteries.
   - Le panneau solaire doit avoir une animation qui montre les cellules solaires captant la lumière du soleil.
   - Le panneau solaire doit avoir une interface utilisateur qui affiche la quantité d'énergie produite en temps réel.
   - Il doit être possible d'améliorer le panneau solaire dans l'arbre de compétences pour augmenter sa production d'énergie et sa durabilité.
+
+---
 
 - Des monstres peuvent arriver et attaquer la base. Il faut des défenses pour les repousser (des tourelles par exemple).
   - Les monstres apparaissent à des intervalles réguliers la nuit. Dans un premier temps, il y aura 1 seul ennemie qui apparaîtra la nuit. Cette fréquence doit être paramétrable et pourra être augmentée dans l'arbre de compétences pour débloquer de nouveaux buildings.
@@ -109,14 +139,20 @@ Ajouter le système d'input/ output pour les batiments
   - Tant qu'il n'y a pas de tourelle, les monstres ignorent les autres bâtiments et se dirigent directement vers le hub.
   - Le hub contient une tourelle de base qui peut tirer sur les monstres à proximité, mais elle a une puissance de feu limitée et une cadence de tir lente.
 
+---
+
 - Implémenter un convoyer souterrain qui permet de transporter des ressources en passant en dessous d'un autre convoyeur.
   - Il partage la même logique que les convoyeurs (mais ils doivent être améliorer de leur côté pour permettre la construction de convoyeurs souterrains)
   - Pour les placer il faut forcément qu'il soit au niveau d'un autre convoyeur à la surface et ils prennent 3 de largeur (1 pour l'entrée 2 pour le passage 3 pour la sortie)
   - En input il prendra le convoyer et en output un autre convoyeur
   - Le sens du flux sera le même que le convoyer et géré de la même façon
 
+---
+
 - Pour découvrir de nouvelles régions, on va créer un building qui sera une tour de guet qu'on pourra évoluer pour qu'elle puisse découvrir de nouvelles régions.
   - Lors de l'amélioration, un nouveau terrain sera généré à côté du terrain actuel. Et qu'il contiendra de nouvelles ressources
+
+---
 
 - Il faudra cacher des éléments dans la roche qui quand elle sera totalement consommé rélèvera une nouvelle amélioration.
   - exemple, miner va permettre de débloquer un item spécial qui permettra de faire évoluer la foreuse. On prendra des minéraux rare existants pour faire évoluer les éléments. et il faudra vraiment que ça soit rare ! 0.1% de chance.
@@ -129,3 +165,7 @@ Ajouter le système d'input/ output pour les batiments
   - Les échanges doivent être débloqués dans l'arbre de compétences
   - Par défaut on peut trade la roche pour des pièces par exemple 10 roches = 1 pièce
   - On pourra acheter par la suite avec les pièces des ressources via un marché géré automatiquement (comme age of empires)
+
+---
+
+- Mettre à jour le BuildingInfoPanel pour split les building à l'intérieur pour que ça soit beaucou plus facile à maintenir

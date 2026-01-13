@@ -29,10 +29,14 @@
       "no_resources": "NO RESOURCES",
       "low_power": "LOW POWER",
       "operational": "OPERATIONAL",
-      "idle": "IDLE"
+      "idle": "IDLE",
+      "active": "ACTIVE",
+      "disabled": "DISABLED"
     },
     "select_item": "Select an item to view details",
     "free": "Free",
+    "enable": "ENABLE",
+    "disable": "DISABLE",
     "skip": "SKIP",
     "acknowledge": "ACKNOWLEDGE",
     "next": "NEXT >>"
@@ -61,6 +65,10 @@
     "cable": {
       "name": "Cable",
       "description": "Connects buildings to power."
+    },
+    "battery": {
+      "name": "Battery",
+      "description": "Stores excess energy and releases it when needed. Requires connecting to a power grid."
     }
   },
   "skill_tree": {
@@ -125,6 +133,16 @@
         "name": "Solar Upgrade II",
         "description": "Increases power generation by 50%"
       }
+    },
+    "battery": {
+      "capacity_1": {
+        "name": "High Density Cells I",
+        "description": "Increases capacity/rate by 50%"
+      },
+      "capacity_2": {
+        "name": "High Density Cells II",
+        "description": "Increases capacity/rate by 100% (total)"
+      }
     }
   },
   "dialogue": {
@@ -184,6 +202,18 @@
       "title": "Factory Supplies",
       "text_1": "Welcome to the Hub Shop. Here you can purchase additional building licenses using your surplus resources.",
       "text_2": "Note that each purchase increases the price of future licenses for that building. Manage your budget carefully!"
+    },
+    "error_locked": {
+      "title": "Blueprint Locked",
+      "text": "This building has not been researched yet! Check the Skill Tree in the Hub to unlock it."
+    },
+    "error_cost": {
+      "title": "Insufficient Resources",
+      "text": "You do not have enough resources to construct this building."
+    },
+    "error_limit": {
+      "title": "Placement Limit Reached",
+      "text": "You have reached the maximum number of this building type you can place. Buy more licenses in the Shop!"
     }
   },
   "building_menu": {

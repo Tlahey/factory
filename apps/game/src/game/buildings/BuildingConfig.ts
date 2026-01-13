@@ -3,6 +3,7 @@ import { CONVEYOR_CONFIG } from "./conveyor/ConveyorConfig";
 import { EXTRACTOR_CONFIG } from "./extractor/ExtractorConfig";
 import { HUB_CONFIG } from "./hub/HubConfig";
 import { ELECTRIC_POLE_CONFIG } from "./electric-pole/ElectricPoleConfig";
+import { BATTERY_CONFIG, BatteryConfigType } from "./battery/BatteryConfig";
 import { IWorld } from "../entities/types";
 
 export interface PowerConfig {
@@ -38,6 +39,19 @@ export interface BuildingUpgrade {
   effects: UpgradeEffect[];
 }
 
+/**
+ * Shop configuration for purchasable buildings.
+ * Define this if the building can be purchased in the shop.
+ */
+export interface ShopBuildingConfig {
+  /** Base cost to purchase a license in the shop */
+  baseCost: Record<string, number>;
+  /** Price multiplier per purchase (e.g., 2.0 = double each time) */
+  priceMultiplier: number;
+  /** Initial count given for free when unlocked (default: 0) */
+  initialCount?: number;
+}
+
 export interface BaseBuildingConfig {
   name: string;
   type: string;
@@ -49,6 +63,8 @@ export interface BaseBuildingConfig {
   maxCount?: number;
   width?: number;
   height?: number;
+  /** Shop configuration (if purchasable in shop) */
+  shop?: ShopBuildingConfig;
 }
 
 // --- Unified Traits (SOLID) ---
@@ -186,6 +202,7 @@ export type BuildingConfig =
   | ChestConfigType
   | HubConfigType
   | ElectricPoleConfigType
+  | BatteryConfigType
   | BaseBuildingConfig; // For simple buildings like 'cable'
 
 export const BUILDINGS: Record<string, BuildingConfig> = {
@@ -204,6 +221,8 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     hasMenu: false,
     description: "Connects buildings to power.",
   },
+
+  battery: BATTERY_CONFIG,
 };
 
 export const getBuildingConfig = (type: string): BuildingConfig | undefined => {

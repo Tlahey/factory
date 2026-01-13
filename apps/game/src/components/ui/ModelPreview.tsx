@@ -11,6 +11,7 @@ import {
   updateRockVisuals,
 } from "@/game/environment/rock/RockModel";
 import { createHubModel } from "@/game/buildings/hub/HubModel";
+import { createBatteryModel } from "@/game/buildings/battery/BatteryModel";
 
 // Singleton Renderer to prevent Context Loss (Limit ~16 contexts involved)
 let sharedRenderer: THREE.WebGLRenderer | null = null;
@@ -96,7 +97,12 @@ export default function ModelPreview({
           model = createHubModel();
           // Center the model (2x2, parts around 0.5, 0.5)
           model.position.set(-0.5, -0.4, -0.5);
+          model.position.set(-0.5, -0.4, -0.5);
           model.scale.set(0.8, 0.8, 0.8);
+        } else if (id === "battery") {
+          model = createBatteryModel();
+          model.scale.set(1.2, 1.2, 1.2); // Larger scale for better visibility
+          model.position.y = -0.3; // Adjust vertical position
         } else if (id === "electric_pole") {
           const geometry = new THREE.CylinderGeometry(0.1, 0.1, 2);
           const material = new THREE.MeshLambertMaterial({ color: 0x888888 });

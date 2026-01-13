@@ -8,6 +8,8 @@ import { ElectricPole } from "./electric-pole/ElectricPole";
 import { ElectricPoleVisual } from "./electric-pole/ElectricPoleVisual";
 import { Chest } from "./chest/Chest";
 import { ChestVisual } from "./chest/ChestVisual";
+import { Battery } from "./battery/Battery";
+import { BatteryVisual } from "./battery/BatteryVisual";
 import { BuildingEntity } from "../entities/BuildingEntity";
 import { ParticleSystem } from "../visuals/ParticleSystem";
 import { VisualEntity } from "../visuals/VisualEntity";
@@ -61,6 +63,12 @@ export const BuildingRegistry: Record<string, BuildingEntry> = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Visual: ChestVisual as any,
     createVisual: (b, _ctx) => new ChestVisual(b as Chest),
+  },
+  battery: {
+    Logic: Battery,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Visual: BatteryVisual as any,
+    createVisual: (b, _ctx) => new BatteryVisual(b as Battery),
   },
 };
 

@@ -17,6 +17,11 @@ export const CHEST_CONFIG: ChestConfigType = {
     outputSide: "back", // Output opposite to input
   },
   maxSlots: 5,
+  shop: {
+    baseCost: { wood: 30 },
+    priceMultiplier: 2.0,
+    initialCount: 0,
+  },
   upgrades: [
     {
       level: 1,

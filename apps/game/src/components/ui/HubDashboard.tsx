@@ -605,6 +605,7 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                       viewBox="0 0 100 100"
                       preserveAspectRatio="none"
                     >
+                      {/* Consumption line (red) */}
                       <polyline
                         points={createPoints("consumption")}
                         fill="none"
@@ -612,6 +613,7 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                         strokeWidth="2"
                         vectorEffect="non-scaling-stroke"
                       />
+                      {/* Production line (green) */}
                       <polyline
                         points={createPoints("production")}
                         fill="none"
@@ -619,6 +621,30 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                         strokeWidth="2"
                         vectorEffect="non-scaling-stroke"
                       />
+                      {/* Balance indicators (small yellow dots where production ≈ consumption) */}
+                      {history.map(
+                        (
+                          pt: { production: number; consumption: number },
+                          i: number,
+                        ) => {
+                          const diff = Math.abs(pt.production - pt.consumption);
+                          const isBalanced = diff < 1; // Within 1 kW tolerance
+                          if (!isBalanced) return null;
+
+                          const x = (i / (history.length - 1)) * 100;
+                          const y = 100 - (pt.production / maxVal) * 100;
+
+                          return (
+                            <circle
+                              key={i}
+                              cx={x}
+                              cy={y}
+                              r="1.5"
+                              fill="rgba(251, 191, 36, 0.7)"
+                            />
+                          );
+                        },
+                      )}
                     </svg>
                   );
                 })()}

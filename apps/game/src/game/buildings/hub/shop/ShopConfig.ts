@@ -1,35 +1,20 @@
 /**
- * Shop Configuration
+ * Shop Utilities
  *
- * Defines the items available in the shop, their base costs, and price scaling.
+ * Provides utility functions for the shop system.
+ * Shop configuration is now defined directly in each building's config file.
  */
 
-import { BuildingId } from "../skill-tree/SkillTreeConfig";
-import { getBuildingConfig } from "../../BuildingConfig";
+import { BUILDINGS, BuildingConfig } from "../../BuildingConfig";
 
-export interface ShopItemConfig {
-  id: BuildingId;
-  baseCost: Record<string, number>;
-  /** How much the cost increases with each purchase (e.g., 2.0 = double price) */
-  priceMultiplier: number;
-  /** Initial count given for free (optional, defaults to 0) */
-  initialCount?: number;
+/**
+ * Get all buildings that are available in the shop
+ */
+export function getShopItems(): BuildingConfig[] {
+  return Object.values(BUILDINGS).filter(
+    (b) => b.shop !== undefined,
+  ) as BuildingConfig[];
 }
-
-export const SHOP_CONFIG: Record<string, ShopItemConfig> = {
-  extractor: {
-    id: "extractor",
-    baseCost: { iron: 50 },
-    priceMultiplier: 2.5,
-    initialCount: 0,
-  },
-  chest: {
-    id: "chest",
-    baseCost: { wood: 30 },
-    priceMultiplier: 2.0,
-    initialCount: 0,
-  },
-};
 
 /**
  * Calculate the cost of the next purchase for a building
@@ -38,13 +23,13 @@ export function getNextPurchaseCost(
   buildingId: string,
   purchasedCount: number,
 ): Record<string, number> {
-  const config = SHOP_CONFIG[buildingId];
-  if (!config) return {};
+  const config = BUILDINGS[buildingId];
+  if (!config?.shop) return {};
 
   const cost: Record<string, number> = {};
-  const multiplier = Math.pow(config.priceMultiplier, purchasedCount);
+  const multiplier = Math.pow(config.shop.priceMultiplier, purchasedCount);
 
-  for (const [resource, amount] of Object.entries(config.baseCost)) {
+  for (const [resource, amount] of Object.entries(config.shop.baseCost)) {
     cost[resource] = Math.floor(amount * multiplier);
   }
 
@@ -58,12 +43,12 @@ export function getAllowedCount(
   buildingId: string,
   purchasedCount: number,
 ): number {
-  const shopConfig = SHOP_CONFIG[buildingId];
-  if (shopConfig) {
-    return (shopConfig.initialCount || 0) + purchasedCount;
+  const config = BUILDINGS[buildingId];
+
+  if (config?.shop) {
+    return (config.shop.initialCount || 0) + purchasedCount;
   }
 
-  // Fallback to static config if not a shop item
-  const buildingConfig = getBuildingConfig(buildingId);
-  return buildingConfig?.maxCount ?? Infinity;
+  // Fallback to static maxCount if not a shop item
+  return config?.maxCount ?? Infinity;
 }

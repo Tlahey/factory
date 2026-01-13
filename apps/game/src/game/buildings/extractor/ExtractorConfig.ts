@@ -21,6 +21,11 @@ export const EXTRACTOR_CONFIG: ExtractorConfigType = {
     type: "consumer",
     rate: 20,
   },
+  shop: {
+    baseCost: { iron: 50 },
+    priceMultiplier: 2.5,
+    initialCount: 0,
+  },
   upgrades: [
     {
       level: 1,

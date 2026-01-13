@@ -75,6 +75,17 @@ export const SKILL_TREE: SkillNode[] = [
     unlockDuration: 10,
   },
 
+  // === TIER 1.2: Battery (Requires Cable) ===
+  {
+    id: "battery_unlock",
+    type: "unlock",
+    buildingId: "battery",
+    level: 0,
+    requires: ["cable_unlock"],
+    position: { x: 4, y: 2 },
+    unlockDuration: 20,
+  },
+
   // === TIER 1.5: Logistics Tech (Buffer Node) ===
   {
     id: "logistics_tech",
@@ -159,6 +170,26 @@ export const SKILL_TREE: SkillNode[] = [
     requires: ["chest_unlock"],
     position: { x: 3, y: 4 },
     unlockDuration: 60,
+  },
+
+  // Battery Upgrades
+  {
+    id: "battery_capacity_1",
+    type: "upgrade",
+    buildingId: "battery",
+    level: 1,
+    requires: ["battery_unlock"],
+    position: { x: 5, y: 3 },
+    unlockDuration: 45,
+  },
+  {
+    id: "battery_capacity_2",
+    type: "upgrade",
+    buildingId: "battery",
+    level: 2,
+    requires: ["battery_capacity_1"],
+    position: { x: 5, y: 4 },
+    unlockDuration: 90,
   },
 ];
 

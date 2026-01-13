@@ -10,6 +10,7 @@ import { isValidConveyorDirection } from "../buildings/conveyor/ConveyorPlacemen
 import { Conveyor } from "../buildings/conveyor/Conveyor";
 import { Direction4 } from "../entities/BuildingEntity";
 import { getBuildingConfig } from "../buildings/BuildingConfig";
+import { getAllowedCount } from "../buildings/hub/shop/ShopConfig";
 
 import { DIALOGUES } from "../data/Dialogues";
 
@@ -552,10 +553,18 @@ export class InputSystem {
               selectedBuilding,
             );
 
-            // Check Cost
+            // Check Locked & Cost for red ghost
+            const { hasResources, unlockedBuildings } = useGameStore.getState();
             const config = getBuildingConfig(selectedBuilding);
+
+            if (
+              config?.locked &&
+              !unlockedBuildings.includes(selectedBuilding)
+            ) {
+              isValid = false;
+            }
+
             if (config?.cost) {
-              const { hasResources } = useGameStore.getState();
               if (!hasResources(config.cost)) {
                 isValid = false;
               }
@@ -951,18 +960,37 @@ export class InputSystem {
       if (!config) return;
 
       // Check Locked
-      const { unlockedBuildings, hasResources, removeResources } =
-        useGameStore.getState();
+      const {
+        unlockedBuildings,
+        hasResources,
+        removeResources,
+        purchasedCounts,
+      } = useGameStore.getState();
       if (config.locked && !unlockedBuildings.includes(selectedBuilding)) {
-        // TODO: Show locked feedback
+        useGameStore.getState().showDialogue("error_locked");
         console.log("Building is locked");
         return;
       }
 
       // Check Cost
       if (config.cost && !hasResources(config.cost)) {
-        // TODO: Show insufficient resources feedback
+        useGameStore.getState().showDialogue("error_cost");
         console.log("Insufficient resources");
+        return;
+      }
+
+      // Check Limit
+      const maxCount = getAllowedCount(
+        selectedBuilding,
+        purchasedCounts[selectedBuilding] || 0,
+      );
+      let count = 0;
+      this.world.buildings.forEach((b) => {
+        if (b.getType() === selectedBuilding) count++;
+      });
+      if (count >= maxCount) {
+        useGameStore.getState().showDialogue("error_limit");
+        console.log("Max count reached");
         return;
       }
 

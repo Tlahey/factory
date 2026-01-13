@@ -29,10 +29,14 @@
       "no_resources": "VIDE",
       "low_power": "FAIBLE ÉNERGIE",
       "operational": "OPÉRATIONNEL",
-      "idle": "EN ATTENTE"
+      "idle": "EN ATTENTE",
+      "active": "ACTIF",
+      "disabled": "DÉSACTIVÉ"
     },
     "select_item": "Sélectionnez un élément pour voir les détails",
     "free": "Gratuit",
+    "enable": "ACTIVER",
+    "disable": "DÉSACTIVER",
     "skip": "PASSER",
     "acknowledge": "COMPRIS",
     "next": "SUIVANT >>"
@@ -61,6 +65,10 @@
     "cable": {
       "name": "Câble",
       "description": "Connecte les bâtiments à l'électricité."
+    },
+    "battery": {
+      "name": "Batterie",
+      "description": "Stocke l'énergie excédentaire et la restitue au besoin. Nécessite une connexion au réseau."
     }
   },
   "skill_tree": {
@@ -124,6 +132,16 @@
       "power_2": {
         "name": "Amélioration Solaire II",
         "description": "Augmente la production d'énergie de 50%"
+      }
+    },
+    "battery": {
+      "capacity_1": {
+        "name": "Cellules Haute Densité I",
+        "description": "Augmente capacité/taux de 50%"
+      },
+      "capacity_2": {
+        "name": "Cellules Haute Densité II",
+        "description": "Augmente capacité/taux de 100% (total)"
       }
     }
   },

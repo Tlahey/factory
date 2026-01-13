@@ -7,6 +7,7 @@ import { Chest } from "../buildings/chest/Chest";
 import { Hub } from "../buildings/hub/Hub";
 import { Battery } from "../buildings/battery/Battery";
 import { ElectricPole } from "../buildings/electric-pole/ElectricPole";
+import { Furnace } from "../buildings/furnace/Furnace";
 import {
   getBuildingConfig,
   ChestConfigType,
@@ -373,6 +374,9 @@ export class World implements IWorld {
         break;
       case "battery":
         building = new Battery(x, y, direction);
+        break;
+      case "furnace":
+        building = new Furnace(x, y, direction);
         break;
       default:
         console.warn(`[World] Unknown building type: ${type}`);

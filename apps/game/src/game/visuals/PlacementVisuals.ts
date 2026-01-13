@@ -10,6 +10,7 @@ import {
 import { createHubModel } from "../buildings/hub/HubModel";
 import { createBatteryModel } from "../buildings/battery/BatteryModel";
 import { createElectricPoleModel } from "../buildings/electric-pole/ElectricPoleModel";
+import { createFurnaceModel } from "../buildings/furnace/FurnaceModel";
 import { Direction4 } from "../entities/BuildingEntity";
 import {
   getBuildingConfig,
@@ -350,6 +351,9 @@ export class PlacementVisuals {
           mesh = createElectricPoleModel();
         } else if (ghostType === "battery") {
           mesh = createBatteryModel();
+        } else if (ghostType === "furnace") {
+          mesh = createFurnaceModel();
+          mesh.scale.set(1.1, 1.1, 1.1); // Match scale from ModelPreview
         }
 
         if (mesh) {

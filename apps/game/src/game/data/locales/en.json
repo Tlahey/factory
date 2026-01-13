@@ -1,8 +1,38 @@
 {
+  "resource": {
+    "stone": "Stone",
+    "iron": "Iron",
+    "copper": "Copper",
+    "iron_ore": "Iron Ore",
+    "iron_ingot": "Iron Ingot",
+    "iron_rod": "Iron Rod",
+    "iron_plate": "Iron Plate",
+    "copper_ore": "Copper Ore",
+    "copper_ingot": "Copper Ingot",
+    "copper_wire": "Copper Wire",
+    "copper_cable": "Copper Cable",
+    "gold_ore": "Gold Ore",
+    "gold_ingot": "Gold Ingot",
+    "coal": "Coal",
+    "limestone": "Limestone",
+    "concrete": "Concrete",
+    "wood": "Wood"
+  },
+  "furnace": {
+    "select_recipe": "Select Recipe"
+  },
   "common": {
     "stone": "Stone",
     "iron": "Iron",
     "copper": "Copper",
+    "iron_ore": "Iron Ore",
+    "iron_ingot": "Iron Ingot",
+    "copper_ore": "Copper Ore",
+    "copper_ingot": "Copper Ingot",
+    "gold_ore": "Gold Ore",
+    "gold_ingot": "Gold Ingot",
+    "copper_wire": "Copper Wire",
+    "iron_plate": "Iron Plate",
     "cost": "Cost",
     "power": "Power",
     "input": "Input",
@@ -91,6 +121,12 @@
     "battery": {
       "name": "Battery",
       "description": "Stores excess energy and releases it when needed. Requires connecting to a power grid."
+    },
+    "furnace": {
+      "name": "Furnace",
+      "description": "Smelts raw ore into refined ingots. Requires power and input materials.",
+      "recipe": "Recipe",
+      "select_recipe": "Select Recipe"
     }
   },
   "skill_tree": {
@@ -240,7 +276,10 @@
   },
   "building_menu": {
     "intro_title": "Construction Blueprints",
-    "intro_text": "On the right is your catalog of available buildings. Drag them to your hotbar or click to build.",
+    "intro_text": "Select a building to construct. Requires resources and available placement limit.",
+    "locked_alert": "This building is locked. Unlock it in the HUB Skill Tree.",
+    "limit_reached_alert": "Building limit reached. Purchase more licenses in the HUB Shop.",
+    "insufficient_resources_alert": "Insufficient resources to build this.",
     "intro_hub": "Start by placing the Hub. You have 1 unit available to establish your main base."
   }
 }

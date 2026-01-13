@@ -4,6 +4,7 @@ import { EXTRACTOR_CONFIG } from "./extractor/ExtractorConfig";
 import { HUB_CONFIG } from "./hub/HubConfig";
 import { ELECTRIC_POLE_CONFIG } from "./electric-pole/ElectricPoleConfig";
 import { BATTERY_CONFIG, BatteryConfigType } from "./battery/BatteryConfig";
+import { FURNACE_CONFIG, FurnaceConfigType } from "./furnace/FurnaceConfig";
 import { IWorld } from "../entities/types";
 
 export interface PowerConfig {
@@ -215,6 +216,7 @@ export type BuildingConfig =
   | HubConfigType
   | ElectricPoleConfigType
   | BatteryConfigType
+  | FurnaceConfigType
   | BaseBuildingConfig; // For simple buildings like 'cable'
 
 export const BUILDINGS: Record<string, BuildingConfig> = {
@@ -236,6 +238,7 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
   },
 
   battery: BATTERY_CONFIG,
+  furnace: FURNACE_CONFIG,
 };
 
 export const getBuildingConfig = (type: string): BuildingConfig | undefined => {

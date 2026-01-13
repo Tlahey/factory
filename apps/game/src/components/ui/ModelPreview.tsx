@@ -12,6 +12,7 @@ import {
 } from "@/game/environment/rock/RockModel";
 import { createHubModel } from "@/game/buildings/hub/HubModel";
 import { createBatteryModel } from "@/game/buildings/battery/BatteryModel";
+import { createFurnaceModel } from "@/game/buildings/furnace/FurnaceModel";
 
 // Singleton Renderer to prevent Context Loss (Limit ~16 contexts involved)
 let sharedRenderer: THREE.WebGLRenderer | null = null;
@@ -152,6 +153,10 @@ export default function ModelPreview({
           const material = new THREE.MeshLambertMaterial({ map: tex });
           model = new THREE.Mesh(geometry, material);
           model.position.y = -0.1;
+        } else if (id === "furnace") {
+          model = createFurnaceModel();
+          model.scale.set(1.1, 1.1, 1.1);
+          model.position.y = -0.4;
         }
       } else if (type === "item") {
         if (id === "stone") {

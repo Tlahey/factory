@@ -10,6 +10,8 @@ import { Chest } from "./chest/Chest";
 import { ChestVisual } from "./chest/ChestVisual";
 import { Battery } from "./battery/Battery";
 import { BatteryVisual } from "./battery/BatteryVisual";
+import { Furnace } from "./furnace/Furnace";
+import { FurnaceVisual } from "./furnace/FurnaceVisual";
 import { BuildingEntity } from "../entities/BuildingEntity";
 import { ParticleSystem } from "../visuals/ParticleSystem";
 import { VisualEntity } from "../visuals/VisualEntity";
@@ -69,6 +71,13 @@ export const BuildingRegistry: Record<string, BuildingEntry> = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Visual: BatteryVisual as any,
     createVisual: (b, _ctx) => new BatteryVisual(b as Battery),
+  },
+  furnace: {
+    Logic: Furnace,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Visual: FurnaceVisual as any,
+    createVisual: (b, ctx) =>
+      new FurnaceVisual(b as Furnace, ctx.particleSystem),
   },
 };
 

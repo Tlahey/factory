@@ -199,6 +199,18 @@ export default function BuildingMenu() {
                         if (!isDisabled) {
                           setSelectedBuilding(b.type);
                           toggleBuildingMenu();
+                        } else {
+                          // Feedback for disabled state
+                          if (isLocked) {
+                            alert(t("building_menu.locked_alert"));
+                          } else if (isLimitReached) {
+                            alert(t("building_menu.limit_reached_alert"));
+                          } else if (!canAfford) {
+                            // Should be caught by !canAfford logic visually, but good to have
+                            alert(
+                              t("building_menu.insufficient_resources_alert"),
+                            );
+                          }
                         }
                       }}
                     >

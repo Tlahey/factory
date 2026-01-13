@@ -4,6 +4,7 @@ import { useGameStore, InventorySlot } from "@/game/state/store";
 import { useEffect } from "react";
 import { Package, X } from "lucide-react";
 import ModelPreview from "./ModelPreview";
+import { PlacementResourceTooltip } from "./PlacementResourceTooltip";
 
 import { useDraggable } from "@/hooks/useDraggable";
 
@@ -195,6 +196,7 @@ export default function HUD() {
           </span>
         </div>
       </div>
+      <PlacementResourceTooltip />
     </>
   );
 }

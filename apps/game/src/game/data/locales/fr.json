@@ -1,8 +1,38 @@
 {
+  "resource": {
+    "stone": "Pierre",
+    "iron": "Fer",
+    "copper": "Cuivre",
+    "iron_ore": "Minerai de Fer",
+    "iron_ingot": "Lingot de Fer",
+    "iron_rod": "Tige de Fer",
+    "iron_plate": "Plaque de Fer",
+    "copper_ore": "Minerai de Cuivre",
+    "copper_ingot": "Lingot de Cuivre",
+    "copper_wire": "Fil de Cuivre",
+    "copper_cable": "Câble de Cuivre",
+    "gold_ore": "Minerai d'Or",
+    "gold_ingot": "Lingot d'Or",
+    "coal": "Charbon",
+    "limestone": "Calcaire",
+    "concrete": "Béton",
+    "wood": "Bois"
+  },
+  "furnace": {
+    "select_recipe": "Choisir Recette"
+  },
   "common": {
     "stone": "Pierre",
     "iron": "Fer",
     "copper": "Cuivre",
+    "iron_ore": "Minerai de Fer",
+    "iron_ingot": "Lingot de Fer",
+    "copper_ore": "Minerai de Cuivre",
+    "copper_ingot": "Lingot de Cuivre",
+    "gold_ore": "Minerai d'Or",
+    "gold_ingot": "Lingot d'Or",
+    "copper_wire": "Fil de Cuivre",
+    "iron_plate": "Plaque de Fer",
     "cost": "Coût",
     "power": "Énergie",
     "input": "Entrée",
@@ -61,6 +91,12 @@
     "extractor": {
       "name": "Foreuse",
       "description": "Extrait des ressources des gisements. Nécessite de l'électricité."
+    },
+    "furnace": {
+      "name": "Fournaise",
+      "description": "Fonde le minerai brut en lingots raffinés. Nécessite de l'énergie et des matériaux.",
+      "recipe": "Recette",
+      "select_recipe": "Choisir Recette"
     },
     "conveyor": {
       "name": "Convoyeur",
@@ -229,6 +265,9 @@
   "building_menu": {
     "intro_title": "Plans de Construction",
     "intro_text": "Sur la droite se trouve votre catalogue de bâtiments disponibles. Glissez-les dans votre barre de raccourcis ou cliquez pour construire.",
+    "locked_alert": "Ce bâtiment est verrouillé. Débloquez-le dans l'Arbre de Compétences du HUB.",
+    "limit_reached_alert": "Limite de construction atteinte. Achetez plus de licences dans la Boutique du HUB.",
+    "insufficient_resources_alert": "Ressources insuffisantes pour construire ceci.",
     "intro_hub": "Commencez par placer le Hub. Vous avez 1 unité disponible pour établir votre base principale."
   }
 }

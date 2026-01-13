@@ -22,10 +22,6 @@
 
 ---
 
-- Les poteaux électriques ont un nombre limité de connexion qui est de 3. ils pourront être améliorés par la suite pour augmenter ce nombre.
-
----
-
 Ajouter le système d'input/ output pour les batiments
 
 - Foreuse à une sortie (output) qui envoie les ressources extraites aux convoyeurs
@@ -33,10 +29,6 @@ Ajouter le système d'input/ output pour les batiments
 - NB: dans le futur, les batiments pourrant avoir plusieurs entrées (qui seront toutes côté à côte sur le batiment) et toujours une seule sortie (à l'opposé des entrées)
 - On matérialisera les entrées par une flèche verte et les sorties par une flèche rouge sur le batiment.
 - Tout convoyeur qui n'est pas lié à une entrée ou une sortie d'un batiment ne fonctionnera pas
-
----
-
-- Ajouter dans la configuration de la foreuse une gestion du rate de la foreuse. Par exemple, on pourra améliorer la foreuse pour augmenter sa vitesse de production.
 
 ---
 
@@ -145,3 +137,9 @@ Certain batiments mettent du temps pour être construit. Par exemple la foreuse 
 - Il faudra un système générique qui permettra d'appliquer un temps de création dans le fichier de configuration
 - Le temps de construction sera affiché dans l'interface utilisateur
 - Le temps de construction pourra être modifié dans l'arbre de compétences. Augmenter par au déblocage d'une compétence (comme pour la puissance de la foreuse) ou litéralement une amélioration pour baisser le temps de construction
+
+---
+
+Quand on est en mode preview il faut voir au niveau de la souris combien de ressources ça va nous côuter et entre parenthèse le nombre de ressources qu'on a dans l'inventaire.
+
+- On affiche des ressources avec l'icone de la ressource dans un carré et à l'intérieur le nombre nécessaire et entre parenthèse le cout

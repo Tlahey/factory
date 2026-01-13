@@ -7,6 +7,7 @@ import { Chest } from "@/game/buildings/chest/Chest";
 import { Extractor } from "@/game/buildings/extractor/Extractor";
 import { Hub } from "@/game/buildings/hub/Hub";
 import { Battery } from "@/game/buildings/battery/Battery";
+import { Furnace } from "@/game/buildings/furnace/Furnace";
 import { BuildingEntity } from "@/game/entities/BuildingEntity";
 import { IWorld } from "@/game/entities/types";
 import ModelPreview from "./ModelPreview";
@@ -19,7 +20,9 @@ import {
   BatteryPanel,
   UpgradeReminder,
   ElectricPolePanel,
+  FurnacePanel,
 } from "./panels";
+import FurnaceDashboard from "./FurnaceDashboard";
 
 export default function BuildingInfoPanel() {
   const { t } = useTranslation();
@@ -141,6 +144,7 @@ export default function BuildingInfoPanel() {
   const isHub = building instanceof Hub;
   const isBattery = building instanceof Battery;
   const isExtractor = building instanceof Extractor;
+  const isFurnace = building instanceof Furnace;
 
   // Get current upgrade level for buildings
   const buildingType = building.getType();
@@ -198,6 +202,10 @@ export default function BuildingInfoPanel() {
   // For Hub buildings, show the HubDashboard instead
   if (isHub) {
     return <HubDashboard hub={building} onClose={handleClose} />;
+  }
+
+  if (isFurnace) {
+    return <FurnaceDashboard furnace={building} onClose={handleClose} />;
   }
 
   return (
@@ -272,9 +280,13 @@ export default function BuildingInfoPanel() {
             <ElectricPolePanel building={building} />
           )}
 
+          {/* isFurnace handled by special dashboard check above */}
+          {isFurnace && <FurnacePanel building={building} />}
+
           {!isChest &&
             !isExtractor &&
             !isBattery &&
+            !isFurnace &&
             building.getType() !== "electric_pole" && (
               <div className="flex items-center justify-center h-full text-gray-500 text-sm italic py-8 text-center uppercase tracking-widest opacity-50">
                 No statistics available

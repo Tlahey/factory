@@ -3,6 +3,7 @@
 import { Battery } from "@/game/buildings/battery/Battery";
 import { Zap, Box } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useState, useEffect } from "react";
 
 interface BatteryPanelProps {
   building: Battery;
@@ -11,6 +12,19 @@ interface BatteryPanelProps {
 
 export function BatteryPanel({ building, forceUpdate }: BatteryPanelProps) {
   const { t } = useTranslation();
+
+  // Local state for throttled display (1s refresh)
+  const [displayCharge, setDisplayCharge] = useState(building.currentCharge);
+  const [displayFlowRate, setDisplayFlowRate] = useState(building.lastFlowRate);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDisplayCharge(building.currentCharge);
+      setDisplayFlowRate(building.lastFlowRate);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [building]);
+
   return (
     <div className="space-y-4 py-2">
       {/* 1. Breaker Panel (Heavy Construction Style) */}
@@ -99,18 +113,18 @@ export function BatteryPanel({ building, forceUpdate }: BatteryPanelProps) {
               className={`w-3 h-3 rounded-full ${building.lastFlowRate > 0.1 ? "bg-green-500 animate-pulse" : building.lastFlowRate < -0.1 ? "bg-red-500 animate-pulse" : "bg-gray-500"}`}
             />
             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-              {building.lastFlowRate > 0.1
+              {displayFlowRate > 0.1
                 ? t("common.charging")
-                : building.lastFlowRate < -0.1
+                : displayFlowRate < -0.1
                   ? t("common.discharging")
                   : t("common.statuses.idle")}
             </span>
           </div>
           <span
-            className={`text-lg font-mono font-bold ${building.lastFlowRate > 0 ? "text-green-400" : building.lastFlowRate < 0 ? "text-red-400" : "text-gray-400"}`}
+            className={`text-lg font-mono font-bold ${displayFlowRate > 0 ? "text-green-400" : displayFlowRate < 0 ? "text-red-400" : "text-gray-400"}`}
           >
-            {building.lastFlowRate > 0 ? "+" : ""}
-            {building.lastFlowRate.toFixed(1)}{" "}
+            {displayFlowRate > 0 ? "+" : ""}
+            {displayFlowRate.toFixed(1)}{" "}
             <span className="text-[10px] text-gray-500">kW</span>
           </span>
         </div>
@@ -125,14 +139,14 @@ export function BatteryPanel({ building, forceUpdate }: BatteryPanelProps) {
               {t("common.charge")}
             </span>
             <span className="text-sm font-mono font-bold text-white">
-              {((building.currentCharge / building.capacity) * 100).toFixed(1)}%
+              {((displayCharge / building.capacity) * 100).toFixed(1)}%
             </span>
           </div>
           <div className="h-3 bg-black/40 rounded-full overflow-hidden border border-white/5 relative">
             <div
               className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 transition-all duration-300"
               style={{
-                width: `${(building.currentCharge / building.capacity) * 100}%`,
+                width: `${(displayCharge / building.capacity) * 100}%`,
               }}
             />
           </div>
@@ -145,7 +159,7 @@ export function BatteryPanel({ building, forceUpdate }: BatteryPanelProps) {
               <Zap size={10} className="text-yellow-500" /> {t("common.stored")}
             </div>
             <div className="text-lg font-mono font-bold text-white">
-              {Math.floor(building.currentCharge)}{" "}
+              {Math.floor(displayCharge)}{" "}
               <span className="text-[10px] text-gray-500">kWs</span>
             </div>
           </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import Image from "next/image";
 import { createExtractorModel } from "@/game/buildings/extractor/ExtractorModel";
 import { createConveyorModel } from "@/game/buildings/conveyor/ConveyorGeometry";
 import { createChestModel } from "@/game/buildings/chest/ChestModel";
@@ -15,18 +16,23 @@ import { createBatteryModel } from "@/game/buildings/battery/BatteryModel";
 import { createFurnaceModel } from "@/game/buildings/furnace/FurnaceModel";
 
 // Singleton Renderer to prevent Context Loss (Limit ~16 contexts involved)
-let sharedRenderer: THREE.WebGLRenderer | null = null;
+import { getBuildingConfig } from "@/game/buildings/BuildingConfig";
+
+// Singleton Renderer to prevent Context Loss (Limit ~16 contexts involved)
+// Use globalThis to survive Hot Module Reloading
+const GLOBAL_RENDERER_KEY = "__THREE_SHARED_RENDERER__";
 
 function getSharedRenderer() {
-  if (!sharedRenderer) {
-    sharedRenderer = new THREE.WebGLRenderer({
+  const g = globalThis as unknown as Record<string, THREE.WebGLRenderer>;
+  if (!g[GLOBAL_RENDERER_KEY]) {
+    g[GLOBAL_RENDERER_KEY] = new THREE.WebGLRenderer({
       alpha: true,
       antialias: true,
       preserveDrawingBuffer: true,
     });
-    sharedRenderer.setPixelRatio(window.devicePixelRatio);
+    g[GLOBAL_RENDERER_KEY].setPixelRatio(window.devicePixelRatio);
   }
-  return sharedRenderer;
+  return g[GLOBAL_RENDERER_KEY];
 }
 
 interface ModelPreviewProps {
@@ -39,8 +45,6 @@ interface ModelPreviewProps {
   static?: boolean;
   seed?: number; // For item variety
 }
-
-import Image from "next/image";
 
 export default function ModelPreview({
   type,
@@ -55,12 +59,26 @@ export default function ModelPreview({
   const containerRef = useRef<HTMLDivElement>(null);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
 
+  // Check for override image in config
+  const config = type === "building" ? getBuildingConfig(id) : null;
+  const previewImage = config?.previewImage;
+
+  // NOTE: Early return above is safe because it only depends on props that don't change hook order?
+  // NO, it's NOT safe if we use hooks below. React hooks must be called unconditionally.
+  // We must move the early return logic inside the render or below hooks.
+  // Actually, we can just use `if (!id) return` inside the effect, and conditionally render the UI.
+
+  // Refactoring to ensure hooks are called:
+
   // For Dynamic
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const modelRef = useRef<THREE.Object3D | null>(null);
   const frameIdRef = useRef<number>(0);
+
+  // Should we show the image?
+  const showImage = !!previewImage;
 
   useEffect(() => {
     if (!id) return;
@@ -164,6 +182,69 @@ export default function ModelPreview({
           updateRockVisuals(model as THREE.Group, seed || 42);
           model.scale.set(4, 4, 4);
           model.position.y = 0;
+        } else if (id === "iron_ore") {
+          // Fallback: dark gray rough sphere for iron ore
+          console.warn(`[ModelPreview] Using fallback model for item: ${id}`);
+          const geometry = new THREE.IcosahedronGeometry(0.3, 0);
+          const material = new THREE.MeshLambertMaterial({ color: 0x555555 });
+          model = new THREE.Mesh(geometry, material);
+          model.scale.set(1.5, 1.5, 1.5);
+        } else if (id === "copper_ore") {
+          // Fallback: orange-brown rough sphere for copper ore
+          console.warn(`[ModelPreview] Using fallback model for item: ${id}`);
+          const geometry = new THREE.IcosahedronGeometry(0.3, 0);
+          const material = new THREE.MeshLambertMaterial({ color: 0xb87333 });
+          model = new THREE.Mesh(geometry, material);
+          model.scale.set(1.5, 1.5, 1.5);
+        } else if (id === "gold_ore") {
+          // Fallback: golden rough sphere for gold ore
+          console.warn(`[ModelPreview] Using fallback model for item: ${id}`);
+          const geometry = new THREE.IcosahedronGeometry(0.3, 0);
+          const material = new THREE.MeshLambertMaterial({ color: 0xffd700 });
+          model = new THREE.Mesh(geometry, material);
+          model.scale.set(1.5, 1.5, 1.5);
+        } else if (id === "iron_ingot") {
+          // Fallback: shiny silver bar for iron ingot
+          console.warn(`[ModelPreview] Using fallback model for item: ${id}`);
+          const geometry = new THREE.BoxGeometry(0.5, 0.15, 0.25);
+          const material = new THREE.MeshStandardMaterial({
+            color: 0xc0c0c0,
+            metalness: 0.8,
+            roughness: 0.3,
+          });
+          model = new THREE.Mesh(geometry, material);
+          model.scale.set(2, 2, 2);
+        } else if (id === "copper_ingot") {
+          // Fallback: shiny copper bar for copper ingot
+          console.warn(`[ModelPreview] Using fallback model for item: ${id}`);
+          const geometry = new THREE.BoxGeometry(0.5, 0.15, 0.25);
+          const material = new THREE.MeshStandardMaterial({
+            color: 0xb87333,
+            metalness: 0.8,
+            roughness: 0.3,
+          });
+          model = new THREE.Mesh(geometry, material);
+          model.scale.set(2, 2, 2);
+        } else if (id === "gold_ingot") {
+          // Fallback: shiny gold bar for gold ingot
+          console.warn(`[ModelPreview] Using fallback model for item: ${id}`);
+          const geometry = new THREE.BoxGeometry(0.5, 0.15, 0.25);
+          const material = new THREE.MeshStandardMaterial({
+            color: 0xffd700,
+            metalness: 0.9,
+            roughness: 0.2,
+          });
+          model = new THREE.Mesh(geometry, material);
+          model.scale.set(2, 2, 2);
+        } else {
+          // Generic fallback for any unknown item
+          console.warn(
+            `[ModelPreview] No model found for item: ${id}, using generic fallback`,
+          );
+          const geometry = new THREE.SphereGeometry(0.25, 8, 8);
+          const material = new THREE.MeshLambertMaterial({ color: 0x888888 });
+          model = new THREE.Mesh(geometry, material);
+          model.scale.set(1.5, 1.5, 1.5);
         }
       }
 
@@ -184,6 +265,10 @@ export default function ModelPreview({
       renderer.setSize(width, height);
       renderer.render(scene, camera);
       const url = renderer.domElement.toDataURL();
+      console.log(
+        `[ModelPreview] Generated URL for ${id}:`,
+        url.substring(0, 50) + "...",
+      );
       setTimeout(() => {
         setImageSrc(url);
       }, 0);
@@ -271,6 +356,19 @@ export default function ModelPreview({
       });
     };
   }, [type, id, width, height, isStatic, seed, isHovered, rotationSpeed]); // Added isHovered dep for dynamic
+
+  if (showImage && previewImage) {
+    return (
+      <Image
+        src={previewImage}
+        width={width}
+        height={height}
+        className="object-contain pointer-events-none"
+        alt={id}
+        unoptimized // Allow external/data strings
+      />
+    );
+  }
 
   if (isStatic) {
     if (imageSrc) {

@@ -136,15 +136,42 @@ export function createIOArrows(
   const io = building.io;
   if (!io.showArrow) return group;
 
+  // Defaults
+  const width = building.width || 1;
+  const height = building.height || 1;
+  const margin = 0.2; // Distance from edge
+
+  // Helper to get distance from center to edge based on side and dimensions
+  // Local Space: Center of First Tile is (0,0).
+  // Front (-Z) Edge: -0.5
+  // Back (+Z) Edge: Height - 0.5
+  // Left (-X) Edge: -Width/2
+  // Right (+X) Edge: Width/2
+  const getDistanceForSide = (side: "front" | "back" | "left" | "right") => {
+    switch (side) {
+      case "front":
+        return 0.5 + margin;
+      case "back":
+        return height - 0.5 + margin;
+      case "left":
+      case "right":
+        return width / 2 + margin;
+    }
+  };
+
   // Create INPUT arrow (green, pointing toward building)
   if (io.hasInput) {
     const inputSide = io.inputSide || "front";
-    const inputDir = getSideDirection(inputSide);
+    const inputDir = getSideDirection(inputSide); // Relative direction (e.g. 'south' for back)
+
+    // For arrow rotation, we align it with the input direction
+    const rotation = getDirectionRotation(inputDir);
+
+    // For position, we need the distance from the pivot (first tile center)
+    const dist = getDistanceForSide(inputSide);
+    const pos = getEdgePosition(inputDir, dist);
 
     const inputArrow = createArrowMesh(INPUT_COLOR, true); // points inward
-    const rotation = getDirectionRotation(inputDir);
-    const pos = getEdgePosition(inputDir, 0.7);
-
     inputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
     inputArrow.rotation.y = rotation;
     inputArrow.name = "input_arrow";
@@ -158,10 +185,11 @@ export function createIOArrows(
     const outputSide = io.outputSide || "front";
     const outputDir = getSideDirection(outputSide);
 
-    const outputArrow = createArrowMesh(OUTPUT_COLOR, false); // points outward
     const rotation = getDirectionRotation(outputDir);
-    const pos = getEdgePosition(outputDir, 0.7);
+    const dist = getDistanceForSide(outputSide);
+    const pos = getEdgePosition(outputDir, dist);
 
+    const outputArrow = createArrowMesh(OUTPUT_COLOR, false); // points outward
     outputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
     outputArrow.rotation.y = rotation;
     outputArrow.name = "output_arrow";
@@ -182,13 +210,31 @@ export function updateIOArrows(
 ): void {
   const io = building.io;
 
+  // Reuse logic: Distance from center to edge based on side and dimensions
+  const width = building.width || 1;
+  const height = building.height || 1;
+  const margin = 0.2;
+
+  const getDistanceForSide = (side: "front" | "back" | "left" | "right") => {
+    switch (side) {
+      case "front":
+        return 0.5 + margin;
+      case "back":
+        return height - 0.5 + margin;
+      case "left":
+      case "right":
+        return width / 2 + margin;
+    }
+  };
+
   // Update input arrow
   const inputArrow = arrowGroup.getObjectByName("input_arrow");
   if (inputArrow && io.hasInput) {
     const inputSide = io.inputSide || "front";
     const inputDir = getSideDirection(inputSide);
     const rotation = getDirectionRotation(inputDir);
-    const pos = getEdgePosition(inputDir, 0.7);
+    const dist = getDistanceForSide(inputSide);
+    const pos = getEdgePosition(inputDir, dist);
 
     inputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
     inputArrow.rotation.y = rotation;
@@ -201,7 +247,8 @@ export function updateIOArrows(
     const outputSide = io.outputSide || "front";
     const outputDir = getSideDirection(outputSide);
     const rotation = getDirectionRotation(outputDir);
-    const pos = getEdgePosition(outputDir, 0.7);
+    const dist = getDistanceForSide(outputSide);
+    const pos = getEdgePosition(outputDir, dist);
 
     outputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
     outputArrow.rotation.y = rotation;

@@ -22,6 +22,7 @@ import {
   Loader2,
   Sparkles,
   ShoppingBag,
+  Flame,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
@@ -35,6 +36,8 @@ import { getBuildingConfig } from "@/game/buildings/BuildingConfig";
 import { getBuildingCategoryVisuals } from "@/game/buildings/BuildingVisuals";
 import ModelPreview from "./ModelPreview";
 import ShopView from "./ShopView";
+import RecipeUnlockView from "./RecipeUnlockView";
+import { BreakerSwitch } from "./panels/BreakerSwitch";
 import clsx from "clsx";
 
 // Grid configuration for skill tree layout
@@ -346,7 +349,9 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
   const showDialogue = useGameStore((state) => state.showDialogue);
 
   const [hoveredNode, setHoveredNode] = useState<SkillNode | null>(null);
-  const [activeTab, setActiveTab] = useState<"tree" | "shop">("tree");
+  const [activeTab, setActiveTab] = useState<"tree" | "shop" | "recipes">(
+    "tree",
+  );
   const [_, forceUpdate] = useState(0);
 
   // Periodically check for completed unlocks and update UI
@@ -469,16 +474,31 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
           {/* Left Panel - Overview */}
           <div
             id="hub-overview-panel"
-            className="w-80 border-r border-white/10 p-4 overflow-y-auto flex-shrink-0 z-10 bg-gray-900/95"
+            className="w-80 border-r border-white/10 p-4 overflow-y-auto flex-shrink-0 z-10 bg-gray-900/95 custom-scrollbar"
           >
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4">
               {t("common.overview")}
             </h3>
 
+            {/* Hub Breaker Switch */}
+            <div className="mb-4">
+              <BreakerSwitch
+                isEnabled={hub.isEnabled}
+                onToggle={() => {
+                  hub.toggleBreaker();
+                  window.dispatchEvent(new CustomEvent("GAME_REBUILD_POWER"));
+                  forceUpdate((n) => n + 1);
+                }}
+                title={t("common.breaker")}
+              />
+            </div>
+
             {/* Main Generator Status */}
             <div className="p-4 bg-white/5 border border-white/10 rounded-xl mb-4">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse" />
+                <div
+                  className={`w-3 h-3 rounded-full ${hub.isEnabled ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse" : "bg-red-500"}`}
+                />
                 <span className="text-sm font-bold tracking-tight text-white/90">
                   MAIN GENERATOR
                 </span>
@@ -753,6 +773,18 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                 <ShoppingBag className="w-3.5 h-3.5" />
                 {t("shop.tab_shop") || "Shop"}
               </button>
+              <button
+                onClick={() => setActiveTab("recipes")}
+                className={clsx(
+                  "px-6 py-3 text-xs font-bold uppercase tracking-widest transition-all border-b-2 flex items-center gap-2",
+                  activeTab === "recipes"
+                    ? "text-orange-400 border-orange-500 bg-white/5"
+                    : "text-gray-500 border-transparent hover:text-gray-300 hover:bg-white/5",
+                )}
+              >
+                <Flame className="w-3.5 h-3.5" />
+                {t("hub.tab_recipes") || "Recipes"}
+              </button>
             </div>
 
             <div className="flex-1 relative overflow-hidden">
@@ -886,9 +918,13 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                     </div>
                   )}
                 </div>
-              ) : (
+              ) : activeTab === "shop" ? (
                 <div id="hub-shop-panel" className="w-full h-full">
                   <ShopView onPurchased={() => forceUpdate((n) => n + 1)} />
+                </div>
+              ) : (
+                <div id="hub-recipes-panel" className="w-full h-full">
+                  <RecipeUnlockView />
                 </div>
               )}
             </div>

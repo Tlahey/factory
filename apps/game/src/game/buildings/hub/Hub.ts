@@ -24,6 +24,9 @@ export class Hub extends BuildingEntity implements IPowered, IIOBuilding {
   }[] = [];
   private currentFluctuation: number = 0;
 
+  /** Breaker state - when false, hub stops generating power */
+  public isEnabled: boolean = true;
+
   public tick(_delta: number): void {
     this.updateFluctuation();
   }
@@ -50,10 +53,18 @@ export class Hub extends BuildingEntity implements IPowered, IIOBuilding {
   }
 
   public getPowerGeneration(): number {
+    // Return 0 if breaker is off
+    if (!this.isEnabled) return 0;
+
     const baseRate = this.powerConfig?.rate ?? 60;
     // Apply skill tree multiplier
     const multiplier = skillTreeManager.getStatMultiplier("hub", "powerRate");
     return Math.max(0, baseRate * multiplier + this.currentFluctuation);
+  }
+
+  /** Toggle the hub breaker on/off */
+  public toggleBreaker(): void {
+    this.isEnabled = !this.isEnabled;
   }
 
   public updatePowerStatus(

@@ -31,6 +31,8 @@ interface GameState {
   setInventory: (inventory: InventorySlot[]) => void;
   updateInventorySlot: (index: number, slot: InventorySlot) => void;
   swapInventorySlots: (fromIndex: number, toIndex: number) => void;
+  clearInventorySlot: (index: number) => void;
+  reorganizeInventory: () => void;
 
   // UI Overhaul
   isBuildingMenuOpen: boolean;
@@ -64,6 +66,8 @@ interface GameState {
   // Progression
   unlockedBuildings: string[];
   unlockBuilding: (buildingId: string) => void;
+  unlockedRecipes: string[];
+  unlockRecipe: (recipeId: string) => void;
   hasResources: (cost: Record<string, number>) => boolean;
   removeResources: (cost: Record<string, number>) => void;
 
@@ -145,6 +149,48 @@ export const useGameStore = create<GameState>()(
             newInv[fromIndex] = newInv[toIndex];
             newInv[toIndex] = temp;
           }
+          return { inventory: newInv };
+        }),
+      clearInventorySlot: (index: number) =>
+        set((state) => {
+          const newInv = [...state.inventory];
+          if (index >= 0 && index < newInv.length) {
+            newInv[index] = { type: null, count: 0 };
+          }
+          return { inventory: newInv };
+        }),
+      reorganizeInventory: () =>
+        set((state) => {
+          const STACK_SIZE = 100;
+
+          // 1. Collect all items by type
+          const itemTotals: Record<string, number> = {};
+          for (const slot of state.inventory) {
+            if (slot.type) {
+              itemTotals[slot.type] = (itemTotals[slot.type] || 0) + slot.count;
+            }
+          }
+
+          // 2. Create new organized inventory
+          const newInv: InventorySlot[] = [];
+
+          // Sort item types alphabetically for consistent ordering
+          const sortedTypes = Object.keys(itemTotals).sort();
+
+          for (const itemType of sortedTypes) {
+            let remaining = itemTotals[itemType];
+            while (remaining > 0) {
+              const stackCount = Math.min(remaining, STACK_SIZE);
+              newInv.push({ type: itemType, count: stackCount });
+              remaining -= stackCount;
+            }
+          }
+
+          // 3. Fill remaining slots with empty
+          while (newInv.length < state.inventory.length) {
+            newInv.push({ type: null, count: 0 });
+          }
+
           return { inventory: newInv };
         }),
       addItem: (item, amount) =>
@@ -245,6 +291,7 @@ export const useGameStore = create<GameState>()(
           activeDialogueId: null,
           seenDialogues: [],
           focusedElement: null,
+          unlockedRecipes: [],
           purchasedCounts: {},
         }),
 
@@ -295,13 +342,19 @@ export const useGameStore = create<GameState>()(
             : [...state.unlockedSkills, skillId],
         })),
 
-      // Progression
       unlockedBuildings: ["hub"], // Only Hub is a starter item
       unlockBuilding: (buildingId) =>
         set((state) => ({
           unlockedBuildings: state.unlockedBuildings.includes(buildingId)
             ? state.unlockedBuildings
             : [...state.unlockedBuildings, buildingId],
+        })),
+      unlockedRecipes: [],
+      unlockRecipe: (recipeId) =>
+        set((state) => ({
+          unlockedRecipes: state.unlockedRecipes.includes(recipeId)
+            ? state.unlockedRecipes
+            : [...state.unlockedRecipes, recipeId],
         })),
       hasResources: (cost) => {
         const state = _get();
@@ -438,6 +491,7 @@ export const useGameStore = create<GameState>()(
         isUnlimitedResources: state.isUnlimitedResources,
         seenDialogues: state.seenDialogues,
         purchasedCounts: state.purchasedCounts,
+        unlockedRecipes: state.unlockedRecipes,
       }),
     },
   ),

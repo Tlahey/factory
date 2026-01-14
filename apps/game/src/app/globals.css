@@ -9,15 +9,14 @@
   /* Z-Index Hierarchy */
   --z-index-world: 10;
   /* Canvas/World elements */
-  --z-index-hud: 40;
-  /* Base HUD (Inventory, Bottom Bar) */
+  --z-index-hud: 110;
+  /* Base HUD (Inventory, Bottom Bar) - Must be above panels for drag & drop */
   --z-index-panel: 100;
   /* Info Panels, Windows */
-  --z-index-panel: 100;
-  /* Tutorial Highlight Background */
   --z-index-overlay: 150;
-  /* Dialogues, Modals */
+  /* Tutorial Highlight Background */
   --z-index-dialog: 200;
+  /* Dialogues, Modals */
   --z-index-menu: 300;
   /* Pause Menu, Main Menu */
   --z-index-tooltip: 1000;
@@ -77,4 +76,33 @@ body {
 
 .animate-fade-in {
   animation: fade-in 0.2s ease-in forwards;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

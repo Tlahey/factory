@@ -43,24 +43,80 @@ export class FurnaceVisual implements VisualEntity {
     } else if (entity.operationStatus === "blocked") {
       statusMat.color.setHex(0xffaa00);
     } else {
-      // Idle
       statusMat.color.setHex(0x888888);
     }
 
-    // Update Core Glow & Particles
+    // Update Core Glow
     if (this.coreMesh) {
       const mat = this.coreMesh.material as THREE.MeshStandardMaterial;
       if (entity.active) {
         // Pulse glow
         const pulse = 0.5 + Math.sin(time * 5) * 0.5;
-        mat.emissiveIntensity = 1.0 + pulse * 1.0;
+        mat.emissiveIntensity = 1.5 + pulse * 1.5;
 
-        // Spawn smoke/fire particles
+        // Spawn smoke particles above lava
         if (Math.random() < 0.1) {
-          this.particleSystem.spawn(entity.x, 1.2, entity.y);
+          // Lava is at Z = -1.0 (Front) relative to Pivot
+          // We need to apply rotation to find world position
+          // Pivot is (entity.x, entity.y)
+
+          // Simple directional offset based on direction
+          // North (Front is -Z): y - 1
+          // South (Front is +Z): y + 1
+          // East (Front is +X): x + 1
+          // West (Front is -X): x - 1
+
+          let spawnX = entity.x;
+          let spawnY = entity.y; // World Z in 3D terms often maps to Game Y in grid logic?
+          // Usually Game Y = 3D Z.
+
+          switch (entity.direction) {
+            case "north":
+              spawnY += 0.8;
+              break; // Building North -> Model South (Pool) -> spawn +Z
+            case "south":
+              spawnY -= 0.8;
+              break; // Building South -> Model North (Pool) -> spawn -Z
+            case "east":
+              spawnX += 0.8;
+              break; // Building East -> Model East (Pool) -> spawn +X
+            case "west":
+              spawnX -= 0.8;
+              break; // Building West -> Model West (Pool) -> spawn -X
+          }
+
+          this.particleSystem.spawn(spawnX, 1.2, spawnY);
         }
       } else {
-        mat.emissiveIntensity = 0;
+        mat.emissiveIntensity = 0.5; // Always some glow for lava
+      }
+    }
+
+    // Animate Hammer
+    const hammerPivot = this.mesh.getObjectByName("hammer_pivot");
+    if (hammerPivot) {
+      if (entity.active) {
+        // heavy impact animation
+        // Cycle: Lift slow, Smash fast
+        // const speed = 3.0;
+        // const cycle = (time * speed) % (Math.PI * 2);
+        // Use sin wave but sharpened for impact?
+        // Simple sin for now: +angle is Up, -angle is Down
+        // Pivot is high. Arm extends Z+. Head is at Z+.
+        // Rotate X axis.
+        // Neutral is 0.
+        // Lift: Rotation X negative (up).
+        // Hit: Rotation X positive (down).
+
+        // Let's say range is -0.5 (up) to 0.2 (down/hit)
+        // const wave = Math.sin(time * 5);
+        // Sharp hit effect
+        const hammerAngle = Math.max(-0.5, Math.sin(time * 8) * 0.5);
+
+        hammerPivot.rotation.x = hammerAngle;
+      } else {
+        // Resting position (up)
+        hammerPivot.rotation.x = -0.4;
       }
     }
   }

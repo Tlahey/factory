@@ -1,10 +1,11 @@
 "use client";
 
 import { useGameStore, InventorySlot } from "@/game/state/store";
-import { useEffect } from "react";
-import { Package, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Package, X, ArrowUpDown } from "lucide-react";
 import ModelPreview from "./ModelPreview";
 import { PlacementResourceTooltip } from "./PlacementResourceTooltip";
+import { TrashZone } from "./TrashZone";
 
 import { useDraggable } from "@/hooks/useDraggable";
 
@@ -38,11 +39,42 @@ export default function HUD() {
     index: number,
     slot: InventorySlot,
   ) => {
-    if (!slot || !slot.type) return;
+    if (!slot.type) {
+      e.preventDefault();
+      return;
+    }
+    console.log("[HUD] Drag Start", { index, slot });
+
     e.dataTransfer.setData("source", "inventory");
     e.dataTransfer.setData("index", index.toString());
     e.dataTransfer.setData("type", slot.type);
     e.dataTransfer.setData("count", slot.count.toString());
+    draggedIndexRef.current = index;
+    setIsDraggingItem(true);
+  };
+
+  // Track dragged item index for trash zone deletion
+  const draggedIndexRef = useRef<number | null>(null);
+  const [isDraggingItem, setIsDraggingItem] = useState(false);
+
+  // Handle drag end - reset drag state (deletion now handled by TrashZone)
+  const handleDragEnd = () => {
+    draggedIndexRef.current = null;
+    setIsDraggingItem(false);
+  };
+
+  // Handle trash zone drop - delete the dragged item
+  const handleTrashDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const source = e.dataTransfer.getData("source");
+    if (source !== "inventory") return;
+
+    const index = draggedIndexRef.current;
+    if (index !== null) {
+      useGameStore.getState().clearInventorySlot(index);
+    }
+    draggedIndexRef.current = null;
+    setIsDraggingItem(false);
   };
 
   const handleDrop = (e: React.DragEvent, targetIndex: number) => {
@@ -61,24 +93,20 @@ export default function HUD() {
 
       // Updated Logic: Atomic Swap
       useGameStore.getState().swapInventorySlots(sourceIndex, targetIndex);
-    } else if (source === "chest") {
-      // Drag from Chest (external drop)
+    } else if (source === "chest" || source === "furnace_output") {
+      // Drag from Chest or Furnace (external drop)
       // Check if target is empty or match
       const targetSlot = inventory[targetIndex];
-      if (targetSlot.type && targetSlot.type !== type) return; // Conflict
+      const newCount = (targetSlot.count || 0) + count;
+      const maxStack = 100; // Constant
 
-      // Dispatch Drop Event for Source Handling
-      window.dispatchEvent(
-        new CustomEvent("GAME_INVENTORY_DROP", {
-          detail: {
-            source: "chest",
-            sourceIndex: sourceIndex,
-            targetIndex: targetIndex,
-            type,
-            count,
-          },
-        }),
-      );
+      if (newCount <= maxStack) {
+        useGameStore
+          .getState()
+          .updateInventorySlot(targetIndex, { type, count: newCount });
+        // Signal success so source removes it
+        e.dataTransfer.dropEffect = "move";
+      }
     }
   };
 
@@ -93,7 +121,7 @@ export default function HUD() {
         ref={elementRef}
         style={isInventoryOpen ? { left: position.x, top: position.y } : {}}
         className={`
-                    fixed z-hud pointer-events-auto
+                    fixed z-[110] pointer-events-auto
                     bg-slate-900/95 backdrop-blur-xl border border-white/20 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.5)]
                     transition-opacity duration-300 ease-out origin-left
                     flex flex-col p-4 w-auto min-w-[200px]
@@ -117,6 +145,14 @@ export default function HUD() {
               {inventory.filter((s) => s.type).length}/{inventory.length}
             </span>
             <button
+              onClick={() => useGameStore.getState().reorganizeInventory()}
+              onMouseDown={(e) => e.stopPropagation()}
+              title="Reorganize inventory"
+              className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-amber-400 border border-white/5 hover:border-amber-400/30"
+            >
+              <ArrowUpDown size={12} />
+            </button>
+            <button
               onClick={() => useGameStore.getState().toggleInventory()}
               onMouseDown={(e) => e.stopPropagation()}
               className="p-1 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
@@ -133,6 +169,7 @@ export default function HUD() {
               key={index}
               draggable={!!slot.type}
               onDragStart={(e) => handleDragStart(e, index, slot)}
+              onDragEnd={handleDragEnd}
               onDrop={(e) => handleDrop(e, index)}
               onDragOver={handleDragOver}
               className={`
@@ -197,6 +234,7 @@ export default function HUD() {
         </div>
       </div>
       <PlacementResourceTooltip />
+      <TrashZone isDragging={isDraggingItem} onDrop={handleTrashDrop} />
     </>
   );
 }

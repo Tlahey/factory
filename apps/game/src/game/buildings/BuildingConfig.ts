@@ -77,6 +77,9 @@ export interface BaseBuildingConfig {
   height?: number;
   /** Shop configuration (if purchasable in shop) */
   shop?: ShopBuildingConfig;
+  /** Optional static image for preview (replaces 3D model) */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  previewImage?: any; // StaticImageData or string
 }
 
 // --- Unified Traits (SOLID) ---
@@ -231,7 +234,7 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     name: "Cable",
     type: "cable",
     category: "power",
-    cost: { copper: 1 },
+    cost: { copper_ingot: 1 },
     locked: true,
     hasMenu: false,
     description: "Connects buildings to power.",

@@ -97,6 +97,7 @@ describe("WorldTooltip", () => {
         name: "Pole",
         maxConnections: 5,
       }),
+      maxConnections: 5,
     });
     mockGetConnectionsCount.mockReturnValue(3);
 

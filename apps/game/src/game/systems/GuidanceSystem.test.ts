@@ -47,7 +47,7 @@ describe("GuidanceSystem", () => {
 
     it("should show 'mined_iron' dialogue when iron is mined", () => {
       gameEventManager.emit("RESOURCE_MINED", {
-        resource: "iron",
+        resource: "iron_ore",
         amount: 1,
         position: { x: 0, y: 0 },
       });

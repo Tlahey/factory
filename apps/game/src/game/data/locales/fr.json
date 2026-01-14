@@ -19,7 +19,8 @@
     "wood": "Bois"
   },
   "furnace": {
-    "select_recipe": "Choisir Recette"
+    "select_recipe": "Choisir Recette",
+    "no_recipes_unlocked": "Aucune recette débloquée. Recherchez les recettes au HUB."
   },
   "common": {
     "stone": "Pierre",
@@ -85,7 +86,8 @@
     "stored": "Stocké",
     "capacity": "Capacité",
     "time_ago": "il y a {time}",
-    "now": "Maintenant"
+    "now": "Maintenant",
+    "drop_to_delete": "Déposer pour supprimer"
   },
   "building": {
     "extractor": {
@@ -156,6 +158,13 @@
     "insufficient_resources": "Ressources Insuffisantes",
     "tab_tree": "Évolution",
     "tab_shop": "Boutique"
+  },
+  "hub": {
+    "tab_recipes": "Recettes",
+    "recipe_research": "Recherche de Recettes",
+    "recipe_research_desc": "Déposez des ressources pour débloquer de nouvelles recettes.",
+    "unlock_previous": "Débloquez la recette précédente d'abord",
+    "all_recipes_unlocked": "Toutes les recettes débloquées !"
   },
   "upgrade": {
     "extractor": {

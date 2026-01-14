@@ -10,12 +10,14 @@ interface ItemBufferPanelProps {
   color?: string; // Default to "orange"
   onDragStart?: (
     e: React.DragEvent,
-    source: "chest" | "inventory",
+    source: string, // Was "chest" | "inventory", now generic string
     index: number,
     slot: { type: string; count: number },
   ) => void;
   onDragOver?: (e: React.DragEvent) => void;
-  sourceId?: "chest" | "inventory"; // Identifier for drag source
+  onDrop?: (e: React.DragEvent) => void;
+  onDragEnd?: (e: React.DragEvent) => void;
+  sourceId?: string; // Identifier for drag source
 }
 
 export function ItemBufferPanel({
@@ -24,7 +26,9 @@ export function ItemBufferPanel({
   capacity,
   color = "orange",
   onDragStart,
+  // onDragEnd, // Unused
   onDragOver,
+  onDrop,
   sourceId = "chest",
 }: ItemBufferPanelProps) {
   // Normalize main item for display (first item or null)
@@ -65,8 +69,32 @@ export function ItemBufferPanel({
 
   const theme = colorMap[color] || colorMap.orange;
 
+  // Handle drag over for the entire panel
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    console.log("[ItemBufferPanel] DragOver firing");
+    if (onDragOver) onDragOver(e);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("[ItemBufferPanel] Drop detected", {
+      title,
+      hasOnDrop: !!onDrop,
+      target: e.target,
+      currentTarget: e.currentTarget,
+    });
+    if (onDrop) onDrop(e);
+  };
+
   return (
-    <div className="p-4 bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-white/10 rounded-xl relative overflow-hidden group">
+    <div
+      className="p-4 bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-white/10 rounded-xl relative overflow-hidden group"
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       {/* Progress Bar Background */}
       <div className="absolute top-0 left-0 w-full h-1 bg-white/5">
         <div
@@ -106,7 +134,11 @@ export function ItemBufferPanel({
               onDragStart(e, sourceId, 0, mainItem);
             }
           }}
-          onDragOver={onDragOver}
+          onDragOver={(e) => {
+            e.preventDefault();
+            if (onDragOver) onDragOver(e);
+          }}
+          onDrop={onDrop}
         >
           {mainItem ? (
             <>

@@ -52,14 +52,13 @@ export class GuidanceSystem {
     // 1. Resource Mined
     gameEventManager.on("RESOURCE_MINED", ({ resource }) => {
       const state = useGameStore.getState();
-      // Check strict resource types
       if (
         resource === "stone" &&
         !state.seenDialogues.includes("mined_stone")
       ) {
         state.showDialogue("mined_stone");
       } else if (
-        resource === "iron" &&
+        resource === "iron_ore" &&
         !state.seenDialogues.includes("mined_iron")
       ) {
         state.showDialogue("mined_iron");

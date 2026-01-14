@@ -4,6 +4,7 @@ import { Activity } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ElectricPole } from "@/game/buildings/electric-pole/ElectricPole";
 import { GameApp } from "@/game/GameApp";
+import { useGameStore } from "@/game/state/store";
 
 interface ElectricPolePanelProps {
   building: BuildingEntity;
@@ -11,6 +12,9 @@ interface ElectricPolePanelProps {
 
 export function ElectricPolePanel({ building }: ElectricPolePanelProps) {
   const { t } = useTranslation();
+  // Subscribe to skills to update when upgrades are unlocked
+  useGameStore((state) => state.unlockedSkills);
+
   const config = building.getConfig() as ElectricPoleConfigType;
   // Access global store/world to get connections - this might need access to World
   // BuildingEntity doesn't store its connections list directly, World does.

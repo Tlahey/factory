@@ -88,7 +88,7 @@ describe("Furnace", () => {
 
   it("should start processing when powered and has input", () => {
     furnace.selectedRecipeId = "iron_ingot";
-    furnace.addItem("iron_ore", 1);
+    furnace.addItem("iron_ore", 5); // Need 5 ore for iron_ingot recipe
     furnace.hasPowerSource = true;
     furnace.powerSatisfaction = 1.0;
 
@@ -102,7 +102,7 @@ describe("Furnace", () => {
 
   it("should complete processing and output", () => {
     furnace.selectedRecipeId = "iron_ingot"; // Duration 2s
-    furnace.addItem("iron_ore", 1);
+    furnace.addItem("iron_ore", 5); // Need 5 ore for iron_ingot recipe
     furnace.hasPowerSource = true;
     furnace.powerSatisfaction = 1.0;
 
@@ -139,7 +139,7 @@ describe("Furnace", () => {
 
   it("should process items faster with speed upgrade", () => {
     furnace.selectedRecipeId = "iron_ingot"; // Duration 2s usually
-    furnace.addItem("iron_ore", 1);
+    furnace.addItem("iron_ore", 5); // Need 5 ore for iron_ingot recipe
     furnace.hasPowerSource = true;
     furnace.powerSatisfaction = 1.0;
 

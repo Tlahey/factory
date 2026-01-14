@@ -10,7 +10,9 @@ export interface Recipe {
   id: string;
   input: string; // Resource ID (e.g., 'iron_ore')
   output: string; // Resource ID (e.g., 'iron_ingot')
+  inputCount: number; // Number of input items consumed per craft
   duration: number; // Seconds
+  unlockCost: Record<string, number>; // Cost to unlock this recipe in the HUB
 }
 
 export const FURNACE_RECIPES: Recipe[] = [
@@ -18,19 +20,25 @@ export const FURNACE_RECIPES: Recipe[] = [
     id: "iron_ingot",
     input: "iron_ore",
     output: "iron_ingot",
+    inputCount: 5,
     duration: 2.0,
+    unlockCost: { iron_ore: 100 },
   },
   {
     id: "copper_ingot",
     input: "copper_ore",
     output: "copper_ingot",
-    duration: 2.0,
+    inputCount: 5,
+    duration: 3.0,
+    unlockCost: { copper_ore: 80 },
   },
   {
     id: "gold_ingot",
     input: "gold_ore",
     output: "gold_ingot",
-    duration: 3.0,
+    inputCount: 3,
+    duration: 4.0,
+    unlockCost: { gold_ore: 50 },
   },
 ];
 
@@ -57,7 +65,7 @@ export const FURNACE_CONFIG: FurnaceConfigType = {
   locked: true,
   hasMenu: true,
   width: 1,
-  height: 1,
+  height: 2,
   cost: {
     stone: 20,
     copper_wire: 10,

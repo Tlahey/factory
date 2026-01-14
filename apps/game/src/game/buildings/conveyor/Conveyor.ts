@@ -8,6 +8,7 @@ import {
 } from "./ConveyorLogicSystem";
 import { IWorld } from "../../entities/types";
 import { Chest } from "../chest/Chest";
+import { Furnace } from "../furnace/Furnace";
 import {
   IIOBuilding,
   ConveyorConfigType,
@@ -72,6 +73,12 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
           this.transportProgress = 0;
         }
       } else if (targetBuilding instanceof Chest) {
+        if (targetBuilding.addItem(this.currentItem!)) {
+          this.currentItem = null;
+          this.itemId = null;
+          this.transportProgress = 0;
+        }
+      } else if (targetBuilding instanceof Furnace) {
         if (targetBuilding.addItem(this.currentItem!)) {
           this.currentItem = null;
           this.itemId = null;

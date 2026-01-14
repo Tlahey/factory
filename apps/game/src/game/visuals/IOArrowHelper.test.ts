@@ -4,6 +4,7 @@ import { describe, test, expect, vi } from "vitest";
 import { createIOArrows, updateIOArrows } from "./IOArrowHelper";
 import { Extractor } from "../buildings/extractor/Extractor";
 import { Chest } from "../buildings/chest/Chest";
+import { Furnace } from "../buildings/furnace/Furnace";
 import { IIOBuilding } from "../buildings/BuildingConfig";
 import { BuildingEntity } from "../entities/BuildingEntity";
 
@@ -99,6 +100,35 @@ describe("IOArrowHelper", () => {
 
     // Output on back (South relative)
     expect(outputArrow!.position.z).toBeGreaterThan(0);
+  });
+
+  test("Furnace arrows respect dimensions (1x2)", () => {
+    // Furnace: Input Back (South), Output Front (North).
+    // Height = 2.
+    // Input (Back) distance = 2 - 0.5 + 0.2 = 1.7.
+    // South is +Z. So Input Arrow at Z = 1.7.
+
+    // Output (Front) distance = 0.5 + 0.2 = 0.7.
+    // North is -Z. So Output Arrow at Z = -0.7.
+
+    const furnace = new Furnace(0, 0, "north");
+    // Verify dimensions (initialized in BuildingEntity constructor)
+    expect(furnace.width).toBe(1);
+    expect(furnace.height).toBe(2);
+
+    const group = createIOArrows(furnace as BuildingEntity & IIOBuilding);
+
+    const inputArrow = group.getObjectByName("input_arrow");
+    const outputArrow = group.getObjectByName("output_arrow");
+
+    expect(inputArrow).toBeDefined();
+    expect(outputArrow).toBeDefined();
+
+    // Input (Back) -> +Z approx 1.7
+    expect(inputArrow!.position.z).toBeCloseTo(1.7, 1);
+
+    // Output (Front) -> -Z approx -0.7
+    expect(outputArrow!.position.z).toBeCloseTo(-0.7, 1);
   });
 
   test("Arrows are created relative to North regardless of building rotation", () => {

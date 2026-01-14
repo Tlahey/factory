@@ -19,7 +19,8 @@
     "wood": "Wood"
   },
   "furnace": {
-    "select_recipe": "Select Recipe"
+    "select_recipe": "Select Recipe",
+    "no_recipes_unlocked": "No recipes unlocked. Research recipes in the HUB."
   },
   "common": {
     "stone": "Stone",
@@ -85,7 +86,8 @@
     "stored": "Stored",
     "capacity": "Capacity",
     "time_ago": "{time} ago",
-    "now": "Now"
+    "now": "Now",
+    "drop_to_delete": "Drop to delete"
   },
   "building": {
     "extractor": {
@@ -156,6 +158,13 @@
     "insufficient_resources": "Insufficient Resources",
     "tab_tree": "Skill Tree",
     "tab_shop": "Shop"
+  },
+  "hub": {
+    "tab_recipes": "Recipes",
+    "recipe_research": "Recipe Research",
+    "recipe_research_desc": "Deposit resources to unlock new furnace recipes.",
+    "unlock_previous": "Unlock previous recipe first",
+    "all_recipes_unlocked": "All recipes unlocked!"
   },
   "upgrade": {
     "extractor": {

@@ -32,6 +32,11 @@ This is a Monorepo with two main workspaces:
 - `game/systems/`: Global systems.
 - `game/core/`: Engine core.
 
+## 🎨 Styling & UI
+
+- **Z-Index**: Never use hardcoded Z-Index values (e.g., `z-[100]`). Always use the defined Tailwind theme variables in `globals.css` (e.g., `z-hud`, `z-panel`) to ensure consistent layering and avoid conflicts.
+- **Scrollbars**: Use the global `.custom-scrollbar` class for scrollable containers to ensure a consistent look and feel across the application.
+
 ## 🚀 Adding a New Feature (e.g., New Building)
 
 To add a new building (e.g., "SolarPanel"):

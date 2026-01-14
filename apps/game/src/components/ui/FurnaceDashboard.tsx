@@ -15,6 +15,7 @@ import ModelPreview from "./ModelPreview";
 import { Furnace } from "@/game/buildings/furnace/Furnace";
 import { FURNACE_CONFIG, Recipe } from "@/game/buildings/furnace/FurnaceConfig";
 import { ItemBufferPanel } from "./panels/ItemBufferPanel";
+import { useGameStore } from "@/game/state/store";
 
 interface FurnaceDashboardProps {
   furnace: Furnace;
@@ -28,6 +29,16 @@ export default function FurnaceDashboard({
   const { t } = useTranslation();
   const [_, forceUpdate] = useState(0);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const unlockedRecipes = useGameStore((state) => state.unlockedRecipes);
+  const clearInventorySlot = useGameStore((state) => state.clearInventorySlot);
+  const updateInventorySlot = useGameStore(
+    (state) => state.updateInventorySlot,
+  );
+
+  // Filter recipes to only show unlocked ones
+  const availableRecipes = FURNACE_CONFIG.recipes.filter((recipe) =>
+    unlockedRecipes.includes(recipe.id),
+  );
 
   // Poll for updates (progress bars etc)
   useEffect(() => {
@@ -44,6 +55,102 @@ export default function FurnaceDashboard({
 
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
+  };
+
+  // Handle drag for Output
+  const handleOutputDragStart = (
+    e: React.DragEvent,
+    source: string,
+    index: number,
+    slot: { type: string; count: number },
+  ) => {
+    // We set data mostly for the HUD to read
+    e.dataTransfer.setData("source", source); // "furnace_output"
+    e.dataTransfer.setData("type", slot.type);
+    e.dataTransfer.setData("count", slot.count.toString());
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleOutputDragEnd = (e: React.DragEvent) => {
+    // If drop was successful (move), remove items
+    if (e.dataTransfer.dropEffect === "move") {
+      if (furnace.outputSlot) {
+        furnace.removeItemsFromOutput(furnace.outputSlot.count);
+        forceUpdate((n) => n + 1);
+      }
+    }
+  };
+
+  // Handle drop from inventory to furnace input
+  const handleInputDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    console.log("[FurnaceDashboard] handleInputDrop called");
+    const source = e.dataTransfer.getData("source");
+    console.log("[FurnaceDashboard] Drop source:", source);
+    if (source !== "inventory") return;
+
+    const sourceIndex = parseInt(e.dataTransfer.getData("index"));
+    const itemType = e.dataTransfer.getData("type");
+    const itemCount = parseInt(e.dataTransfer.getData("count"));
+
+    if (!itemType || isNaN(sourceIndex) || isNaN(itemCount)) return;
+
+    console.log("[FurnaceDashboard] Processing Drop:", {
+      itemType,
+      itemCount,
+      selectedRecipeId: furnace.selectedRecipeId,
+    });
+
+    if (!furnace.selectedRecipeId) {
+      console.log("[FurnaceDashboard] Rejected: No recipe selected");
+      // TODO: Add visual feedback (toast/shake)
+      // For now, maybe we can try to auto-select recipe if valid?
+      // Let's just return to avoid confusion
+      return;
+    }
+
+    // Try to add the item to the furnace
+    if (furnace.addItem(itemType, itemCount)) {
+      console.log("[FurnaceDashboard] addItem (Full) Success");
+      // Success - clear the inventory slot
+      clearInventorySlot(sourceIndex);
+      forceUpdate((n) => n + 1);
+    } else {
+      console.log(
+        "[FurnaceDashboard] addItem (Full) Failed. Trying partial...",
+      );
+      // Furnace rejected - maybe it's full or wrong item type
+      // Try adding partial amount if capacity allows
+      const currentQueueCount = furnace.inputQueue.reduce(
+        (acc, item) => acc + item.count,
+        0,
+      );
+      const maxQueue = furnace.getQueueSize();
+      const spaceAvailable = maxQueue - currentQueueCount;
+      console.log("[FurnaceDashboard] State:", {
+        currentQueueCount,
+        maxQueue,
+        spaceAvailable,
+      });
+
+      if (spaceAvailable > 0) {
+        const toAdd = Math.min(spaceAvailable, itemCount);
+        if (furnace.addItem(itemType, toAdd)) {
+          console.log("[FurnaceDashboard] addItem (Partial) Success");
+          // Partial success - update inventory with remaining
+          const remaining = itemCount - toAdd;
+          if (remaining > 0) {
+            updateInventorySlot(sourceIndex, {
+              type: itemType,
+              count: remaining,
+            });
+          } else {
+            clearInventorySlot(sourceIndex);
+          }
+          forceUpdate((n) => n + 1);
+        }
+      }
+    }
   };
 
   const selectedRecipe = furnace.selectedRecipeId
@@ -83,7 +190,7 @@ export default function FurnaceDashboard({
               />
             </div>
             <div className="absolute -bottom-2 -right-2 bg-gray-800 text-white text-xs font-bold px-1.5 py-0.5 rounded border border-white/20 shadow-md">
-              1
+              x{recipe.inputCount}
             </div>
           </div>
 
@@ -151,23 +258,7 @@ export default function FurnaceDashboard({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center animate-in fade-in duration-200">
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.05);
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.2);
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.4);
-        }
-      `}</style>
-
-      <div className="relative w-[80vw] max-w-5xl h-[70vh] max-h-[700px] bg-gray-900/95 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+      <div className="relative w-[80vw] max-w-5xl h-[70vh] max-h-[700px] bg-gray-900/95 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col custom-scrollbar">
         {/* Header */}
         <div className="p-4 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-orange-500/10 to-transparent">
           <div className="flex items-center gap-4">
@@ -322,12 +413,18 @@ export default function FurnaceDashboard({
               {isDropdownOpen && (
                 <div className="absolute top-full left-0 right-0 mt-3 bg-gray-900 border border-white/20 rounded-xl shadow-2xl p-2 max-h-[500px] overflow-y-auto z-50 animate-in fade-in slide-in-from-top-4 duration-200 custom-scrollbar">
                   <div className="grid grid-cols-1 gap-2">
-                    {FURNACE_CONFIG.recipes.map((recipe) =>
-                      renderRecipeCard(
-                        recipe,
-                        furnace.selectedRecipeId === recipe.id,
-                        () => handleRecipeSelect(recipe.id),
-                      ),
+                    {availableRecipes.length === 0 ? (
+                      <div className="text-center text-gray-500 py-4">
+                        {t("furnace.no_recipes_unlocked")}
+                      </div>
+                    ) : (
+                      availableRecipes.map((recipe) =>
+                        renderRecipeCard(
+                          recipe,
+                          furnace.selectedRecipeId === recipe.id,
+                          () => handleRecipeSelect(recipe.id),
+                        ),
+                      )
                     )}
                   </div>
                 </div>
@@ -344,62 +441,23 @@ export default function FurnaceDashboard({
                   capacity={furnace.getQueueSize()}
                   color="blue"
                   sourceId="inventory"
+                  onDrop={handleInputDrop}
                 />
                 <p className="text-xs text-center text-gray-500 mt-2">
-                  Items are automatically pulled from belts
+                  Drag items from inventory or connect conveyor belts
                 </p>
               </div>
 
               {/* Output Buffer */}
-              <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                <div className="flex flex-col h-full justify-between">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                      Output
-                    </h4>
-                    <div className="text-[10px] font-mono text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded border border-orange-500/20">
-                      {furnace.outputSlot ? furnace.outputSlot.count : 0} /{" "}
-                      {furnace.OUTPUT_CAPACITY}
-                    </div>
-                  </div>
-
-                  <div className="flex-1 flex items-center justify-center">
-                    <div
-                      className={`
-                                        w-24 h-24 bg-black/40 rounded-xl border-2 relative flex items-center justify-center transition-all duration-200
-                                        ${
-                                          furnace.outputSlot
-                                            ? "border-orange-500/50 cursor-grab active:cursor-grabbing hover:scale-105 shadow-[0_0_30px_rgba(249,115,22,0.2)]"
-                                            : "border-white/5 border-dashed"
-                                        }
-                                    `}
-                    >
-                      {furnace.outputSlot ? (
-                        <>
-                          <ModelPreview
-                            type="item"
-                            id={furnace.outputSlot.type}
-                            width={80}
-                            height={80}
-                            static
-                          />
-                          <div className="absolute -bottom-3 -right-3 bg-orange-600 text-white text-sm font-bold px-3 py-1 rounded-lg border border-orange-400 shadow-xl z-10">
-                            {furnace.outputSlot.count}
-                          </div>
-                        </>
-                      ) : (
-                        <span className="text-xs text-gray-600 uppercase font-bold tracking-widest">
-                          Empty
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-center text-gray-500 mt-2">
-                    Items are pushed to output belts
-                  </p>
-                </div>
-              </div>
+              <ItemBufferPanel
+                title="Output Buffer"
+                items={furnace.outputSlot ? [furnace.outputSlot] : []}
+                capacity={furnace.OUTPUT_CAPACITY}
+                color="orange"
+                sourceId="furnace_output"
+                onDragStart={handleOutputDragStart}
+                onDragEnd={handleOutputDragEnd}
+              />
             </div>
           </div>
         </div>

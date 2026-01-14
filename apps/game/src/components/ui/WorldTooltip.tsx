@@ -4,10 +4,7 @@ import { useGameStore } from "@/game/state/store";
 import { useEffect, useState } from "react";
 import { BuildingEntity } from "@/game/entities/BuildingEntity";
 import { IWorld } from "@/game/entities/types";
-import {
-  ElectricPoleConfigType,
-  BaseBuildingConfig,
-} from "@/game/buildings/BuildingConfig";
+import { BaseBuildingConfig } from "@/game/buildings/BuildingConfig";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function WorldTooltip() {
@@ -48,23 +45,16 @@ export default function WorldTooltip() {
   // Or we can show name for everything.
   const isPole = building.getType() === "electric_pole";
 
-  // Calculate screen position?
-  // InputSystem has mouse pos but doesn't share it with store efficiently every frame.
-  // BuildingHoverCard uses `absolute top-0 right-full` style positioning, appearing NEXT to cursor or Fixed?
-  // HUD uses fixed positioning.
-  // Since this is a "Tooltip", it should probably follow mouse or be fixed in a corner.
-  // Implementing "follow mouse" in React without prop drilling mouse pos is hard/laggy.
-  // Better to put it in a fixed status area or floating near the object in 3D (Projected).
-  // OR just fixed at bottom/top of screen.
-
-  // Let's try fixed position near cursor using a simple mouse listener here?
-  // Or just fixed bottom center.
-
   // User request: "Au passage de la souris au dessus du poteau..." (On mouse over...)
   // Providing a tooltip next to the mouse is best.
 
   return (
-    <TooltipContent config={config} connections={connections} isPole={isPole} />
+    <TooltipContent
+      config={config}
+      connections={connections}
+      isPole={isPole}
+      building={building}
+    />
   );
 }
 
@@ -72,11 +62,25 @@ interface TooltipContentProps {
   config: BaseBuildingConfig;
   connections: number;
   isPole: boolean;
+  building: BuildingEntity;
 }
 
-function TooltipContent({ config, connections, isPole }: TooltipContentProps) {
+function TooltipContent({
+  config,
+  connections,
+  isPole,
+  building,
+}: TooltipContentProps) {
   const { t } = useTranslation();
   const [pos, setPos] = useState({ x: -1000, y: -1000 });
+
+  // Get maxConnections from building instance (includes upgrades)
+  // Get maxConnections from building instance (includes upgrades)
+  // Use loose check for testing support (mocks)
+  const maxConnections =
+    isPole && "maxConnections" in building
+      ? (building as unknown as { maxConnections: number }).maxConnections
+      : 3;
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -103,10 +107,9 @@ function TooltipContent({ config, connections, isPole }: TooltipContentProps) {
         <div className="flex justify-between items-center text-xs">
           <span className="text-gray-400">Connections:</span>
           <span
-            className={`font-mono font-bold ${connections >= ((config as ElectricPoleConfigType).maxConnections || 3) ? "text-amber-400" : "text-green-400"}`}
+            className={`font-mono font-bold ${connections >= maxConnections ? "text-amber-400" : "text-green-400"}`}
           >
-            {connections} /{" "}
-            {(config as ElectricPoleConfigType).maxConnections || 3}
+            {connections} / {maxConnections}
           </span>
         </div>
       )}

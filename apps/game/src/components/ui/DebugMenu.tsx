@@ -4,6 +4,7 @@ import { useGameStore } from "@/game/state/store";
 import { Bug, Check, Unlock, Zap, X, Trash2 } from "lucide-react";
 import { useState } from "react";
 import clsx from "clsx";
+import { RESOURCES } from "@/game/data/Items";
 
 export default function DebugMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -84,17 +85,23 @@ export default function DebugMenu() {
                 <span className="text-xs font-medium">Unlock All Skills</span>
               </button>
 
-              <button
-                onClick={() => {
-                  ["iron", "copper", "stone", "coal", "wood"].forEach((res) =>
-                    addItem(res, 1000),
-                  );
-                }}
-                className="w-full flex items-center gap-2 p-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-300 hover:bg-blue-500/20 transition-all"
-              >
-                <span className="text-xs font-bold">+</span>
-                <span className="text-xs font-medium">Add 1000 Resources</span>
-              </button>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-500 uppercase">
+                  Add Resources (100x)
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {RESOURCES.map((res) => (
+                    <button
+                      key={res}
+                      onClick={() => addItem(res, 100)}
+                      className="p-1 rounded bg-blue-500/10 border border-blue-500/30 text-blue-300 hover:bg-blue-500/20 text-[10px] truncate"
+                      title={`Add ${res}`}
+                    >
+                      {res}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="h-px bg-white/10" />

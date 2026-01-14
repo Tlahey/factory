@@ -134,19 +134,23 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
             );
 
             if (itemIndex !== -1) {
-              // Consume input
               const item = this.inputQueue[itemIndex];
-              item.count--;
-              if (item.count <= 0) {
-                this.inputQueue.splice(itemIndex, 1);
-              }
+              // Check if we have enough input resources for this recipe
+              const requiredCount = recipe.inputCount;
+              if (item.count >= requiredCount) {
+                // Consume inputCount items
+                item.count -= requiredCount;
+                if (item.count <= 0) {
+                  this.inputQueue.splice(itemIndex, 1);
+                }
 
-              // Start Job
-              this.activeJobs.push({
-                recipeId: recipe.id,
-                progress: 0,
-                elapsed: 0,
-              });
+                // Start Job
+                this.activeJobs.push({
+                  recipeId: recipe.id,
+                  progress: 0,
+                  elapsed: 0,
+                });
+              }
             }
           }
         }
@@ -310,6 +314,15 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
       existing.count += amount;
     } else {
       this.inputQueue.push({ type, count: amount });
+    }
+    return true;
+  }
+
+  public removeItemsFromOutput(amount: number): boolean {
+    if (!this.outputSlot || this.outputSlot.count < amount) return false;
+    this.outputSlot.count -= amount;
+    if (this.outputSlot.count <= 0) {
+      this.outputSlot = null;
     }
     return true;
   }

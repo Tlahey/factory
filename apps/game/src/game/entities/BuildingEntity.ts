@@ -45,6 +45,12 @@ export abstract class BuildingEntity extends Entity {
     super(x, y, "building");
     this.buildingType = buildingType;
     this.direction = direction;
+
+    const config = this.getConfig();
+    if (config) {
+      this.width = config.width ?? 1;
+      this.height = config.height ?? 1;
+    }
   }
 
   public rotate(): void {

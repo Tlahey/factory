@@ -143,3 +143,52 @@ Certain batiments mettent du temps pour être construit. Par exemple la foreuse 
 Quand on est en mode preview il faut voir au niveau de la souris combien de ressources ça va nous côuter et entre parenthèse le nombre de ressources qu'on a dans l'inventaire.
 
 - On affiche des ressources avec l'icone de la ressource dans un carré et à l'intérieur le nombre nécessaire et entre parenthèse le cout
+
+---
+
+pour la furnace il faut ajouter certaines spécifications:
+
+- Le déblocage de ressources se fait via le HUB dans l'arbre de compétence.
+  Par exemple il faut 100 de Iron ore pour débloquer l'iron lingot etc .. pour les autres aussi (les valeurs de base peuvent différer) Donc on ne doit pas afficher dans la liste déroulante de la forge les éléments qu'on a pas encore débloqué
+- Pour craft un Iron ingot et les autres, il faut que le nombre de stack en input diffère. Par exemple il faut 5 de iron ore pour faire 1 iton ingot etc ... de même pour les autres. Cette somme pourra évoluer par la suite pour certaines recettes.
+
+- les ressources doivent arrivé par l'input de la forge sinon rien ne se passe (et le convoyeur bloque)
+- quand la limite de stack est atteinte dans la forge, le convoyeur bloque
+- Les stacks qui ont été craftés sortirons par l'ouput de la forge
+- Quand la ressource est consommée, elle disparait et n'est pas réinjectée dans le convoyeur
+- C'est la ressource produite qui est réinjecté dans l'output de la forge
+- Si la forge n'a pas de convoyeur connecté en output, elle ne fait rien et stack les éléments jusqu'à 20 puis s'arrête
+- Tout comme la foreuse, la forge consomme de l'électricité seulement si elle fonctionne (ressource à crafter à l'intérieur)
+
+- génère aussi un modèle pour les ressources qui manques (ajoute un log dans la console pour les modèles 3D manquants)
+
+---
+
+Créer un builing broyeur qui permet de broyer la roche pour extraire les ressources rares
+
+- On pourra mettre de la roche en input de la forge et dans se cas la, il est possible avec un faible taux de drop (qui peut être évoluer par la suite, on compte du 0.1%, pour nos tests on va pouvoir l'augmenter pour tester) de générer des ressources rare par exemple de l'or mais il faudra 10 items de roche pour avoir une change d'avoir ça.
+  Donc aléatoirement pour 10 stack :
+  - 0.1% d'avoir de l'or
+  - 0.2% d'avoir de l'argent
+  - 0.3% d'avoir du bronze
+  - 0.4% d'avoir du cuivre
+  - 0.5% d'avoir du fer
+- Pour la roche il faut 10 secondes pour forger l'intérieur
+- les ressources doivent arrivé par l'input du broyerr sinon rien ne se passe (et le convoyeur bloque)
+
+---
+
+Ajouter un système qui permet d'utiliser une image en asset pour la preview d'un modèle
+Du coup ça fait Image Asset ou 3d Asset
+Les assets seront stockés au même niveau que la config avec une fonction pour charger la preview (image ou model3D)
+
+---
+
+Créer un building Constructeur qui permet de construire d'autre items à partir d'autres éléments.
+Il faut qu'il ait la même interface que la forge
+En donnée il faut une configuration comme la forge
+Le modèle du batiment montrera une presse qui tappe vers le sol (TODO: trouver illustration)
+
+- Pour 1 iron Ingot -> 4secondes = 1 Iron Rod
+- Les améliorations pourront être acheté dans le HUB pour accélérer le processus
+- Des plans pourront être acheté dans le HUB pour avoir plus de possibilité de craft

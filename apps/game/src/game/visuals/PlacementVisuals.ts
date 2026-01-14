@@ -166,13 +166,48 @@ export class PlacementVisuals {
 
     // Create INPUT arrow (green, pointing toward building)
     // Always position for 'north' orientation - ghost mesh rotation handles the rest
+    const width = config.width || 1;
+    const height = config.height || 1;
+
+    // Determine Pivot Logic
+    // If Height is Even, Pivot is at Back Slot. Extends Forward.
+    // If Height is Odd, Pivot is Center.
+    const isHeightEven = height % 2 === 0;
+    const isFurnace = buildingType === "furnace";
+
+    const getDistanceForSide = (side: "front" | "back" | "left" | "right") => {
+      const margin = 0.05; // .55 - .5
+
+      switch (side) {
+        case "front":
+          return (isHeightEven ? height - 0.5 : height / 2) + margin;
+        case "back":
+          return (isHeightEven ? 0.5 : height / 2) + margin;
+        case "left":
+        case "right":
+          return width / 2 + margin;
+      }
+    };
+
     if (io.hasInput) {
       const inputSide = io.inputSide || "front";
-      const inputDir = getSideDirection(inputSide);
+      let inputDir = getSideDirection(inputSide);
+      let dist = getDistanceForSide(inputSide);
+
+      if (isFurnace && inputSide === "back") {
+        // Furnace Input is Back.
+        // Model extends South.
+        // Input Port is North (-0.4).
+        // We want Arrow at North (-0.5).
+        // North is "front" direction (-Z).
+        // Dist 0.5 is "back" distance.
+        inputDir = "north";
+        dist = 0.5 + 0.05;
+      }
 
       const inputArrow = createArrowMesh(INPUT_COLOR, true);
       const rot = getDirectionRotation(inputDir);
-      const pos = getEdgePosition(inputDir, 0.55);
+      const pos = getEdgePosition(inputDir, dist);
 
       inputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
       inputArrow.rotation.y = rot;
@@ -184,11 +219,23 @@ export class PlacementVisuals {
     // Create OUTPUT arrow (red, pointing away from building)
     if (io.hasOutput) {
       const outputSide = io.outputSide || "front";
-      const outputDir = getSideDirection(outputSide);
+      let outputDir = getSideDirection(outputSide);
+      let dist = getDistanceForSide(outputSide);
+
+      if (isFurnace && outputSide === "front") {
+        // Furnace Output is Front.
+        // Model extends South.
+        // Output Port is South (+1.4).
+        // We want Arrow at South (+1.5).
+        // South is "back" direction (+Z).
+        // Dist 1.5 is "front" distance (Height - 0.5).
+        outputDir = "south";
+        dist = 1.5 + 0.05;
+      }
 
       const outputArrow = createArrowMesh(OUTPUT_COLOR, false);
       const rot = getDirectionRotation(outputDir);
-      const pos = getEdgePosition(outputDir, 0.55);
+      const pos = getEdgePosition(outputDir, dist);
 
       outputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
       outputArrow.rotation.y = rot;
@@ -307,7 +354,82 @@ export class PlacementVisuals {
     }
 
     this.cursorMesh.visible = true;
-    this.cursorMesh.position.set(x, 0.5, y);
+
+    // Default 1x1 base pos
+    const baseX = x;
+    const baseZ = y;
+
+    // Get Config dimensions
+    let width = 1;
+    let height = 1;
+
+    if (ghostType) {
+      const config = getBuildingConfig(ghostType);
+      if (config) {
+        width = config.width;
+        height = config.height;
+      }
+    }
+
+    // Scale cursor
+    // If we rotate the cursor mesh, we can keep scale (w, 1, h) local
+    // AND we need to offset position if dimensions are even/odd change
+    // Logic:
+    // Anchor is at (x,y).
+    // Building extends from Anchor according to local geometry.
+    // Our Convention: Building origins are centered on X (width), and extend Forward (height)??
+    // Actually, usually W is X axis, H is Z axis.
+    // Width is usually odd (1, 3). Centered.
+    // Height can be 2. Extends Forward?
+    // Based on FurnaceModel shift plan: Origin is Back. Extends Front.
+    // So Local Center is (0, 0, (h-1)/2).
+
+    this.cursorMesh.scale.set(width, 1, height);
+
+    // Calculate Rotation
+    let rot = 0;
+    if (ghostType) {
+      rot = directionToRotation[rotation] ?? 0;
+      // Conveyor special rotation logic handled separately?
+      // For cursor, we just follow building rotation.
+      if (ghostType === "conveyor" && this.conveyorVisualType === "left") {
+        rot -= Math.PI / 2;
+      } else if (
+        ghostType === "conveyor" &&
+        this.conveyorVisualType === "right"
+      ) {
+        rot += Math.PI / 2;
+      }
+    }
+
+    this.cursorMesh.rotation.y = rot;
+
+    // Calculate Offset in World Space
+    // Local Offset: 0, 0, (h - 1) * 0.5
+    // Because Box is centered at 0. We want Box Back Edge at 0?
+    // No, Box Back Edge is at -0.5 (Local).
+    // We want Box Back Edge at -0.5 (Anchor Back Edge)?
+    // Yes. Anchor Tile Back Edge is -0.5.
+    // Box (scaled 2) Back Edge is -1.
+    // So we need to shift +0.5 to align Back Edge (-1) to -0.5.
+    // Wait. -1 + 0.5 = -0.5.
+    // So Shift is +0.5 (for height 2).
+    // General: Shift = (Height - 1) * 0.5.
+
+    const forwardOffset = (height - 1) * 0.5;
+
+    // Rotate offset
+    // rot 0 (North): -Z. But usually North is Back?
+    // If direction="north", rotation=0.
+    // If direction="south", rotation=PI.
+    // In our model, +Z is Front.
+    // So offset is +Z.
+    // Rotate vector (0, 0, offset) by rot.
+
+    const dx = Math.sin(rot) * forwardOffset;
+    const dz = Math.cos(rot) * forwardOffset;
+
+    this.cursorMesh.position.set(baseX + dx, 0.5, baseZ + dz);
 
     const color = isValid ? 0xffffff : 0xff0000;
     (this.cursorMesh.material as THREE.LineBasicMaterial).color.setHex(color);

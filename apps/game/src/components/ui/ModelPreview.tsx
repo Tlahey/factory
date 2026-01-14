@@ -173,8 +173,8 @@ export default function ModelPreview({
           model.position.y = -0.1;
         } else if (id === "furnace") {
           model = createFurnaceModel();
-          model.scale.set(1.1, 1.1, 1.1);
-          model.position.y = -0.4;
+          model.scale.set(0.75, 0.75, 0.75);
+          model.position.y = -0.5;
         }
       } else if (type === "item") {
         if (id === "stone") {

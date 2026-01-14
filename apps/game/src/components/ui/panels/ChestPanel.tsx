@@ -40,7 +40,7 @@ export function ChestPanel({
           {building.slots.length}/{building.maxSlots} {t("common.slots")}
         </span>
       </div>
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-5 gap-4">
         {Array.from({ length: building.maxSlots }).map((_, i) => {
           const slot = building.slots[i];
           return (

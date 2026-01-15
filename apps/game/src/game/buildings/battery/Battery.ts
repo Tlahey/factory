@@ -1,6 +1,6 @@
-import { BuildingEntity, Direction4 } from "../../entities/BuildingEntity";
+import { BuildingEntity } from "../../entities/BuildingEntity";
 import { Tile } from "../../core/Tile";
-import { IWorld } from "../../entities/types";
+import { IWorld, Direction } from "../../entities/types";
 import { BATTERY_CONFIG, BatteryConfigType, IBattery } from "./BatteryConfig";
 import { IPowered, IIOBuilding } from "../BuildingConfig";
 import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
@@ -35,7 +35,7 @@ export class Battery
   public flowHistory: { time: number; flow: number }[] = [];
   private flowHistoryTimer: number = 0;
 
-  constructor(x: number, y: number, direction: Direction4 = "north") {
+  constructor(x: number, y: number, direction: Direction = "north") {
     super(x, y, "battery", direction);
     this.capacity = BATTERY_CONFIG.capacity;
     this.maxChargeRate = BATTERY_CONFIG.maxChargeRate;

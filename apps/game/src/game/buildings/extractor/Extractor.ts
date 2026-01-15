@@ -1,6 +1,6 @@
 import { Tile } from "../../core/Tile";
-import { BuildingEntity, Direction4 } from "../../entities/BuildingEntity";
-import { IWorld } from "../../entities/types";
+import { BuildingEntity } from "../../entities/BuildingEntity";
+import { IWorld, Direction } from "../../entities/types";
 import { Conveyor } from "../conveyor/Conveyor";
 import { Chest } from "../chest/Chest";
 import { ResourceTile } from "../../core/ResourceTile";
@@ -34,7 +34,7 @@ export class Extractor
   public slots: { type: string; count: number }[] = [];
   public readonly BUFFER_CAPACITY = 20;
 
-  constructor(x: number, y: number, direction: Direction4 = "north") {
+  constructor(x: number, y: number, direction: Direction = "north") {
     super(x, y, "extractor", direction);
   }
 

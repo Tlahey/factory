@@ -6,6 +6,7 @@ import { IWorld } from "../../entities/types";
 import { IIOBuilding, IStorage, ChestConfigType } from "../BuildingConfig";
 import { updateBuildingConnectivity } from "../BuildingIOHelper";
 import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
+import { Conveyor } from "../conveyor/Conveyor";
 
 export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   public slots: { type: string; count: number }[] = [];
@@ -18,9 +19,12 @@ export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   }
 
   public tick(_delta: number, world?: IWorld): void {
-    // Logic to store items
     if (world) {
       updateBuildingConnectivity(this, world);
+      // Try to output items when output is connected
+      if (this.isOutputConnected && this.slots.length > 0) {
+        this.tryOutputResource(world);
+      }
     }
   }
 
@@ -140,10 +144,44 @@ export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   }
 
   public canOutput(): boolean {
-    return false; // For now Chests don't output by themselves
+    // Chest can output when it has items
+    return this.slots.length > 0;
   }
 
-  public tryOutput(): boolean {
+  public tryOutput(world: IWorld): boolean {
+    return this.tryOutputResource(world);
+  }
+
+  /**
+   * Try to push an item from the first slot to a conveyor at the output position.
+   * Similar to Extractor.tryOutputResource().
+   */
+  private tryOutputResource(world: IWorld): boolean {
+    if (this.slots.length === 0) return false;
+
+    const outputPos = this.getOutputPosition();
+    if (!outputPos) return false;
+
+    const target = world.getBuilding(outputPos.x, outputPos.y);
+    if (!target) return false;
+
+    if (target instanceof Conveyor) {
+      // Only push to resolved conveyors with no current item
+      if (target.isResolved && !target.currentItem) {
+        const itemToOutput = this.slots[0].type;
+        target.currentItem = itemToOutput;
+        target.itemId = Math.floor(Math.random() * 1000000);
+        target.transportProgress = 0;
+
+        // Decrement the slot count
+        this.slots[0].count -= 1;
+        if (this.slots[0].count <= 0) {
+          this.slots.splice(0, 1);
+        }
+        return true;
+      }
+    }
+
     return false;
   }
 

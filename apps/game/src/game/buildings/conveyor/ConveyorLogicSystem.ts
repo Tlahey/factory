@@ -226,7 +226,8 @@ export function determineFlowInputDirection(
 
     if (!neighbor) continue;
 
-    // CRITICAL: Validate that neighbor's OUTPUT PORT targets our position
+    // GENERIC: Check if neighbor has an output port pointing at us
+    // This works for any building implementing IIOBuilding (extractor, conveyor, chest, furnace, etc.)
     if (
       !hasOutputPortAt(
         neighbor as unknown as {
@@ -238,22 +239,14 @@ export function determineFlowInputDirection(
     )
       continue;
 
-    const neighborType = neighbor.getType();
+    // Any building with output pointing at us is a valid input source
     const neighborDirection = neighbor.direction as
       | "north"
       | "south"
       | "east"
       | "west";
 
-    // Valid input sources: Extractors or Conveyors pointing at us
-    if (neighborType === "extractor") {
-      return neighborDirection;
-    }
-
-    // Any conveyor pointing at us counts as input for turn detection
-    if (neighborType === "conveyor") {
-      return neighborDirection;
-    }
+    return neighborDirection;
   }
 
   return null;

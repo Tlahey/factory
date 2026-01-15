@@ -3,6 +3,10 @@
 - Les types onDragStart et onDragEnd doivent implémenter une interface pour les éléments.
   Actuellement si on souhaite appliquer une règle, ça devient complexe. De plus il faudra en faire un type générique <T> pour que le drag and drop se face seulement sur les types qu'on a défini.
 
+---
+
+- La popup de dialogue s'ouvre toujours quand on ouvre le menu de construction. Elle ne devrait s'ouvrir qu'une seule fois la première fois qu'on l'ouvre.
+
 # Features
 
 - Il faudrait trouver un moyen de récupérer de la roche au départ du jeu sans forcément avoir d'équipement.

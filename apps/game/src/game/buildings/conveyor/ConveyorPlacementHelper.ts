@@ -15,12 +15,14 @@ import { getDirectionOffset } from "./ConveyorLogicSystem";
 
 interface InputSource {
   direction: Direction;
-  type: "extractor" | "conveyor";
+  /** 'building' = producer (extractor, chest, furnace, etc.), 'conveyor' = transporter */
+  type: "building" | "conveyor";
 }
 
 interface OutputTarget {
   direction: Direction;
-  type: "chest" | "hub" | "conveyor";
+  /** 'building' = sink (chest, hub, furnace, etc.), 'conveyor' = chained belt */
+  type: "building" | "conveyor";
 }
 
 /**
@@ -48,18 +50,15 @@ export function determineConveyorDirection(
     return outputTarget.direction;
   }
 
-  // Case 2: Only output target (Chest/Hub)
-  // Point toward it
-  if (
-    outputTarget &&
-    (outputTarget.type === "chest" || outputTarget.type === "hub")
-  ) {
+  // Case 2: Only output target (building that accepts input)
+  // Point toward it if it's a "sink" building (not a conveyor)
+  if (outputTarget && outputTarget.type === "building") {
     return outputTarget.direction;
   }
 
-  // Case 3: Only input source (Extractor feeding us)
-  // Continue the extractor direction
-  if (inputSource && inputSource.type === "extractor") {
+  // Case 3: Only input source (building producing flow)
+  // Continue the building's output direction
+  if (inputSource && inputSource.type === "building") {
     return inputSource.direction;
   }
 
@@ -70,6 +69,9 @@ export function determineConveyorDirection(
 /**
  * Find if something is feeding INTO our position (x, y) AND is available.
  * Checks that the source isn't already connected to another conveyor.
+ *
+ * Uses the IIOBuilding interface generically - any building with an output
+ * port pointing at us is a valid input source.
  */
 function findAvailableInputSource(
   x: number,
@@ -86,42 +88,58 @@ function findAvailableInputSource(
 
     if (!neighbor) continue;
 
-    const neighborType = neighbor.getType();
-    const neighborDir = neighbor.direction as Direction;
+    // GENERIC: Check if this building implements IIOBuilding with an output port
+    // that points to our position
+    const hasGetOutputPosition =
+      "getOutputPosition" in neighbor &&
+      typeof (
+        neighbor as {
+          getOutputPosition?: () => { x: number; y: number } | null;
+        }
+      ).getOutputPosition === "function";
+
+    if (!hasGetOutputPosition) continue;
+
+    const outputPos = (
+      neighbor as { getOutputPosition: () => { x: number; y: number } | null }
+    ).getOutputPosition();
 
     // Check if neighbor's output points at our position
-    const outputOffset = getDirectionOffset(neighborDir);
-    const outputX = neighborX + outputOffset.dx;
-    const outputY = neighborY + outputOffset.dy;
+    if (!outputPos || outputPos.x !== x || outputPos.y !== y) continue;
 
-    if (outputX === x && outputY === y) {
-      // Check if this output is AVAILABLE (not already connected)
-      if (neighborType === "extractor") {
-        // Extractor output available if isOutputConnected is false
-        if (
-          "isOutputConnected" in neighbor &&
-          !(neighbor as { isOutputConnected: boolean }).isOutputConnected
-        ) {
-          return { direction: neighborDir, type: "extractor" };
-        }
-        // If we can't check, assume available
-        if (!("isOutputConnected" in neighbor)) {
-          return { direction: neighborDir, type: "extractor" };
-        }
-      }
-      if (neighborType === "conveyor") {
-        // Conveyor output available if isOutputConnected is false
-        if (
-          "isOutputConnected" in neighbor &&
-          !(neighbor as { isOutputConnected: boolean }).isOutputConnected
-        ) {
-          return { direction: neighborDir, type: "conveyor" };
-        }
-        // If we can't check, assume available
-        if (!("isOutputConnected" in neighbor)) {
-          return { direction: neighborDir, type: "conveyor" };
-        }
-      }
+    // Check if this output is AVAILABLE (not already connected)
+    const isOutputConnected =
+      "isOutputConnected" in neighbor &&
+      (neighbor as { isOutputConnected: boolean }).isOutputConnected === true;
+
+    if (isOutputConnected) continue;
+
+    // Get the flow direction from the neighbor
+    // IMPORANT: Instead of using neighbor.direction (which might be North while output is South for a Chest),
+    // we calculate the direction from the neighbor TO us. This ensures we always point AWAY from the source.
+    let flowDir = neighbor.direction as Direction; // Default for conveyors
+
+    // For non-conveyor buildings (producers), the flow direction is the direction of the output port
+    // which corresponds to the vector from neighbor(x,y) to us(x,y)
+    const dx = x - neighborX;
+    const dy = y - neighborY;
+
+    if (dy === -1) flowDir = "north";
+    else if (dy === 1) flowDir = "south";
+    else if (dx === 1) flowDir = "east";
+    else if (dx === -1) flowDir = "west";
+
+    const neighborType = neighbor.getType();
+
+    // Distinguish between conveyors (which just transport) and other buildings
+    // (which "produce" flow direction). This affects auto-orientation logic.
+    if (neighborType === "conveyor") {
+      // For conveyors, we stick to their direction for now (chaining)
+      return { direction: neighbor.direction as Direction, type: "conveyor" };
+    } else {
+      // All other IO buildings (extractor, chest, furnace, etc.)
+      // are treated as "building" sources that set the initial flow direction
+      return { direction: flowDir, type: "building" };
     }
   }
 
@@ -131,6 +149,9 @@ function findAvailableInputSource(
 /**
  * Find if there's something we should output TO adjacent to (x, y) AND is available.
  * Checks that the target isn't already receiving input from another source.
+ *
+ * Uses the IIOBuilding interface generically - any building with an input
+ * port at our position is a valid output target.
  */
 function findAvailableOutputTarget(
   x: number,
@@ -149,32 +170,52 @@ function findAvailableOutputTarget(
 
     const neighborType = neighbor.getType();
 
-    // Chest or Hub: We should point toward it (always available for input)
-    if (neighborType === "chest" || neighborType === "hub") {
-      return { direction: checkDir, type: neighborType as "chest" | "hub" };
+    // GENERIC: Check if this building has an input port at our position
+    // This works for any building implementing IIOBuilding (chest, furnace, etc.)
+    const hasGetInputPosition =
+      "getInputPosition" in neighbor &&
+      typeof (
+        neighbor as { getInputPosition?: () => { x: number; y: number } | null }
+      ).getInputPosition === "function";
+
+    if (hasGetInputPosition) {
+      const inputPos = (
+        neighbor as { getInputPosition: () => { x: number; y: number } | null }
+      ).getInputPosition();
+
+      // Check if the building's input port is at OUR position
+      if (inputPos && inputPos.x === x && inputPos.y === y) {
+        // Check if input is available (not already connected)
+        const isInputConnected =
+          "isInputConnected" in neighbor &&
+          (neighbor as { isInputConnected: boolean }).isInputConnected === true;
+
+        if (!isInputConnected) {
+          // Distinguish between conveyors and other buildings for orientation logic
+          if (neighborType === "conveyor") {
+            return { direction: checkDir, type: "conveyor" };
+          } else {
+            return { direction: checkDir, type: "building" };
+          }
+        }
+      }
     }
 
-    // Conveyor: We can output to its input (back side)
-    // A conveyor's input is on the BACK side (opposite of its direction)
-    if (neighborType === "conveyor") {
+    // Special case: Conveyor input check (back side of conveyor)
+    // Conveyors accept input from the back, which getInputPosition() handles
+    // but let's also support legacy check for conveyors without getInputPosition
+    if (neighborType === "conveyor" && !hasGetInputPosition) {
       const neighborDir = neighbor.direction as Direction;
-
-      // We can feed into this conveyor if we're at its INPUT position
-      // Conveyor input is at the back, so we check if WE would be at its back
       const backOffset = getDirectionOffset(getOppositeDir(neighborDir));
       const inputX = neighborX + backOffset.dx;
       const inputY = neighborY + backOffset.dy;
 
       if (inputX === x && inputY === y) {
-        // Check if this conveyor's input is AVAILABLE (not already connected)
-        if (
+        const isInputConnected =
           "isInputConnected" in neighbor &&
-          !(neighbor as { isInputConnected: boolean }).isInputConnected
-        ) {
-          return { direction: checkDir, type: "conveyor" };
-        }
-        // If we can't check, assume available
-        if (!("isInputConnected" in neighbor)) {
+          (neighbor as { isInputConnected: boolean }).isInputConnected === true;
+
+        if (!isInputConnected) {
           return { direction: checkDir, type: "conveyor" };
         }
       }

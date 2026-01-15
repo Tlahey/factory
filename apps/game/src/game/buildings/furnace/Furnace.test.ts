@@ -125,8 +125,10 @@ describe("Furnace", () => {
     furnace.outputSlot = { type: "iron_ingot", count: 1 };
 
     // Mock neighbor
-    const chest = new Chest(10, 9); // North of 10,10 facing north?
-    // Furnace at 10,10 North. Output is Front -> 10,9.
+    const chest = new Chest(10, 12); // South of 10,10 + 1 (Back is +2 for 1x2?)
+    // Furnace (1x2) at 10,10 North.
+    // Occupies 10,10 and 10,11.
+    // Output is Back -> 10,12.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (world.getBuilding as any).mockReturnValue(chest);
 
@@ -193,9 +195,30 @@ describe("Furnace", () => {
     furnace.selectedRecipeId = "iron_ingot";
     expect(furnace.selectedRecipeId).toBe("iron_ingot");
 
-    // Changing recipe handling (if implemented in future, good to test behavior)
-    // Currently changing it just requires setting the property
     furnace.selectedRecipeId = "copper_ingot";
     expect(furnace.selectedRecipeId).toBe("copper_ingot");
+  });
+
+  describe("Rotation & Footprint", () => {
+    it("should occupy 1x2 tiles when facing North", () => {
+      expect(furnace.direction).toBe("north");
+      expect(furnace.width).toBe(1);
+      expect(furnace.height).toBe(2);
+    });
+
+    it("should occupy 2x1 tiles when rotated East", () => {
+      furnace.rotate(); // north -> east
+      expect(furnace.direction).toBe("east");
+      expect(furnace.width).toBe(2);
+      expect(furnace.height).toBe(1);
+    });
+
+    it("should swap dimensions back when rotated South", () => {
+      furnace.rotate(); // north -> east
+      furnace.rotate(); // east -> south
+      expect(furnace.direction).toBe("south");
+      expect(furnace.width).toBe(1);
+      expect(furnace.height).toBe(2);
+    });
   });
 });

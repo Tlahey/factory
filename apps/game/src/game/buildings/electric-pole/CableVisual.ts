@@ -231,23 +231,28 @@ export function getCableAttachmentPoint(
   // If no building, center on tile center
   if (!b) return new THREE.Vector3(tileX, 0.5, tileY);
 
-  let localX = 0;
+  // 1. Calculate Logical Center (same as GameApp / PlacementVisuals)
+  const isRotated = b.direction === "east" || b.direction === "west";
+  const finalWidth = isRotated ? b.height : b.width;
+  const finalHeight = isRotated ? b.width : b.height;
+  const centerX = b.x + (finalWidth - 1) / 2;
+  const centerZ = b.y + (finalHeight - 1) / 2;
+
+  const localX = 0;
   let localY = 0.5;
-  let localZ = 0;
+  const localZ = 0;
 
   if (b.getType() === "hub") {
-    // Hub is 2x2. Pole is at center of the 2x2 block footprint.
-    // Relative to the top-left tile center (b.x, b.y), the center is at (0.5, 0.5).
-    localX = 0.5;
+    // Hub's pole is at its center
     localY = 2.5;
-    localZ = 0.5;
   } else {
     // Standard 1x1 buildings are centered on their tile
     if (b.getType() === "electric_pole") localY = 1.8;
     else if (b.getType() === "extractor") localY = 1.5;
   }
 
-  // Apply Rotation around b.x, b.y (pivot used in GameApp)
+  // 2. Apply Rotation relative to center
+  // (For Hub/Poles where localX=localZ=0, this is a no-op, which is correct as they rotate in-place)
   let theta = 0;
   if (b.direction === "east") theta = -Math.PI / 2;
   else if (b.direction === "west") theta = Math.PI / 2;
@@ -256,8 +261,8 @@ export function getCableAttachmentPoint(
   const cos = Math.cos(theta);
   const sin = Math.sin(theta);
 
-  const worldX = b.x + localX * cos - localZ * sin;
-  const worldZ = b.y + localX * sin + localZ * cos;
+  const worldX = centerX + localX * cos - localZ * sin;
+  const worldZ = centerZ + localX * sin + localZ * cos;
 
   return new THREE.Vector3(worldX, localY, worldZ);
 }

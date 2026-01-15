@@ -1,7 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test, expect, vi } from "vitest";
 // import * as THREE from 'three';
-import { createIOArrows, updateIOArrows } from "./IOArrowHelper";
+import {
+  createIOArrows,
+  updateIOArrows,
+  createIOArrowsFromConfig,
+} from "./IOArrowHelper";
 import { Extractor } from "../buildings/extractor/Extractor";
 import { Chest } from "../buildings/chest/Chest";
 import { Furnace } from "../buildings/furnace/Furnace";
@@ -10,11 +13,12 @@ import { BuildingEntity } from "../entities/BuildingEntity";
 
 // Mock THREE to avoid canvas/webgl issues in node environment
 vi.mock("three", async () => {
-  const actual = (await vi.importActual("three")) as any;
+  const actual = (await vi.importActual("three")) as Record<string, unknown>;
   return {
     ...actual,
     Group: class {
-      children: any[] = [];
+      children: { name: string; position: { z: number }; visible: boolean }[] =
+        [];
       name: string = "";
       position = {
         x: 0,
@@ -27,7 +31,7 @@ vi.mock("three", async () => {
         },
       };
       rotation = { x: 0, y: 0, z: 0 };
-      add(obj: any) {
+      add(obj: { name: string; position: { z: number }; visible: boolean }) {
         this.children.push(obj);
       }
       getObjectByName(name: string) {
@@ -47,6 +51,7 @@ vi.mock("three", async () => {
         },
       };
       name: string = "";
+      visible: boolean = true;
       constructor() {}
     },
     MeshBasicMaterial: class {},
@@ -105,11 +110,9 @@ describe("IOArrowHelper", () => {
   test("Furnace arrows respect dimensions (1x2)", () => {
     // Furnace: Input Back (South), Output Front (North).
     // Height = 2.
-    // Input (Back) distance = 2 - 0.5 + 0.2 = 1.7.
-    // South is +Z. So Input Arrow at Z = 1.7.
-
-    // Output (Front) distance = 0.5 + 0.2 = 0.7.
-    // North is -Z. So Output Arrow at Z = -0.7.
+    // Center-based positioning: distance = height / 2 + margin = 1.0 + 0.2 = 1.2
+    // Input (Back) -> +Z direction -> Z = 1.2
+    // Output (Front) -> -Z direction -> Z = -1.2
 
     const furnace = new Furnace(0, 0, "north");
     // Verify dimensions (initialized in BuildingEntity constructor)
@@ -124,11 +127,11 @@ describe("IOArrowHelper", () => {
     expect(inputArrow).toBeDefined();
     expect(outputArrow).toBeDefined();
 
-    // Input (Back) -> +Z approx 1.7
-    expect(inputArrow!.position.z).toBeCloseTo(1.7, 1);
+    // Input (Back) -> +Z approx 1.2
+    expect(inputArrow!.position.z).toBeCloseTo(1.2, 1);
 
-    // Output (Front) -> -Z approx -0.7
-    expect(outputArrow!.position.z).toBeCloseTo(-0.7, 1);
+    // Output (Front) -> -Z approx -1.2
+    expect(outputArrow!.position.z).toBeCloseTo(-1.2, 1);
   });
 
   test("Arrows are created relative to North regardless of building rotation", () => {
@@ -156,20 +159,39 @@ describe("IOArrowHelper", () => {
 
   test("Arrow visibility follows connectivity", () => {
     const extractor = new Extractor(0, 0, "north");
-    const group = createIOArrows(extractor as any);
-    const arrow = group.getObjectByName("output_arrow") as any;
+    const group = createIOArrows(extractor as BuildingEntity & IIOBuilding);
+    const arrow = group.getObjectByName("output_arrow") as unknown as {
+      visible: boolean;
+    };
 
     // Default: visible
     expect(arrow.visible).toBe(true);
 
     // Connected: hidden
-    (extractor as any).isOutputConnected = true;
-    updateIOArrows(group, extractor as any);
+    (extractor as BuildingEntity & IIOBuilding).isOutputConnected = true;
+    updateIOArrows(group, extractor as BuildingEntity & IIOBuilding);
     expect(arrow.visible).toBe(false);
 
     // Disconnected: visible
-    (extractor as any).isOutputConnected = false;
-    updateIOArrows(group, extractor as any);
+    (extractor as BuildingEntity & IIOBuilding).isOutputConnected = false;
+    updateIOArrows(group, extractor as BuildingEntity & IIOBuilding);
     expect(arrow.visible).toBe(true);
+  });
+
+  test("createIOArrowsFromConfig works without entity", () => {
+    const ioConfig = {
+      hasInput: true,
+      hasOutput: true,
+      inputSide: "back" as const,
+      outputSide: "front" as const,
+      showArrow: true,
+    };
+    const group = createIOArrowsFromConfig(ioConfig, 1, 1);
+    expect(group.children.length).toBe(2);
+
+    const input = group.getObjectByName("input_arrow");
+    expect(input).toBeDefined();
+    // Static creation defaults to visible
+    expect((input as unknown as { visible: boolean }).visible).toBe(true);
   });
 });

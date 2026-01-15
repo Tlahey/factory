@@ -11,13 +11,8 @@ import { createHubModel } from "../buildings/hub/HubModel";
 import { createBatteryModel } from "../buildings/battery/BatteryModel";
 import { createElectricPoleModel } from "../buildings/electric-pole/ElectricPoleModel";
 import { createFurnaceModel } from "../buildings/furnace/FurnaceModel";
-import {
-  getBuildingConfig,
-  IOConfig,
-  getDirectionFromSide,
-} from "../buildings/BuildingConfig";
+import { getBuildingConfig, IOConfig } from "../buildings/BuildingConfig";
 import { IWorld, Direction } from "../entities/types";
-import { isPortConnected } from "../buildings/BuildingIOHelper";
 
 // 4-direction rotation mapping
 const directionToRotation: Record<Direction, number> = {
@@ -27,98 +22,7 @@ const directionToRotation: Record<Direction, number> = {
   west: Math.PI / 2,
 };
 
-// IO Arrow constants
-const ARROW_HEAD_SIZE = 0.15;
-const ARROW_SHAFT_LENGTH = 0.2;
-const ARROW_SHAFT_RADIUS = 0.04;
-const ARROW_HEIGHT = 0.5;
-const INPUT_COLOR = 0x00ff88; // Bright vivid green
-const OUTPUT_COLOR = 0xff4444; // Bright vivid red
-
-function createArrowMesh(color: number, pointsInward: boolean): THREE.Group {
-  const arrowGroup = new THREE.Group();
-
-  const material = new THREE.MeshBasicMaterial({
-    color,
-    transparent: true,
-    opacity: 0.95,
-  });
-
-  const headGeometry = new THREE.ConeGeometry(
-    ARROW_HEAD_SIZE,
-    ARROW_HEAD_SIZE * 1.8,
-    8,
-  );
-  const head = new THREE.Mesh(headGeometry, material);
-  const shaftGeometry = new THREE.CylinderGeometry(
-    ARROW_SHAFT_RADIUS,
-    ARROW_SHAFT_RADIUS,
-    ARROW_SHAFT_LENGTH,
-    8,
-  );
-  const shaft = new THREE.Mesh(shaftGeometry, material);
-
-  head.rotation.x = Math.PI / 2;
-  shaft.rotation.x = Math.PI / 2;
-
-  if (pointsInward) {
-    head.rotation.x = -Math.PI / 2;
-    head.position.z = -ARROW_HEAD_SIZE * 0.8;
-    shaft.position.z = ARROW_SHAFT_LENGTH / 2 + ARROW_HEAD_SIZE * 0.2;
-  } else {
-    head.position.z = ARROW_HEAD_SIZE * 0.8;
-    shaft.position.z = -(ARROW_SHAFT_LENGTH / 2 + ARROW_HEAD_SIZE * 0.2);
-  }
-
-  arrowGroup.add(head);
-  arrowGroup.add(shaft);
-  return arrowGroup;
-}
-
-function getDirectionRotation(direction: Direction): number {
-  switch (direction) {
-    case "north":
-      return Math.PI;
-    case "south":
-      return 0;
-    case "east":
-      return -Math.PI / 2;
-    case "west":
-      return Math.PI / 2;
-  }
-}
-
-function getEdgePosition(
-  direction: Direction,
-  distance: number,
-): { x: number; z: number } {
-  switch (direction) {
-    case "north":
-      return { x: 0, z: -distance };
-    case "south":
-      return { x: 0, z: distance };
-    case "east":
-      return { x: distance, z: 0 };
-    case "west":
-      return { x: -distance, z: 0 };
-  }
-}
-
-function getSideDirection(
-  side: "front" | "back" | "left" | "right",
-): Direction {
-  // Returns the direction for the given side when building faces 'north'
-  switch (side) {
-    case "front":
-      return "north";
-    case "back":
-      return "south";
-    case "right":
-      return "east";
-    case "left":
-      return "west";
-  }
-}
+import { createIOArrowsFromConfig } from "./IOArrowHelper";
 
 export class PlacementVisuals {
   private scene: THREE.Scene;
@@ -159,90 +63,11 @@ export class PlacementVisuals {
     const io = (config as { io?: IOConfig }).io;
     if (!io || !io.showArrow) return null;
 
-    const group = new THREE.Group();
-    group.name = "ghost_io_arrows";
-
-    // Create INPUT arrow (green, pointing toward building)
-    // Always position for 'north' orientation - ghost mesh rotation handles the rest
     const width = config.width || 1;
     const height = config.height || 1;
 
-    // Determine Pivot Logic
-    // If Height is Even, Pivot is at Back Slot. Extends Forward.
-    // If Height is Odd, Pivot is Center.
-    const isHeightEven = height % 2 === 0;
-    const isFurnace = buildingType === "furnace";
-
-    const getDistanceForSide = (side: "front" | "back" | "left" | "right") => {
-      const margin = 0.05; // .55 - .5
-
-      switch (side) {
-        case "front":
-          return (isHeightEven ? height - 0.5 : height / 2) + margin;
-        case "back":
-          return (isHeightEven ? 0.5 : height / 2) + margin;
-        case "left":
-        case "right":
-          return width / 2 + margin;
-      }
-    };
-
-    if (io.hasInput) {
-      const inputSide = io.inputSide || "front";
-      let inputDir = getSideDirection(inputSide);
-      let dist = getDistanceForSide(inputSide);
-
-      if (isFurnace && inputSide === "back") {
-        // Furnace Input is Back.
-        // Model extends South.
-        // Input Port is North (-0.4).
-        // We want Arrow at North (-0.5).
-        // North is "front" direction (-Z).
-        // Dist 0.5 is "back" distance.
-        inputDir = "north";
-        dist = 0.5 + 0.05;
-      }
-
-      const inputArrow = createArrowMesh(INPUT_COLOR, true);
-      const rot = getDirectionRotation(inputDir);
-      const pos = getEdgePosition(inputDir, dist);
-
-      inputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
-      inputArrow.rotation.y = rot;
-      inputArrow.name = "input_arrow";
-
-      group.add(inputArrow);
-    }
-
-    // Create OUTPUT arrow (red, pointing away from building)
-    if (io.hasOutput) {
-      const outputSide = io.outputSide || "front";
-      let outputDir = getSideDirection(outputSide);
-      let dist = getDistanceForSide(outputSide);
-
-      if (isFurnace && outputSide === "front") {
-        // Furnace Output is Front.
-        // Model extends South.
-        // Output Port is South (+1.4).
-        // We want Arrow at South (+1.5).
-        // South is "back" direction (+Z).
-        // Dist 1.5 is "front" distance (Height - 0.5).
-        outputDir = "south";
-        dist = 1.5 + 0.05;
-      }
-
-      const outputArrow = createArrowMesh(OUTPUT_COLOR, false);
-      const rot = getDirectionRotation(outputDir);
-      const pos = getEdgePosition(outputDir, dist);
-
-      outputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
-      outputArrow.rotation.y = rot;
-      outputArrow.name = "output_arrow";
-
-      group.add(outputArrow);
-    }
-
-    return group.children.length > 0 ? group : null;
+    // Use shared helper
+    return createIOArrowsFromConfig(io, width, height);
   }
 
   /**
@@ -343,6 +168,8 @@ export class PlacementVisuals {
     ghostType: string | null = null,
     rotation: Direction = "north",
     world?: IWorld,
+    hoverWidth: number = 1,
+    hoverHeight: number = 1,
   ) {
     if (x < 0 || y < 0) {
       this.cursorMesh.visible = false;
@@ -357,77 +184,23 @@ export class PlacementVisuals {
     const baseX = x;
     const baseZ = y;
 
-    // Get Config dimensions
-    let width = 1;
-    let height = 1;
+    // Use passed dimensions directly (InputSystem handles rotation swapping)
+    const width = hoverWidth;
+    const height = hoverHeight;
 
-    if (ghostType) {
-      const config = getBuildingConfig(ghostType);
-      if (config) {
-        width = config.width || 1;
-        height = config.height || 1;
-      }
-    }
-
-    // Scale cursor
-    // If we rotate the cursor mesh, we can keep scale (w, 1, h) local
-    // AND we need to offset position if dimensions are even/odd change
-    // Logic:
-    // Anchor is at (x,y).
-    // Building extends from Anchor according to local geometry.
-    // Our Convention: Building origins are centered on X (width), and extend Forward (height)??
-    // Actually, usually W is X axis, H is Z axis.
-    // Width is usually odd (1, 3). Centered.
-    // Height can be 2. Extends Forward?
-    // Based on FurnaceModel shift plan: Origin is Back. Extends Front.
-    // So Local Center is (0, 0, (h-1)/2).
-
+    // Scale cursor directly to target dimensions
     this.cursorMesh.scale.set(width, 1, height);
 
-    // Calculate Rotation
-    let rot = 0;
-    if (ghostType) {
-      rot = directionToRotation[rotation] ?? 0;
-      // Conveyor special rotation logic handled separately?
-      // For cursor, we just follow building rotation.
-      if (ghostType === "conveyor" && this.conveyorVisualType === "left") {
-        rot -= Math.PI / 2;
-      } else if (
-        ghostType === "conveyor" &&
-        this.conveyorVisualType === "right"
-      ) {
-        rot += Math.PI / 2;
-      }
-    }
-
-    this.cursorMesh.rotation.y = rot;
-
-    // Calculate Offset in World Space
-    // Local Offset: 0, 0, (h - 1) * 0.5
-    // Because Box is centered at 0. We want Box Back Edge at 0?
-    // No, Box Back Edge is at -0.5 (Local).
-    // We want Box Back Edge at -0.5 (Anchor Back Edge)?
-    // Yes. Anchor Tile Back Edge is -0.5.
-    // Box (scaled 2) Back Edge is -1.
-    // So we need to shift +0.5 to align Back Edge (-1) to -0.5.
-    // Wait. -1 + 0.5 = -0.5.
-    // So Shift is +0.5 (for height 2).
-    // General: Shift = (Height - 1) * 0.5.
-
-    const forwardOffset = (height - 1) * 0.5;
-
-    // Rotate offset
-    // rot 0 (North): -Z. But usually North is Back?
-    // If direction="north", rotation=0.
-    // If direction="south", rotation=PI.
-    // In our model, +Z is Front.
-    // So offset is +Z.
-    // Rotate vector (0, 0, offset) by rot.
-
-    const dx = Math.sin(rot) * forwardOffset;
-    const dz = Math.cos(rot) * forwardOffset;
-
-    this.cursorMesh.position.set(baseX + dx, 0.5, baseZ + dz);
+    // Position cursor at the center of the target area
+    // Since Anchor is at baseX, baseZ (Corner of first tile), and centers are at integers.
+    // Center of N tiles starting at X is X + (N-1)/2.
+    this.cursorMesh.position.set(
+      baseX + (width - 1) / 2,
+      0.5,
+      baseZ + (height - 1) / 2,
+    );
+    // Force rotation to 0 as dimensions handle the shape
+    this.cursorMesh.rotation.y = 0;
 
     const color = isValid ? 0xffffff : 0xff0000;
     (this.cursorMesh.material as THREE.LineBasicMaterial).color.setHex(color);
@@ -473,82 +246,46 @@ export class PlacementVisuals {
           mesh = createBatteryModel();
         } else if (ghostType === "furnace") {
           mesh = createFurnaceModel();
-          mesh.scale.set(1.1, 1.1, 1.1); // Match scale from ModelPreview
         }
 
         if (mesh) {
           this.ghostMesh = mesh;
-          this.ghostType = ghostType;
           this.scene.add(this.ghostMesh);
 
-          // Create IO arrows and add them as children of ghost mesh
-          // This way they inherit the ghost's rotation automatically
+          // IO Arrows
           this.ioArrowGroup = this.createIOArrows(ghostType);
           if (this.ioArrowGroup) {
             this.ghostMesh.add(this.ioArrowGroup);
           }
-        } else {
-          // Fallback Generic Box
-          const geometry = new THREE.BoxGeometry(0.8, 1, 0.8);
-          if (ghostType === "electric_pole") {
-            geometry.scale(0.2, 2, 0.2);
-          }
-          const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
-          this.ghostMesh = new THREE.Mesh(geometry, material);
           this.ghostType = ghostType;
-          this.scene.add(this.ghostMesh);
         }
       }
 
       if (this.ghostMesh) {
-        this.ghostMesh.visible = true;
-        this.ghostMesh.position.set(x, 0, y);
+        this.ghostMesh.visible = true; // FIX: Ensure visible if it was hidden previously
 
-        // Apply rotation for all buildings
-        let baseRotation = directionToRotation[rotation] ?? 0;
+        // Ghost Position Logic - Center it on the footprint center
+        // Centers are at integers. Center of N tiles starting at X is X + (N-1)/2.
+        this.ghostMesh.position.set(
+          baseX + (width - 1) / 2,
+          0,
+          baseZ + (height - 1) / 2,
+        );
 
-        // For conveyor turn pieces, apply additional rotation adjustments
+        const rotAngle = directionToRotation[rotation] ?? 0;
+        this.ghostMesh.rotation.y = rotAngle;
+
+        // Helper for Conveyor Rotation?
         if (ghostType === "conveyor") {
-          // Reset scale first for all types except right
+          // Reset scale defaults
           this.ghostMesh.scale.set(1, 1, 1);
 
+          // Conveyor visual rotation overrides
           if (this.conveyorVisualType === "left") {
-            baseRotation -= Math.PI / 2;
+            this.ghostMesh.rotation.y -= Math.PI / 2;
           } else if (this.conveyorVisualType === "right") {
             this.ghostMesh.scale.set(-1, 1, 1); // Mirror for right turns
-            baseRotation += Math.PI / 2;
-          }
-        }
-
-        this.ghostMesh.rotation.y = baseRotation;
-
-        // IO arrows are children of ghostMesh and inherit its rotation automatically
-        // No separate positioning needed
-
-        // Update IO arrow visibility based on connectivity
-        if (this.ioArrowGroup && world) {
-          const config = getBuildingConfig(this.ghostType!);
-          const io = (config as unknown as { io?: IOConfig })?.io;
-
-          if (io) {
-            if (io.hasInput) {
-              const arrow = this.ioArrowGroup.getObjectByName("input_arrow");
-              if (arrow) {
-                const side = io.inputSide || "front";
-                const absDir = getDirectionFromSide(side, rotation);
-                const connected = isPortConnected(world, x, y, absDir, false);
-                arrow.visible = !connected;
-              }
-            }
-            if (io.hasOutput) {
-              const arrow = this.ioArrowGroup.getObjectByName("output_arrow");
-              if (arrow) {
-                const side = io.outputSide || "front";
-                const absDir = getDirectionFromSide(side, rotation);
-                const connected = isPortConnected(world, x, y, absDir, true);
-                arrow.visible = !connected;
-              }
-            }
+            this.ghostMesh.rotation.y += Math.PI / 2;
           }
         }
 
@@ -560,12 +297,17 @@ export class PlacementVisuals {
           opacity: 0.5,
           roughness: 0.5,
           metalness: 0.1,
+          side: THREE.FrontSide, // Fix for "bar" effect (was DoubleSide)
         });
 
         this.ghostMesh.traverse((child) => {
           if (child instanceof THREE.Mesh) {
             // Skip IO arrows - preserve their green/red colors
             if (child.parent?.name === "ghost_io_arrows") return;
+            // Skip input/output arrows explicitly if structure differs
+            if (child.name === "input_arrow" || child.name === "output_arrow")
+              return;
+
             child.material = ghostMat;
           }
         });
@@ -714,6 +456,7 @@ export class PlacementVisuals {
         opacity: 0.5,
         roughness: 0.5,
         metalness: 0.1,
+        side: THREE.DoubleSide, // Fix for negative scale culling
       });
 
       mesh.traverse((child) => {
@@ -763,10 +506,14 @@ export class PlacementVisuals {
     }
     if (this.ghostMesh) {
       this.scene.remove(this.ghostMesh);
+      this.ghostMesh = null;
     }
-    if (this.ioArrowGroup) {
-      this.scene.remove(this.ioArrowGroup);
-    }
+    // ioArrowGroup is a child of ghostMesh, so it's removed with it.
+    // explicit remove from scene would be wrong if it's attached to ghost.
+    this.ioArrowGroup = null;
+
+    this.ghostType = null;
+    this.conveyorVisualType = "straight";
     this.clearConveyorDragPreview();
   }
 }

@@ -1,5 +1,5 @@
-import { IWorld } from "../../entities/types";
-import { Direction, getDirectionOffset } from "./ConveyorLogicSystem";
+import { IWorld, Direction } from "../../entities/types";
+import { getDirectionOffset } from "./ConveyorLogicSystem";
 
 /**
  * CONVEYOR PLACEMENT HELPER
@@ -267,4 +267,44 @@ export function getSegmentDirection(
 
   // Single point: default north
   return "north";
+}
+
+/**
+ * Get the next valid rotation for a conveyor at (x, y), skipping invalid "reverse flow" directions.
+ * @param currentRotation The current rotation direction
+ * @param x World X position
+ * @param y World Y position
+ * @param world World instance
+ * @param clockwise Rotation direction (true = clockwise)
+ * @returns The next valid direction, or the standard next direction if finding a valid one fails
+ */
+export function getNextValidConveyorRotation(
+  currentRotation: Direction,
+  x: number,
+  y: number,
+  world: IWorld,
+  clockwise: boolean = true,
+): Direction {
+  const clockwiseOrder: Direction[] = ["north", "east", "south", "west"];
+  const currentIndex = clockwiseOrder.indexOf(currentRotation);
+
+  // Try to find the next valid rotation (up to 4 steps)
+  for (let step = 1; step <= 4; step++) {
+    const nextIndex = clockwise
+      ? (currentIndex + step) % 4
+      : (currentIndex - step + 4) % 4; // handle negative modulo
+
+    const candidateDir = clockwiseOrder[nextIndex];
+
+    if (isValidConveyorDirection(x, y, candidateDir, world)) {
+      return candidateDir;
+    }
+  }
+
+  // Fallback (e.g. if surrounded by inputs on all sides, shouldn't happen usually)
+  // Just return standard next rotation
+  const fallbackIndex = clockwise
+    ? (currentIndex + 1) % 4
+    : (currentIndex + 3) % 4;
+  return clockwiseOrder[fallbackIndex];
 }

@@ -1,6 +1,6 @@
 import { BuildingEntity } from "../entities/BuildingEntity";
-import { IWorld } from "../entities/types";
-import { IIOBuilding, Direction, getDirectionOffset } from "./BuildingConfig";
+import { IWorld, Direction } from "../entities/types";
+import { IIOBuilding, getDirectionOffset } from "./BuildingConfig";
 
 /**
  * SIMPLIFIED ARROW VISIBILITY RULES:
@@ -110,39 +110,43 @@ export function updateBuildingConnectivity(
     building.isOutputConnected = false;
   }
 
-  // Handle Input - check ALL adjacent neighbors for any output pointing to us
-  // This handles 90° angle connections properly
-  if (io.hasInput) {
-    const directions: Direction[] = ["north", "south", "east", "west"];
-    let isConnected = false;
+  // Handle Input - check if the building at our input position outputs to us
+  // getInputPosition() returns the external tile where feeders should be located
+  if (io.hasInput && "getInputPosition" in building) {
+    const inputPos = (
+      building as unknown as {
+        getInputPosition: () => { x: number; y: number } | null;
+      }
+    ).getInputPosition();
 
-    for (const checkDir of directions) {
-      const offset = getDirectionOffset(checkDir);
-      const neighborX = building.x + offset.dx;
-      const neighborY = building.y + offset.dy;
-      const neighbor = world.getBuilding(neighborX, neighborY);
+    if (inputPos) {
+      // Get the potential feeder at the input position
+      const feeder = world.getBuilding(inputPos.x, inputPos.y);
 
-      if (!neighbor) continue;
-
-      // Check if neighbor has an output that targets our position
-      if ("getOutputPosition" in neighbor) {
-        const neighborOutput = (
-          neighbor as unknown as {
+      if (feeder && "getOutputPosition" in feeder) {
+        const feederOutput = (
+          feeder as unknown as {
             getOutputPosition: () => { x: number; y: number } | null;
           }
         ).getOutputPosition();
-        if (
-          neighborOutput &&
-          neighborOutput.x === building.x &&
-          neighborOutput.y === building.y
-        ) {
-          isConnected = true;
-          break;
-        }
-      }
-    }
 
-    building.isInputConnected = isConnected;
+        if (feederOutput) {
+          // Check if feeder outputs to any tile of our building
+          // (works for both single-tile and multi-tile buildings)
+          const targetBuilding = world.getBuilding(
+            feederOutput.x,
+            feederOutput.y,
+          );
+          building.isInputConnected = targetBuilding === building;
+        } else {
+          building.isInputConnected = false;
+        }
+      } else {
+        building.isInputConnected = false;
+      }
+    } else {
+      building.isInputConnected = false;
+    }
   } else {
     building.isInputConnected = false;
   }
@@ -206,5 +210,10 @@ export function getIOOffset(
       return { dx: w, dy: 0 };
     case "west":
       return { dx: -1, dy: 0 };
+    default: {
+      // Exhaustiveness check
+      const _exhaustiveCheck: never = absDir;
+      return _exhaustiveCheck;
+    }
   }
 }

@@ -110,11 +110,11 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
     let inputDir: "north" | "south" | "east" | "west";
 
     if (this.visualType === "left") {
-      // Left turn: input from right side of output direction
-      inputDir = this.getRotatedDirection(this.direction, 1); // +90°
-    } else if (this.visualType === "right") {
-      // Right turn: input from left side of output direction
+      // Left turn: input from left side of output direction (90° counter-clockwise)
       inputDir = this.getRotatedDirection(this.direction, -1); // -90°
+    } else if (this.visualType === "right") {
+      // Right turn: input from right side of output direction (90° clockwise)
+      inputDir = this.getRotatedDirection(this.direction, 1); // +90°
     } else {
       // Straight: input from back
       inputDir = getOppositeDirection(this.direction);

@@ -73,8 +73,12 @@ export class SelectionIndicator {
     const s2 = 1.0 + Math.cos(time * 3) * 0.05;
     this.ring2.scale.set(s2, s2, 1);
 
-    // Slight rotation for detail
-    this.mesh.rotation.y += 0.02;
+    // Constant rotation only if square (otherwise it wobbles)
+    if (width === height) {
+      this.mesh.rotation.y += 0.02;
+    } else {
+      this.mesh.rotation.y = 0;
+    }
   }
 
   public dispose() {

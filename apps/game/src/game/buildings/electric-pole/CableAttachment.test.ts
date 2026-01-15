@@ -51,25 +51,23 @@ describe("Cable Attachment Logic", () => {
     expect(pN.z).toBeCloseTo(10.5);
 
     // East (-90 deg CW around 10,10)
+    // For a 2x2 Hub, the center is (10.5, 10.5). Rotating around the center keeps it at (10.5, 10.5).
+    // The "local" offset is 0 for Hub.
     hub.direction = "east";
     const pE = getCableAttachmentPoint(hub, 10, 10);
-    // (0.5, 0.5) rotated -90 deg -> (0.5, -0.5)
-    // World: 10 + 0.5, 10 - 0.5 = 10.5, 9.5
     expect(pE.x).toBeCloseTo(10.5);
-    expect(pE.z).toBeCloseTo(9.5);
+    expect(pE.z).toBeCloseTo(10.5);
 
     // South (180 deg)
     hub.direction = "south";
     const pS = getCableAttachmentPoint(hub, 10, 10);
-    // (0.5, 0.5) rotated 180 deg -> (-0.5, -0.5)
-    expect(pS.x).toBeCloseTo(9.5);
-    expect(pS.z).toBeCloseTo(9.5);
+    expect(pS.x).toBeCloseTo(10.5);
+    expect(pS.z).toBeCloseTo(10.5);
 
     // West (90 deg CCW)
     hub.direction = "west";
     const pW = getCableAttachmentPoint(hub, 10, 10);
-    // (0.5, 0.5) rotated 90 deg -> (-0.5, 0.5)
-    expect(pW.x).toBeCloseTo(9.5);
+    expect(pW.x).toBeCloseTo(10.5);
     expect(pW.z).toBeCloseTo(10.5);
   });
 

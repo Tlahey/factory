@@ -1,6 +1,7 @@
 import { TileType, WORLD_HEIGHT, WORLD_WIDTH } from "../constants";
 import { useGameStore } from "../state/store";
-import { BuildingEntity, Direction4 } from "../entities/BuildingEntity";
+import { BuildingEntity } from "../entities/BuildingEntity";
+import { Direction } from "../entities/types";
 import { Extractor } from "../buildings/extractor/Extractor";
 import { Conveyor } from "../buildings/conveyor/Conveyor";
 import { Chest } from "../buildings/chest/Chest";
@@ -19,8 +20,8 @@ import { getAllowedCount } from "../buildings/hub/shop/ShopConfig";
 import {
   getDirectionOffset,
   getOppositeDirection,
-  Direction,
 } from "../buildings/conveyor/ConveyorLogicSystem";
+import { isValidConveyorDirection } from "../buildings/conveyor/ConveyorPlacementHelper";
 import { updateBuildingConnectivity } from "../buildings/BuildingIOHelper";
 
 import { Tile } from "./Tile";
@@ -118,7 +119,12 @@ export class World implements IWorld {
     return false;
   }
 
-  public canPlaceBuilding(x: number, y: number, type: string): boolean {
+  public canPlaceBuilding(
+    x: number,
+    y: number,
+    type: string,
+    direction: Direction = "north",
+  ): boolean {
     if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) return false;
 
     // Check Max Count Limits
@@ -137,8 +143,20 @@ export class World implements IWorld {
       return false;
     }
 
-    const width = config?.width || 1;
-    const height = config?.height || 1;
+    // Check Conveyor Direction Validity (No reverse flow)
+    if (
+      type === "conveyor" &&
+      !isValidConveyorDirection(x, y, direction, this)
+    ) {
+      console.log(
+        `[World] Placement failed: Invalid conveyor direction (Reverse Flow) at ${x},${y}`,
+      );
+      return false;
+    }
+
+    const isRotated = direction === "east" || direction === "west";
+    const width = isRotated ? config?.height || 1 : config?.width || 1;
+    const height = isRotated ? config?.width || 1 : config?.height || 1;
 
     // Check bounds
     if (x + width > WORLD_WIDTH || y + height > WORLD_HEIGHT) {
@@ -147,7 +165,7 @@ export class World implements IWorld {
     }
 
     // Create dummy for validation
-    const dummy = createBuildingLogic(type, x, y);
+    const dummy = createBuildingLogic(type, x, y, direction);
     if (!dummy) {
       console.log(
         `[World] Placement failed: Could not create dummy logic for ${type}`,
@@ -342,7 +360,7 @@ export class World implements IWorld {
     x: number,
     y: number,
     type: string,
-    direction: Direction4 = "north",
+    direction: Direction = "north",
     skipValidation: boolean = false,
   ): boolean {
     const key = `${x},${y}`;
@@ -350,7 +368,7 @@ export class World implements IWorld {
 
     if (!skipValidation) {
       // Validate first
-      if (!this.canPlaceBuilding(x, y, type)) return false;
+      if (!this.canPlaceBuilding(x, y, type, direction)) return false;
     }
 
     // ... imports
@@ -626,7 +644,7 @@ export class World implements IWorld {
       console.log(`Deserializing ${worldData.buildings.length} buildings...`);
       worldData.buildings.forEach((bData: SerializedBuilding) => {
         // Cast direction to Direction8 (handles both old 4-dir and new 8-dir saves)
-        const dir = bData.direction as Direction4;
+        const dir = bData.direction as Direction;
         this.placeBuilding(bData.x, bData.y, bData.type, dir, true);
 
         // Restore internal state

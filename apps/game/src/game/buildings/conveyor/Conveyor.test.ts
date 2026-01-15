@@ -248,12 +248,14 @@ describe("Conveyor Orientation & Flow", () => {
     });
 
     test("tracks input connectivity", () => {
+      // Conveyor facing east at (1, 0). Its input position is (0, 0).
+      // Extractor at (0, 0) which IS the input position, outputs to (1, 0) which is the conveyor
       const ext = new MockEntity("extractor", 0, 0, "east");
       const c = new Conveyor(1, 0, "east");
-      world.add(c); // Add conveyor first
-      world.add(ext as unknown as MockEntity); // Cast to MockEntity which is accepted
+      world.add(c);
+      world.add(ext as unknown as MockEntity);
 
-      // Mock getOutputPosition for extractor
+      // Mock getOutputPosition for extractor - outputs to (1, 0) which is the conveyor
       (
         ext as unknown as {
           getOutputPosition: () => { x: number; y: number } | null;

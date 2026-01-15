@@ -47,8 +47,7 @@ export default function FurnaceDashboard({
   }, []);
 
   const handleRecipeSelect = (recipeId: string) => {
-    // eslint-disable-next-line
-    furnace.selectedRecipeId = recipeId;
+    furnace.setRecipe(recipeId);
     setIsDropdownOpen(false);
     forceUpdate((n) => n + 1);
   };

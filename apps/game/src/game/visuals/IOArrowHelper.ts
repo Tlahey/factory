@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { BuildingEntity } from "../entities/BuildingEntity";
-import type { IIOBuilding, Direction } from "../buildings/BuildingConfig";
+import type { IIOBuilding, IOConfig } from "../buildings/BuildingConfig";
+import type { Direction } from "../entities/types";
 
 /**
  * IO Arrow Helper
@@ -125,34 +126,31 @@ function getSideDirection(
 }
 
 /**
- * Create IO arrows for a building element.
+ * Create IO arrows from a configuration object (static).
+ * Used for ghosts/previews where no entity exists.
  */
-export function createIOArrows(
-  building: BuildingEntity & IIOBuilding,
+export function createIOArrowsFromConfig(
+  io: IOConfig,
+  width: number,
+  height: number,
 ): THREE.Group {
   const group = new THREE.Group();
   group.name = "io_arrows";
 
-  const io = building.io;
-  if (!io.showArrow) return group;
+  if (!io || !io.showArrow) return group;
 
-  // Defaults
-  const width = building.width || 1;
-  const height = building.height || 1;
   const margin = 0.2; // Distance from edge
 
-  // Helper to get distance from center to edge based on side and dimensions
-  // Local Space: Center of First Tile is (0,0).
-  // Front (-Z) Edge: -0.5
-  // Back (+Z) Edge: Height - 0.5
+  // Local Space: Footprint Center is (0,0,0).
+  // Front (-Z) Edge: -Height/2
+  // Back (+Z) Edge: +Height/2
   // Left (-X) Edge: -Width/2
-  // Right (+X) Edge: Width/2
+  // Right (+X) Edge: +Width/2
   const getDistanceForSide = (side: "front" | "back" | "left" | "right") => {
     switch (side) {
       case "front":
-        return 0.5 + margin;
       case "back":
-        return height - 0.5 + margin;
+        return height / 2 + margin;
       case "left":
       case "right":
         return width / 2 + margin;
@@ -175,7 +173,8 @@ export function createIOArrows(
     inputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
     inputArrow.rotation.y = rotation;
     inputArrow.name = "input_arrow";
-    inputArrow.visible = !building.isInputConnected;
+    // Always visible by default in static creation
+    inputArrow.visible = true;
 
     group.add(inputArrow);
   }
@@ -193,10 +192,34 @@ export function createIOArrows(
     outputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
     outputArrow.rotation.y = rotation;
     outputArrow.name = "output_arrow";
-    outputArrow.visible = !building.isOutputConnected;
+    // Always visible by default in static creation
+    outputArrow.visible = true;
 
     group.add(outputArrow);
   }
+
+  return group;
+}
+
+/**
+ * Create IO arrows for a building element.
+ */
+export function createIOArrows(
+  building: BuildingEntity & IIOBuilding,
+): THREE.Group {
+  const io = building.io;
+  const config = building.getConfig();
+  const width = (config && config.width) || 1;
+  const height = (config && config.height) || 1;
+
+  const group = createIOArrowsFromConfig(io, width, height);
+
+  // Set initial visibility state based on connection
+  const inputArrow = group.getObjectByName("input_arrow");
+  if (inputArrow) inputArrow.visible = !building.isInputConnected;
+
+  const outputArrow = group.getObjectByName("output_arrow");
+  if (outputArrow) outputArrow.visible = !building.isOutputConnected;
 
   return group;
 }
@@ -211,16 +234,17 @@ export function updateIOArrows(
   const io = building.io;
 
   // Reuse logic: Distance from center to edge based on side and dimensions
-  const width = building.width || 1;
-  const height = building.height || 1;
+  // Use CONFIG dimensions for local space consistency
+  const config = building.getConfig();
+  const width = (config && config.width) || 1;
+  const height = (config && config.height) || 1;
   const margin = 0.2;
 
   const getDistanceForSide = (side: "front" | "back" | "left" | "right") => {
     switch (side) {
       case "front":
-        return 0.5 + margin;
       case "back":
-        return height - 0.5 + margin;
+        return height / 2 + margin;
       case "left":
       case "right":
         return width / 2 + margin;
@@ -230,6 +254,9 @@ export function updateIOArrows(
   // Update input arrow
   const inputArrow = arrowGroup.getObjectByName("input_arrow");
   if (inputArrow && io.hasInput) {
+    // Re-verify position in case visual got out of sync, or just update visibility
+    // But since config doesn't change runtime, just visibility is enough usually.
+    // However, if we want to be robust:
     const inputSide = io.inputSide || "front";
     const inputDir = getSideDirection(inputSide);
     const rotation = getDirectionRotation(inputDir);

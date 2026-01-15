@@ -61,27 +61,31 @@ describe("Chest IO & Storage", () => {
   });
 
   describe("IO Connectivity", () => {
-    test("input is connected when an outputting building is in front", () => {
+    test("input is connected when feeder at input position outputs to us", () => {
       // Chest at (5,5) facing north. Input is at (5,4).
+      // Feeder at (5,4) outputs to (5,5) which is the chest
       const mockConveyor = {
         x: 5,
         y: 4,
-        getOutputPosition: () => ({ x: 5, y: 5 }),
+        getOutputPosition: () => ({ x: 5, y: 5 }), // outputs to chest's position
       };
 
+      world.buildings.set("5,5", chest as unknown as BuildingEntity);
       world.buildings.set("5,4", mockConveyor as unknown as BuildingEntity);
 
       chest.tick(0, world as unknown as IWorld);
       expect(chest.isInputConnected).toBe(true);
     });
 
-    test("input is disconnected when neighbor is facing away", () => {
+    test("input is disconnected when feeder outputs away", () => {
+      // Feeder at (5,4) outputs to (5,3) - away from chest
       const mockConveyor = {
         x: 5,
         y: 4,
         getOutputPosition: () => ({ x: 5, y: 3 }), // points away from chest
       };
 
+      world.buildings.set("5,5", chest as unknown as BuildingEntity);
       world.buildings.set("5,4", mockConveyor as unknown as BuildingEntity);
 
       chest.tick(0, world as unknown as IWorld);

@@ -123,7 +123,7 @@ export class GameApp {
         this.syncBuildings();
         this.powerSystem.rebuildNetworks();
       },
-      (x, y, isValid, ghostBuilding, rotation) => {
+      (x, y, isValid, ghostBuilding, rotation, width, height) => {
         this.placementVisuals.update(
           x,
           y,
@@ -131,6 +131,8 @@ export class GameApp {
           ghostBuilding ?? null,
           rotation ?? "north",
           this.world,
+          width ?? 1,
+          height ?? 1,
         );
       },
       (start, end, isValid) => {
@@ -797,25 +799,35 @@ export class GameApp {
       if (!visual) {
         try {
           visual = createBuildingVisual(building.getType(), building, context);
-
-          // Common Positioning
-          visual.mesh.position.set(building.x, 0, building.y);
-
-          // Apply generic rotation for non-conveyors (ConveyorVisual handles its own)
-          if (building.getType() !== "conveyor") {
-            if (building.direction === "east")
-              visual.mesh.rotation.y = -Math.PI / 2;
-            else if (building.direction === "west")
-              visual.mesh.rotation.y = Math.PI / 2;
-            else if (building.direction === "south")
-              visual.mesh.rotation.y = Math.PI;
-            else if (building.direction === "north") visual.mesh.rotation.y = 0;
-          }
-
           this.scene.add(visual.mesh);
           this.visuals.set(key, visual);
         } catch (e) {
           console.warn(`Failed to create visual for ${building.getType()}`, e);
+        }
+      }
+
+      if (visual) {
+        // Common Positioning
+        // Center Positioning (calculate current footprint dimensions)
+        // BuildingEntity.width/height are already swapped if rotated, so use them directly.
+        const finalWidth = building.width;
+        const finalHeight = building.height;
+        // Centers are at integers. Center of N tiles starting at X is X + (N-1)/2.
+        visual.mesh.position.set(
+          building.x + (finalWidth - 1) / 2,
+          0,
+          building.y + (finalHeight - 1) / 2,
+        );
+
+        // Apply generic rotation for non-conveyors (ConveyorVisual handles its own)
+        if (building.getType() !== "conveyor") {
+          if (building.direction === "east")
+            visual.mesh.rotation.y = -Math.PI / 2;
+          else if (building.direction === "west")
+            visual.mesh.rotation.y = Math.PI / 2;
+          else if (building.direction === "south")
+            visual.mesh.rotation.y = Math.PI;
+          else if (building.direction === "north") visual.mesh.rotation.y = 0;
         }
       }
     });
@@ -981,6 +993,7 @@ export class GameApp {
       const [sx, sy] = openedKey.split(",").map(Number);
       const b = this.world.getBuilding(sx, sy);
       if (b) {
+        // BuildingEntity.width/height are already swapped if rotated
         this.selectionIndicator.update(b.x, b.y, b.width, b.height);
       } else {
         this.selectionIndicator.update(sx, sy);

@@ -6,9 +6,12 @@ import {
   calculateConveyorPath,
   getSegmentDirection,
 } from "../buildings/conveyor/ConveyorPathHelper";
-import { isValidConveyorDirection } from "../buildings/conveyor/ConveyorPlacementHelper";
+import {
+  isValidConveyorDirection,
+  getNextValidConveyorRotation,
+} from "../buildings/conveyor/ConveyorPlacementHelper";
 import { Conveyor } from "../buildings/conveyor/Conveyor";
-import { Direction4 } from "../entities/BuildingEntity";
+import { Direction } from "../entities/types";
 import { getBuildingConfig } from "../buildings/BuildingConfig";
 import { getAllowedCount } from "../buildings/hub/shop/ShopConfig";
 import { ElectricPole } from "../buildings/electric-pole/ElectricPole";
@@ -27,7 +30,9 @@ export class InputSystem {
     y: number,
     isValid?: boolean,
     ghostBuilding?: string | null,
-    rotation?: Direction4,
+    rotation?: Direction,
+    width?: number,
+    height?: number,
   ) => void;
   private onCableDrag?: (
     start: { x: number; y: number } | null,
@@ -45,14 +50,14 @@ export class InputSystem {
   ) => void;
   private onConveyorDrag?: (
     path: { x: number; y: number; isValid: boolean }[],
-    rotation: Direction4,
+    rotation: Direction,
   ) => void;
   private onInteract?: (x: number, y: number, buildingId: string) => void;
 
   // Camera Controls
   private isDragging = false;
   private previousMousePosition = { x: 0, y: 0 };
-  private currentRotation: Direction4 = "north";
+  private currentRotation: Direction = "north";
 
   // Bound listeners for proper removal
   private boundOnPointerDown = this.onPointerDown.bind(this);
@@ -73,7 +78,9 @@ export class InputSystem {
       y: number,
       isValid?: boolean,
       ghostBuilding?: string | null,
-      rotation?: Direction4,
+      rotation?: Direction,
+      width?: number,
+      height?: number,
     ) => void,
     onCableDrag?: (
       start: { x: number; y: number } | null,
@@ -91,7 +98,7 @@ export class InputSystem {
     ) => void,
     onConveyorDrag?: (
       path: { x: number; y: number; isValid: boolean }[],
-      rotation: Direction4,
+      rotation: Direction,
     ) => void,
     onInteract?: (x: number, y: number, buildingId: string) => void,
   ) {
@@ -209,6 +216,7 @@ export class InputSystem {
     }
     if (e.key === "r") {
       this.rotateSelection();
+      this.triggerRefreshHover();
     }
     if (e.key === "s") {
       const current = useGameStore.getState().selectedBuilding;
@@ -225,12 +233,55 @@ export class InputSystem {
   }
 
   private rotateSelection(clockwise: boolean = true) {
-    const clockwiseOrder: Direction4[] = ["north", "east", "south", "west"];
+    const clockwiseOrder: Direction[] = ["north", "east", "south", "west"];
     const currentIndex = clockwiseOrder.indexOf(this.currentRotation);
+    const selectedBuilding = useGameStore.getState().selectedBuilding;
+
+    // Special handling for Conveyor to skip invalid (reverse) directions
+    if (selectedBuilding === "conveyor" && this.lastHoverPosition) {
+      const { x, y } = this.lastHoverPosition;
+      this.currentRotation = getNextValidConveyorRotation(
+        this.currentRotation,
+        x,
+        y,
+        this.world,
+        clockwise,
+      );
+      return;
+    }
+
     if (clockwise) {
       this.currentRotation = clockwiseOrder[(currentIndex + 1) % 4];
     } else {
       this.currentRotation = clockwiseOrder[(currentIndex + 3) % 4]; // -1 mod 4
+    }
+  }
+
+  private triggerRefreshHover() {
+    if (this.lastHoverPosition && this.onHover) {
+      const { x, y, ghost } = this.lastHoverPosition;
+      const config = ghost ? getBuildingConfig(ghost) : null;
+      const isRotated =
+        this.currentRotation === "east" || this.currentRotation === "west";
+      const width = config?.width ?? 1;
+      const height = config?.height ?? 1;
+      const finalWidth = isRotated ? height : width;
+      const finalHeight = isRotated ? width : height;
+
+      // Re-validate validity based on new rotation
+      const isValid = ghost
+        ? this.world.canPlaceBuilding(x, y, ghost, this.currentRotation)
+        : true;
+
+      this.onHover(
+        x,
+        y,
+        isValid,
+        ghost,
+        this.currentRotation,
+        finalWidth,
+        finalHeight,
+      );
     }
   }
 
@@ -585,12 +636,23 @@ export class InputSystem {
               isValid,
               ghost,
             };
+
+            const isRotated =
+              this.currentRotation === "east" ||
+              this.currentRotation === "west";
+            const width = config?.width ?? 1;
+            const height = config?.height ?? 1;
+            const finalWidth = isRotated ? height : width;
+            const finalHeight = isRotated ? width : height;
+
             this.onHover(
               intersection.x,
               intersection.y,
               isValid,
               ghost,
               this.currentRotation,
+              finalWidth,
+              finalHeight,
             );
           } else {
             // Check for existing building to hover
@@ -601,14 +663,31 @@ export class InputSystem {
             const building = key
               ? this.world.getBuilding(intersection.x, intersection.y)
               : null;
-            useGameStore.getState().setHoveredEntityKey(building ? key : null);
+
+            // Fix: Use building anchor for hover key
+            const hoverKey = building ? `${building.x},${building.y}` : null;
+            useGameStore.getState().setHoveredEntityKey(hoverKey);
+
+            // BuildingEntity.width/height are already swapped if rotated, use directly.
+            const finalWidth = building ? building.width : 1;
+            const finalHeight = building ? building.height : 1;
 
             this.onHover(
-              intersection && intersection.x >= 0 ? intersection.x : -1,
-              intersection && intersection.x >= 0 ? intersection.y : -1,
+              building
+                ? building.x
+                : intersection && intersection.x >= 0
+                  ? intersection.x
+                  : -1,
+              building
+                ? building.y
+                : intersection && intersection.x >= 0
+                  ? intersection.y
+                  : -1,
               true,
               null,
-              this.currentRotation,
+              building ? building.direction : this.currentRotation,
+              finalWidth,
+              finalHeight,
             );
             if (this.onDeleteHover) this.onDeleteHover(null);
           }
@@ -871,7 +950,7 @@ export class InputSystem {
         const prev = i > 0 ? path[i - 1] : null;
         const isLast = i === path.length - 1;
 
-        let direction: Direction4;
+        let direction: Direction;
 
         // For the LAST conveyor, use user's rotation (scroll wheel)
         // This allows user to control the end direction of the chain
@@ -976,7 +1055,10 @@ export class InputSystem {
       if (selectedBuilding === "select") {
         const building = this.world.getBuilding(gridX, gridY);
         if (building && building.hasInteractionMenu()) {
-          useGameStore.getState().setOpenedEntityKey(`${gridX},${gridY}`);
+          // Fix: Use building anchor coordinates for the key
+          useGameStore
+            .getState()
+            .setOpenedEntityKey(`${building.x},${building.y}`);
         } else {
           useGameStore.getState().setOpenedEntityKey(null);
         }
@@ -1188,9 +1270,8 @@ export class InputSystem {
       }
 
       // Recall onHover to update ghost rotation (only if NOT dragging conveyor)
-      if (!this.isDraggingConveyor && this.lastHoverPosition && this.onHover) {
-        const { x, y, isValid, ghost } = this.lastHoverPosition;
-        this.onHover(x, y, isValid, ghost, this.currentRotation);
+      if (!this.isDraggingConveyor) {
+        this.triggerRefreshHover();
       }
       return;
     }

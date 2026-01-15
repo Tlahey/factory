@@ -46,8 +46,9 @@ export abstract class BuildingEntity extends Entity {
 
     const config = this.getConfig();
     if (config) {
-      this.width = config.width ?? 1;
-      this.height = config.height ?? 1;
+      const isRotated = direction === "east" || direction === "west";
+      this.width = isRotated ? (config.height ?? 1) : (config.width ?? 1);
+      this.height = isRotated ? (config.width ?? 1) : (config.height ?? 1);
     }
   }
 
@@ -58,7 +59,18 @@ export abstract class BuildingEntity extends Entity {
       south: "west",
       west: "north",
     };
+    const oldDir = this.direction;
     this.direction = clockwise[this.direction];
+
+    // Swap dimensions if orientation changes (Vertical <-> Horizontal)
+    const wasHorizontal = oldDir === "east" || oldDir === "west";
+    const isHorizontal = this.direction === "east" || this.direction === "west";
+
+    if (wasHorizontal !== isHorizontal) {
+      const tmp = this.width;
+      this.width = this.height;
+      this.height = tmp;
+    }
   }
 
   public update(delta: number): void {

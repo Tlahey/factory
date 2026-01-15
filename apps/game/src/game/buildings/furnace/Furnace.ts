@@ -1,14 +1,8 @@
 import { BuildingEntity } from "../../entities/BuildingEntity";
 import { IWorld, Direction } from "../../entities/types";
-import {
-  IIOBuilding,
-  IPowered,
-  PowerConfig,
-  getDirectionFromSide,
-  getDirectionOffset,
-} from "../BuildingConfig";
+import { IIOBuilding, IPowered, PowerConfig } from "../BuildingConfig";
 import { FURNACE_RECIPES, FurnaceConfigType, Recipe } from "./FurnaceConfig";
-import { updateBuildingConnectivity } from "../BuildingIOHelper";
+import { updateBuildingConnectivity, getIOOffset } from "../BuildingIOHelper";
 import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
 import { Conveyor } from "../conveyor/Conveyor";
 import { Chest } from "../chest/Chest";
@@ -38,6 +32,10 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
 
   constructor(x: number, y: number, direction: Direction = "north") {
     super(x, y, "furnace", direction);
+  }
+
+  public setRecipe(recipeId: string | null): void {
+    this.selectedRecipeId = recipeId;
   }
 
   public tick(delta: number, world?: IWorld): void {
@@ -245,17 +243,28 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
 
   public getInputPosition(): { x: number; y: number } | null {
     if (!this.io.hasInput) return null;
-    // Input is 'back' relative to direction.
-    // We need to calculate world pos for 'back'.
-    const backDir = getDirectionFromSide("back", this.direction);
-    const offset = getDirectionOffset(backDir);
+    const inputSide = this.io.inputSide || "front";
+    // Config: width/height
+    const config = this.getConfig() as FurnaceConfigType;
+    const offset = getIOOffset(
+      inputSide,
+      this.direction,
+      config.width,
+      config.height,
+    );
     return { x: this.x + offset.dx, y: this.y + offset.dy };
   }
 
   public getOutputPosition(): { x: number; y: number } | null {
     if (!this.io.hasOutput) return null;
-    const frontDir = this.direction; // Automatic output usually front
-    const offset = getDirectionOffset(frontDir);
+    const outputSide = this.io.outputSide || "front";
+    const config = this.getConfig() as FurnaceConfigType;
+    const offset = getIOOffset(
+      outputSide,
+      this.direction,
+      config.width,
+      config.height,
+    );
     return { x: this.x + offset.dx, y: this.y + offset.dy };
   }
 

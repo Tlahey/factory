@@ -33,8 +33,7 @@ export function FurnacePanel({
   }, []);
 
   const handleRecipeSelect = (recipeId: string) => {
-    // eslint-disable-next-line
-    building.selectedRecipeId = recipeId;
+    building.setRecipe(recipeId);
     setIsDropdownOpen(false);
     forceUpdate((n) => n + 1);
   };

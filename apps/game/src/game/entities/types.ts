@@ -2,6 +2,9 @@ import { BuildingEntity } from "./BuildingEntity";
 import { Tile } from "../core/Tile";
 import { TileType } from "../constants";
 
+export type Direction = "north" | "south" | "east" | "west";
+export const DIRECTIONS: Direction[] = ["north", "south", "east", "west"];
+
 export interface IEntity {
   id: string;
   x: number;

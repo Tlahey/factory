@@ -11,18 +11,16 @@ import { createHubModel } from "../buildings/hub/HubModel";
 import { createBatteryModel } from "../buildings/battery/BatteryModel";
 import { createElectricPoleModel } from "../buildings/electric-pole/ElectricPoleModel";
 import { createFurnaceModel } from "../buildings/furnace/FurnaceModel";
-import { Direction4 } from "../entities/BuildingEntity";
 import {
   getBuildingConfig,
   IOConfig,
-  Direction,
   getDirectionFromSide,
 } from "../buildings/BuildingConfig";
-import { IWorld } from "../entities/types";
+import { IWorld, Direction } from "../entities/types";
 import { isPortConnected } from "../buildings/BuildingIOHelper";
 
 // 4-direction rotation mapping
-const directionToRotation: Record<Direction4, number> = {
+const directionToRotation: Record<Direction, number> = {
   north: 0,
   east: -Math.PI / 2,
   south: Math.PI,
@@ -255,12 +253,12 @@ export class PlacementVisuals {
   private detectConveyorTurnType(
     x: number,
     y: number,
-    outputDirection: Direction4,
+    outputDirection: Direction,
     world: IWorld,
   ): "straight" | "left" | "right" {
     // Check all 4 directions for a building whose output points to our position
-    const directions: Direction4[] = ["north", "south", "east", "west"];
-    const offsets: Record<Direction4, { dx: number; dy: number }> = {
+    const directions: Direction[] = ["north", "south", "east", "west"];
+    const offsets: Record<Direction, { dx: number; dy: number }> = {
       north: { dx: 0, dy: -1 },
       south: { dx: 0, dy: 1 },
       east: { dx: 1, dy: 0 },
@@ -289,7 +287,7 @@ export class PlacementVisuals {
         ) {
           // Found input source!
           // flowIn = neighbor's direction (the direction flow is traveling)
-          const flowIn = neighbor.direction as Direction4;
+          const flowIn = neighbor.direction as Direction;
           // flowOut = our output direction
           const flowOut = outputDirection;
 
@@ -307,8 +305,8 @@ export class PlacementVisuals {
    * Calculate turn type based on flow directions (same logic as ConveyorLogicSystem.calculateTurnType)
    */
   private calculateTurnTypeLocal(
-    flowIn: Direction4,
-    flowOut: Direction4,
+    flowIn: Direction,
+    flowOut: Direction,
   ): "straight" | "left" | "right" {
     if (flowIn === flowOut) {
       return "straight";
@@ -316,8 +314,8 @@ export class PlacementVisuals {
 
     // Turn mappings: given flowIn, which direction is left/right
     const turnMappings: Record<
-      Direction4,
-      { left: Direction4; right: Direction4 }
+      Direction,
+      { left: Direction; right: Direction }
     > = {
       north: { left: "west", right: "east" },
       south: { left: "east", right: "west" },
@@ -343,7 +341,7 @@ export class PlacementVisuals {
     y: number,
     isValid: boolean = true,
     ghostType: string | null = null,
-    rotation: Direction4 = "north",
+    rotation: Direction = "north",
     world?: IWorld,
   ) {
     if (x < 0 || y < 0) {
@@ -585,7 +583,7 @@ export class PlacementVisuals {
    */
   public updateConveyorDragPreview(
     path: { x: number; y: number; isValid: boolean }[],
-    rotation: Direction4 = "north",
+    rotation: Direction = "north",
   ) {
     // Clear existing drag meshes
     this.clearConveyorDragPreview();
@@ -614,7 +612,7 @@ export class PlacementVisuals {
       const isSingle = path.length === 1;
 
       // Determine direction and conveyor type
-      let direction: Direction4;
+      let direction: Direction;
       let conveyorType: "straight" | "left" | "right" = "straight";
 
       if (isSingle) {
@@ -633,7 +631,7 @@ export class PlacementVisuals {
           next!.y,
           null,
           null,
-        ) as Direction4;
+        ) as Direction;
         conveyorType = "straight"; // First element is always straight
         console.log(
           `[DEBUG] Segment ${i} FIRST: dir=${direction}, type=${conveyorType}`,
@@ -648,7 +646,7 @@ export class PlacementVisuals {
           segment.y,
           null,
           null,
-        ) as Direction4;
+        ) as Direction;
         conveyorType = this.calculateTurnTypeLocal(prevDirection, direction);
         console.log(
           `[DEBUG] Segment ${i} LAST: prevDir=${prevDirection}, dir=${direction}, type=${conveyorType}`,
@@ -662,7 +660,7 @@ export class PlacementVisuals {
           next!.y,
           prev!.x,
           prev!.y,
-        ) as Direction4;
+        ) as Direction;
         conveyorType = detectConveyorType(
           prev!.x,
           prev!.y,

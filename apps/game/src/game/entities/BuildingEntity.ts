@@ -5,13 +5,11 @@ import {
   BuildingConfig,
   PowerConfig,
 } from "../buildings/BuildingConfig";
-import type { IWorld } from "./types";
-
-export type Direction4 = "north" | "south" | "east" | "west";
+import { Direction, IWorld } from "./types";
 
 export abstract class BuildingEntity extends Entity {
   public buildingType: string;
-  public direction: Direction4 = "north";
+  public direction: Direction = "north";
 
   public width: number = 1;
   public height: number = 1;
@@ -40,7 +38,7 @@ export abstract class BuildingEntity extends Entity {
     x: number,
     y: number,
     buildingType: string,
-    direction: Direction4 = "north",
+    direction: Direction = "north",
   ) {
     super(x, y, "building");
     this.buildingType = buildingType;
@@ -54,7 +52,7 @@ export abstract class BuildingEntity extends Entity {
   }
 
   public rotate(): void {
-    const clockwise: Record<Direction4, Direction4> = {
+    const clockwise: Record<Direction, Direction> = {
       north: "east",
       east: "south",
       south: "west",

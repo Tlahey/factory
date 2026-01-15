@@ -3,7 +3,7 @@ import { BuildingEntity } from "../entities/BuildingEntity";
 import { IWorld } from "../entities/types";
 import { updateBuildingConnectivity } from "./BuildingIOHelper";
 import { IIOBuilding, IOConfig } from "./BuildingConfig";
-import { Direction4 } from "../entities/BuildingEntity";
+import { Direction } from "../entities/types";
 
 // Minimal mock implementation of an IO building
 class MockBuilding extends BuildingEntity implements IIOBuilding {
@@ -11,7 +11,7 @@ class MockBuilding extends BuildingEntity implements IIOBuilding {
   public isInputConnected: boolean = false;
   public isOutputConnected: boolean = false;
 
-  constructor(x: number, y: number, direction: Direction4, io: IOConfig) {
+  constructor(x: number, y: number, direction: Direction, io: IOConfig) {
     super(x, y, "mock", direction);
     this.io = io;
   }

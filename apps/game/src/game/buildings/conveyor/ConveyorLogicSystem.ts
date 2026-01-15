@@ -1,4 +1,4 @@
-import { IWorld } from "../../entities/types";
+import { IWorld, Direction, DIRECTIONS } from "../../entities/types";
 
 /**
  * CONVEYOR LOGIC SYSTEM
@@ -12,7 +12,6 @@ import { IWorld } from "../../entities/types";
  * See CONVEYOR_SPEC.md for complete rules and requirements
  */
 
-export type Direction = "north" | "south" | "east" | "west";
 export type ConveyorTurnType = "straight" | "left" | "right";
 
 /**
@@ -159,7 +158,7 @@ export function findOutputDestination(
   excludeDirection: Direction | null,
   world: IWorld,
 ): Direction | null {
-  const directions: Direction[] = ["north", "south", "east", "west"];
+  const directions = DIRECTIONS;
 
   for (const checkDir of directions) {
     // Don't go back toward input source
@@ -214,12 +213,7 @@ export function determineFlowInputDirection(
   myDirection: "north" | "south" | "east" | "west",
   world: IWorld,
 ): "north" | "south" | "east" | "west" | null {
-  const directions: Array<"north" | "south" | "east" | "west"> = [
-    "north",
-    "south",
-    "east",
-    "west",
-  ];
+  const directions = DIRECTIONS;
 
   for (const checkDir of directions) {
     // Don't check the direction we are outputting to

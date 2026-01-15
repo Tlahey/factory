@@ -1,14 +1,13 @@
 import { Tile } from "../../core/Tile";
-import { BuildingEntity, Direction4 } from "../../entities/BuildingEntity";
+import { BuildingEntity } from "../../entities/BuildingEntity";
 import {
   getDirectionOffset,
   getOppositeDirection,
   determineFlowInputDirection,
   calculateTurnType,
 } from "./ConveyorLogicSystem";
-import { IWorld } from "../../entities/types";
-import { Chest } from "../chest/Chest";
-import { Furnace } from "../furnace/Furnace";
+import { IWorld, Direction } from "../../entities/types";
+
 import {
   IIOBuilding,
   ConveyorConfigType,
@@ -17,7 +16,7 @@ import {
 import { updateBuildingConnectivity } from "../BuildingIOHelper";
 
 export class Conveyor extends BuildingEntity implements IIOBuilding {
-  constructor(x: number, y: number, direction: Direction4 = "north") {
+  constructor(x: number, y: number, direction: Direction = "north") {
     super(x, y, "conveyor", direction);
   }
 
@@ -72,14 +71,13 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
           this.itemId = null;
           this.transportProgress = 0;
         }
-      } else if (targetBuilding instanceof Chest) {
-        if (targetBuilding.addItem(this.currentItem!)) {
-          this.currentItem = null;
-          this.itemId = null;
-          this.transportProgress = 0;
-        }
-      } else if (targetBuilding instanceof Furnace) {
-        if (targetBuilding.addItem(this.currentItem!)) {
+      } else if (
+        "addItem" in targetBuilding &&
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        typeof (targetBuilding as any).addItem === "function"
+      ) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((targetBuilding as any).addItem(this.currentItem!)) {
           this.currentItem = null;
           this.itemId = null;
           this.transportProgress = 0;
@@ -127,16 +125,8 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
   }
 
   /** Rotate direction by 90° increments. steps > 0 = clockwise */
-  private getRotatedDirection(
-    dir: "north" | "south" | "east" | "west",
-    steps: number,
-  ): "north" | "south" | "east" | "west" {
-    const order: Array<"north" | "south" | "east" | "west"> = [
-      "north",
-      "east",
-      "south",
-      "west",
-    ];
+  private getRotatedDirection(dir: Direction, steps: number): Direction {
+    const order: Direction[] = ["north", "east", "south", "west"];
     const index = order.indexOf(dir);
     const newIndex = (index + steps + 4) % 4;
     return order[newIndex];
@@ -194,10 +184,6 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
   public tryOutput(world: IWorld): boolean {
     this.moveItem(world);
     return this.currentItem === null; // Success if item moved
-  }
-
-  public autoOrient(_world: IWorld): void {
-    // Deprecated: Orientation is now handled globally by World.updateConveyorNetwork()
   }
 
   public getColor(): number {

@@ -1,5 +1,5 @@
-import { BuildingEntity, Direction4 } from "../../entities/BuildingEntity";
-import { IWorld } from "../../entities/types";
+import { BuildingEntity } from "../../entities/BuildingEntity";
+import { IWorld, Direction } from "../../entities/types";
 import {
   IIOBuilding,
   IPowered,
@@ -36,7 +36,7 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
   public currentPowerDraw: number = 0;
   public currentPowerSatisfied: number = 0;
 
-  constructor(x: number, y: number, direction: Direction4 = "north") {
+  constructor(x: number, y: number, direction: Direction = "north") {
     super(x, y, "furnace", direction);
   }
 

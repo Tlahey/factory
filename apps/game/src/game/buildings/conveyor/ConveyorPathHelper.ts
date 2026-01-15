@@ -3,7 +3,7 @@
  * Provides path calculation using Bresenham's line algorithm and direction detection.
  */
 
-type Direction = "north" | "south" | "east" | "west";
+import { Direction } from "../../entities/types";
 type PathSegment = { x: number; y: number };
 
 /**

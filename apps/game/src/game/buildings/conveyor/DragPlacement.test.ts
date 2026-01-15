@@ -3,7 +3,7 @@ import {
   getSegmentDirection,
   calculateConveyorPath,
 } from "./ConveyorPathHelper";
-import { Direction4 } from "../../entities/BuildingEntity";
+import { Direction } from "../../entities/types";
 
 // Mock World and Conveyor needed?
 // getSegmentDirection is a pure function, so we can test it directly.
@@ -68,9 +68,9 @@ describe("Conveyor Drag Placement Logic", () => {
 
     const simulatePlacement = (
       path: { x: number; y: number }[],
-      userRotation: Direction4,
+      userRotation: Direction,
     ) => {
-      const placements: { x: number; y: number; dir: Direction4 }[] = [];
+      const placements: { x: number; y: number; dir: Direction }[] = [];
 
       for (let i = 0; i < path.length; i++) {
         const current = path[i];
@@ -78,7 +78,7 @@ describe("Conveyor Drag Placement Logic", () => {
         const prev = i > 0 ? path[i - 1] : null;
         const isLast = i === path.length - 1;
 
-        let direction: Direction4;
+        let direction: Direction;
         if (isLast) {
           direction = userRotation;
         } else {
@@ -89,7 +89,7 @@ describe("Conveyor Drag Placement Logic", () => {
             next ? next.y : null,
             prev ? prev.x : null,
             prev ? prev.y : null,
-          ) as Direction4;
+          ) as Direction;
         }
         placements.push({ x: current.x, y: current.y, dir: direction });
       }

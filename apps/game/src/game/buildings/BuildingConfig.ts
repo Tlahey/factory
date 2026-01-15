@@ -5,7 +5,7 @@ import { HUB_CONFIG } from "./hub/HubConfig";
 import { ELECTRIC_POLE_CONFIG } from "./electric-pole/ElectricPoleConfig";
 import { BATTERY_CONFIG, BatteryConfigType } from "./battery/BatteryConfig";
 import { FURNACE_CONFIG, FurnaceConfigType } from "./furnace/FurnaceConfig";
-import { IWorld } from "../entities/types";
+import { IWorld, Direction } from "../entities/types";
 
 export interface PowerConfig {
   type: "consumer" | "producer" | "relay";
@@ -142,8 +142,6 @@ export interface IIOBuilding {
   isInputConnected?: boolean;
   isOutputConnected?: boolean;
 }
-
-export type Direction = "north" | "south" | "east" | "west";
 
 /**
  * Convert a relative IOSide to an absolute world direction based on the building's facing direction.

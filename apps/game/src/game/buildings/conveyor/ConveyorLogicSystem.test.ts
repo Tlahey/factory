@@ -6,8 +6,8 @@ import {
   getDirectionOffset,
   findOutputDestination,
   determineFlowInputDirection,
-  Direction,
 } from "./ConveyorLogicSystem";
+import { Direction } from "../../entities/types";
 
 class MockEntity {
   x: number;

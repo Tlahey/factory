@@ -10,7 +10,7 @@ interface ChestPanelProps {
   building: Chest;
   onDragStart: (
     e: React.DragEvent,
-    source: "chest" | "inventory",
+    source: string,
     index: number,
     slot: InventorySlot,
   ) => void;

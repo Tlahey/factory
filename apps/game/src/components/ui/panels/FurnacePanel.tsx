@@ -10,7 +10,7 @@ interface FurnacePanelProps {
   building: Furnace;
   onDragStart?: (
     e: React.DragEvent,
-    source: "chest" | "inventory",
+    source: string,
     index: number,
     slot: { type: string; count: number },
   ) => void;

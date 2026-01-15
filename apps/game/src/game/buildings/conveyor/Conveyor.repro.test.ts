@@ -31,6 +31,15 @@ class MockWorld implements IWorld {
     return { isStone: () => false, isWater: () => false };
   }
   setTile(_x: number, _y: number, _tile: any): void {}
+  getTiles() {
+    return [];
+  }
+  getConnectionsCount() {
+    return 0;
+  }
+  getBuildingConnectionsCount() {
+    return 0;
+  }
   hasPathTo(
     _startX: number,
     _startY: number,

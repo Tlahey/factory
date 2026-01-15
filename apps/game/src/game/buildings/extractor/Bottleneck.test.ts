@@ -49,6 +49,15 @@ class MockWorld implements IWorld {
   ): boolean {
     return true;
   }
+  getTiles() {
+    return Array.from(this.tiles.values());
+  }
+  getConnectionsCount() {
+    return 0;
+  }
+  getBuildingConnectionsCount() {
+    return 0;
+  }
 }
 
 class MockExtractor extends Extractor {

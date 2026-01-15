@@ -155,7 +155,9 @@ describe("BuildingInfoPanel", () => {
   });
 
   test("renders content for Extractor", async () => {
-    mockGetBuilding.mockReturnValue(new Extractor());
+    mockGetBuilding.mockReturnValue(
+      new Extractor(0, 0) as unknown as Extractor,
+    );
 
     const { getByTestId } = render(<BuildingInfoPanel />);
 
@@ -168,7 +170,7 @@ describe("BuildingInfoPanel", () => {
   });
 
   test("renders HubDashboard for Hub", async () => {
-    mockGetBuilding.mockReturnValue(new Hub());
+    mockGetBuilding.mockReturnValue(new Hub(0, 0) as unknown as Hub);
 
     const { getByTestId } = render(<BuildingInfoPanel />);
 
@@ -180,7 +182,9 @@ describe("BuildingInfoPanel", () => {
   });
 
   test("closes panel on button click", async () => {
-    mockGetBuilding.mockReturnValue(new Extractor());
+    mockGetBuilding.mockReturnValue(
+      new Extractor(0, 0) as unknown as Extractor,
+    );
 
     render(<BuildingInfoPanel />);
 

@@ -153,7 +153,7 @@ export default function BuildingInfoPanel() {
 
   const handleDragStart = (
     e: React.DragEvent,
-    source: "chest" | "inventory",
+    source: string,
     index: number,
     slot: InventorySlot,
   ) => {

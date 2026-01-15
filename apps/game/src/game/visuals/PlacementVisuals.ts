@@ -366,8 +366,8 @@ export class PlacementVisuals {
     if (ghostType) {
       const config = getBuildingConfig(ghostType);
       if (config) {
-        width = config.width;
-        height = config.height;
+        width = config.width || 1;
+        height = config.height || 1;
       }
     }
 

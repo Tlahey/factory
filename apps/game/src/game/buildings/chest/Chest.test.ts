@@ -142,7 +142,7 @@ describe("Chest IO & Storage", () => {
       expect(chest.slots[0].count).toBe(4);
     });
 
-    test("tryOutput does not push to unresolved conveyor", async () => {
+    test("tryOutput pushes item to unresolved conveyor", async () => {
       const { Conveyor } = await import("../conveyor/Conveyor");
 
       chest.addItem("iron", 5);
@@ -156,9 +156,9 @@ describe("Chest IO & Storage", () => {
 
       chest.tick(0.1, world as unknown as IWorld);
 
-      // Item should NOT be pushed
-      expect(conveyor.currentItem).toBeNull();
-      expect(chest.slots[0].count).toBe(5);
+      // Item SHOULD be pushed
+      expect(conveyor.currentItem).toBe("iron");
+      expect(chest.slots[0].count).toBe(4);
     });
 
     test("tryOutput does not push to full conveyor", async () => {

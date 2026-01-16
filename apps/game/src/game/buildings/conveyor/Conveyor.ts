@@ -39,7 +39,7 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
       updateBuildingConnectivity(this, world);
     }
 
-    if (!this.currentItem || !this.isResolved) return;
+    if (!this.currentItem) return;
 
     this.transportProgress += this.transportSpeed * delta;
 
@@ -60,29 +60,27 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
 
     const targetBuilding = world.getBuilding(tx, ty);
 
-    if (targetBuilding) {
-      if (targetBuilding instanceof Conveyor && !targetBuilding.currentItem) {
-        // Push only to resolved conveyors
-        if (targetBuilding.isResolved) {
-          targetBuilding.currentItem = this.currentItem;
-          targetBuilding.itemId = this.itemId;
-          // Preserve overflow time for smooth transition
-          targetBuilding.transportProgress = this.transportProgress - 1;
-          this.currentItem = null;
-          this.itemId = null;
-          this.transportProgress = 0;
-        }
-      } else if (
-        "addItem" in targetBuilding &&
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        typeof (targetBuilding as any).addItem === "function"
-      ) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if ((targetBuilding as any).addItem(this.currentItem!)) {
-          this.currentItem = null;
-          this.itemId = null;
-          this.transportProgress = 0;
-        }
+    if (targetBuilding instanceof Conveyor) {
+      if (!targetBuilding.currentItem) {
+        targetBuilding.currentItem = this.currentItem;
+        targetBuilding.itemId = this.itemId;
+        // Preserve overflow time for smooth transition
+        targetBuilding.transportProgress = this.transportProgress - 1;
+        this.currentItem = null;
+        this.itemId = null;
+        this.transportProgress = 0;
+      }
+    } else if (
+      targetBuilding &&
+      "addItem" in targetBuilding &&
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      typeof (targetBuilding as any).addItem === "function"
+    ) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((targetBuilding as any).addItem(this.currentItem!)) {
+        this.currentItem = null;
+        this.itemId = null;
+        this.transportProgress = 0;
       }
     }
 
@@ -168,7 +166,7 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
     if (!target) return false;
 
     if (target instanceof Conveyor) {
-      return target.isResolved && !target.currentItem;
+      return !target.currentItem;
     }
 
     if (

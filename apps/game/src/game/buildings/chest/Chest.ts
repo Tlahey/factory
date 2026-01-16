@@ -167,8 +167,8 @@ export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
     if (!target) return false;
 
     if (target instanceof Conveyor) {
-      // Only push to resolved conveyors with no current item
-      if (target.isResolved && !target.currentItem) {
+      // Only push to conveyors with no current item
+      if (!target.currentItem) {
         const itemToOutput = this.slots[0].type;
         target.currentItem = itemToOutput;
         target.itemId = Math.floor(Math.random() * 1000000);

@@ -202,12 +202,6 @@ Le modèle du batiment montrera une presse qui tappe vers le sol (TODO: trouver 
 
 ---
 
-Les ressources nécessaire pour constuire un batiments s'affichent au dessus de la barre en bas quand je sélectionne le batiment ou quand le le hover sur le batiment
-
-- Il n'y a plus de tooltip qui affiche les ressources nécessaires
-
----
-
 Au hover des batiments qui craft des éléments comme la fournaise, on affiche la ressource en train d'être crafté au hover avec en background la progression (background transition de la gauche vers la droite)
 
 ---

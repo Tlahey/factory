@@ -131,4 +131,25 @@ describe("Conveyor Item Transport", () => {
     expect(c1.currentItem).toBeNull();
     expect(chest.inputs).toContain("iron_ore");
   });
+
+  test("Moves item to next conveyor even if NOT resolved", () => {
+    // C1 (0,0) -> C2 (0,-1)
+    const c1 = new Conveyor(0, 0, "north");
+    const c2 = new Conveyor(0, -1, "north");
+
+    c1.isResolved = false;
+    c2.isResolved = false;
+
+    world.add(c1);
+    world.add(c2);
+
+    c1.currentItem = "coal";
+    c1.transportProgress = 0.95;
+
+    // Delta 0.1 should move it
+    c1.tick(0.1, world as unknown as IWorld);
+
+    expect(c1.currentItem).toBeNull();
+    expect(c2.currentItem).toBe("coal");
+  });
 });

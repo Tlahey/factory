@@ -9,6 +9,7 @@ import {
 import {
   isValidConveyorDirection,
   getNextValidConveyorRotation,
+  determineConveyorDirection,
 } from "../buildings/conveyor/ConveyorPlacementHelper";
 import { Conveyor } from "../buildings/conveyor/Conveyor";
 import { Direction } from "../entities/types";
@@ -606,10 +607,25 @@ export class InputSystem {
             selectedBuilding !== "select" &&
             selectedBuilding !== "cable"
           ) {
+            if (
+              selectedBuilding === "conveyor" &&
+              (!this.lastHoverPosition ||
+                this.lastHoverPosition.x !== intersection.x ||
+                this.lastHoverPosition.y !== intersection.y)
+            ) {
+              this.currentRotation = determineConveyorDirection(
+                intersection.x,
+                intersection.y,
+                this.world,
+                this.currentRotation,
+              );
+            }
+
             isValid = this.world.canPlaceBuilding(
               intersection.x,
               intersection.y,
               selectedBuilding,
+              this.currentRotation,
             );
 
             // Check Locked & Cost for red ghost

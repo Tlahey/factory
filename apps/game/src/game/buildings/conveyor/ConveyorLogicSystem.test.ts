@@ -67,6 +67,11 @@ class MockEntity {
     const offset = offsets[backDir];
     return { x: this.x + offset.dx, y: this.y + offset.dy };
   }
+
+  canInput(fromX: number, fromY: number): boolean {
+    const inputPos = this.getInputPosition();
+    return !!inputPos && inputPos.x === fromX && inputPos.y === fromY;
+  }
 }
 
 class MockWorld {
@@ -166,9 +171,12 @@ describe("ConveyorLogicSystem", () => {
     });
 
     test("Finds chest", () => {
-      const chest = new MockEntity("chest", 1, 0, "north");
+      // For findOutputDestination to find a chest, the chest must have an input port
+      // at the conveyor's position.
+      // Conveyor at 0,0. Chest at (1,0) (East).
+      // MockEntity input is BEHIND. So if chest faces East, input is West (0,0).
+      const chest = new MockEntity("chest", 1, 0, "east");
       world.add(chest);
-      // Conveyor at 0,0. Chest at East.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const dir = findOutputDestination(0, 0, null, world as any);
       expect(dir).toBe("east");
@@ -184,7 +192,8 @@ describe("ConveyorLogicSystem", () => {
     });
 
     test("Excludes input direction", () => {
-      const chest = new MockEntity("chest", 1, 0, "north");
+      // Conveyor at 0,0. Chest at 1,0 (East). Input at 0,0.
+      const chest = new MockEntity("chest", 1, 0, "east");
       world.add(chest);
       // Test: Chest at East.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -197,7 +206,7 @@ describe("ConveyorLogicSystem", () => {
 
     // Complex Scenarios: Priority
     test("Priority: Chooses North neighbor over South neighbor", () => {
-      // North Neighbor: Chest
+      // North Neighbor: Chest at (0, -1). Facing North, so input at (0, 0).
       const chest = new MockEntity("chest", 0, -1, "north");
       world.add(chest);
 
@@ -212,8 +221,8 @@ describe("ConveyorLogicSystem", () => {
     });
 
     test("Priority: Chooses South neighbor over East neighbor", () => {
-      // South Neighbor: Chest
-      const chest = new MockEntity("chest", 0, 1, "north");
+      // South Neighbor: Chest at (0, 1). Facing South, so input at (0, 0).
+      const chest = new MockEntity("chest", 0, 1, "south");
       world.add(chest);
 
       // East Neighbor: Conveyor

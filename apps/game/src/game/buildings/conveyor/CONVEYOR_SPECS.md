@@ -41,7 +41,7 @@ This document details the functional specifications for the Conveyor building in
   - Chest (stores items).
   - Hub (sells items).
   - Other machines (Furnace, etc.) inputs.
-- **Resolution:** A conveyor is considered "Resolved" (`isResolved = true`) only if it eventually leads to a valid sink (Chest, Hub, Machine). Unresolved conveyors do not move items.
+- **Resolution:** A conveyor is considered "Resolved" (`isResolved = true`) only if it eventually leads to a valid sink (Chest, Hub, Machine). However, **non-resolved conveyors still transport items** as long as they have a valid path forward. Resolution is primarily a visual hint for the player.
 
 ## 3. Visuals
 

@@ -112,7 +112,14 @@ function findAvailableInputSource(
       "isOutputConnected" in neighbor &&
       (neighbor as { isOutputConnected: boolean }).isOutputConnected === true;
 
-    if (isOutputConnected) continue;
+    if (isOutputConnected) {
+      // Lenient check: if the output is already connected to a conveyor at OUR position,
+      // we still count it as a source (this happens during ghost preview/rotation)
+      const existingAtUs = world.getBuilding(x, y);
+      if (existingAtUs?.getType() !== "conveyor") {
+        continue;
+      }
+    }
 
     // Get the flow direction from the neighbor
     // IMPORANT: Instead of using neighbor.direction (which might be North while output is South for a Chest),
@@ -180,7 +187,9 @@ function findAvailableOutputTarget(
 
     if (hasGetInputPosition) {
       const inputPos = (
-        neighbor as { getInputPosition: () => { x: number; y: number } | null }
+        neighbor as unknown as {
+          getInputPosition: () => { x: number; y: number } | null;
+        }
       ).getInputPosition();
 
       // Check if the building's input port is at OUR position
@@ -190,7 +199,16 @@ function findAvailableOutputTarget(
           "isInputConnected" in neighbor &&
           (neighbor as { isInputConnected: boolean }).isInputConnected === true;
 
-        if (!isInputConnected) {
+        let available = !isInputConnected;
+        if (isInputConnected) {
+          // Lenient check: if input is from a conveyor at OUR position, it's still a valid target
+          const existingAtUs = world.getBuilding(x, y);
+          if (existingAtUs?.getType() === "conveyor") {
+            available = true;
+          }
+        }
+
+        if (available) {
           // Distinguish between conveyors and other buildings for orientation logic
           if (neighborType === "conveyor") {
             return { direction: checkDir, type: "conveyor" };
@@ -215,7 +233,15 @@ function findAvailableOutputTarget(
           "isInputConnected" in neighbor &&
           (neighbor as { isInputConnected: boolean }).isInputConnected === true;
 
-        if (!isInputConnected) {
+        let available = !isInputConnected;
+        if (isInputConnected) {
+          const existingAtUs = world.getBuilding(x, y);
+          if (existingAtUs?.getType() === "conveyor") {
+            available = true;
+          }
+        }
+
+        if (available) {
           return { direction: checkDir, type: "conveyor" };
         }
       }

@@ -7,6 +7,7 @@ import {
   detectConveyorType,
   getSegmentDirection,
 } from "../buildings/conveyor/ConveyorPathHelper";
+import { determineFlowInputDirection } from "../buildings/conveyor/ConveyorLogicSystem";
 import { createHubModel } from "../buildings/hub/HubModel";
 import { createBatteryModel } from "../buildings/battery/BatteryModel";
 import { createElectricPoleModel } from "../buildings/electric-pole/ElectricPoleModel";
@@ -81,45 +82,12 @@ export class PlacementVisuals {
     outputDirection: Direction,
     world: IWorld,
   ): "straight" | "left" | "right" {
-    // Check all 4 directions for a building whose output points to our position
-    const directions: Direction[] = ["north", "south", "east", "west"];
-    const offsets: Record<Direction, { dx: number; dy: number }> = {
-      north: { dx: 0, dy: -1 },
-      south: { dx: 0, dy: 1 },
-      east: { dx: 1, dy: 0 },
-      west: { dx: -1, dy: 0 },
-    };
+    // Determine where flow is coming FROM at this position
+    const flowIn = determineFlowInputDirection(x, y, outputDirection, world);
 
-    for (const checkDir of directions) {
-      const offset = offsets[checkDir];
-      const neighborX = x + offset.dx;
-      const neighborY = y + offset.dy;
-      const neighbor = world.getBuilding(neighborX, neighborY);
-
-      if (!neighbor) continue;
-
-      // Check if neighbor has an output that targets our position
-      if ("getOutputPosition" in neighbor) {
-        const getOutputPos = neighbor as {
-          getOutputPosition: () => { x: number; y: number } | null;
-        };
-        const neighborOutput = getOutputPos.getOutputPosition();
-
-        if (
-          neighborOutput &&
-          neighborOutput.x === x &&
-          neighborOutput.y === y
-        ) {
-          // Found input source!
-          // flowIn = neighbor's direction (the direction flow is traveling)
-          const flowIn = neighbor.direction as Direction;
-          // flowOut = our output direction
-          const flowOut = outputDirection;
-
-          // Use same logic as Conveyor.updateVisualState
-          return this.calculateTurnTypeLocal(flowIn, flowOut);
-        }
-      }
+    if (flowIn) {
+      // flowOut = our output direction
+      return this.calculateTurnTypeLocal(flowIn, outputDirection);
     }
 
     // No adjacent input source found, default to straight

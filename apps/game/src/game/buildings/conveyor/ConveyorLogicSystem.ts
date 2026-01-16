@@ -178,12 +178,20 @@ export function findOutputDestination(
 
     const neighborType = neighbor.getType();
 
-    // Valid destinations: ANY conveyor or chest
-    if (neighborType === "chest") {
-      return checkDir; // Output toward chest
-    } else if (neighborType === "conveyor") {
+    // Valid destinations: ANY conveyor or building with an input port at this position
+    if (neighborType === "conveyor") {
       // Don't check isResolved - we want to connect to ANY conveyor
       return checkDir; // Output toward conveyor
+    } else if (
+      hasInputPortAt(
+        neighbor as unknown as {
+          getInputPosition?: () => { x: number; y: number } | null;
+        },
+        conveyorX,
+        conveyorY,
+      )
+    ) {
+      return checkDir; // Output toward building input
     }
   }
 
@@ -239,14 +247,23 @@ export function determineFlowInputDirection(
     )
       continue;
 
-    // Any building with output pointing at us is a valid input source
-    const neighborDirection = neighbor.direction as
-      | "north"
-      | "south"
-      | "east"
-      | "west";
+    // For conveyors, we can use their direction
+    if (neighbor.getType() === "conveyor") {
+      return neighbor.direction as "north" | "south" | "east" | "west";
+    }
 
-    return neighborDirection;
+    // For other buildings, the flow direction is FROM the neighbor TO us
+    const dx = conveyorX - neighborX;
+    const dy = conveyorY - neighborY;
+
+    if (dy === -1) return "north";
+    if (dy === 1) return "south";
+    if (dx === 1) return "east";
+    if (dx === -1) return "west";
+
+    return (
+      (neighbor.direction as "north" | "south" | "east" | "west") || "north"
+    );
   }
 
   return null;

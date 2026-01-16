@@ -9,11 +9,8 @@ import { Hub } from "../buildings/hub/Hub";
 import { Battery } from "../buildings/battery/Battery";
 import { ElectricPole } from "../buildings/electric-pole/ElectricPole";
 import { Furnace } from "../buildings/furnace/Furnace";
-import {
-  getBuildingConfig,
-  ChestConfigType,
-  IIOBuilding,
-} from "../buildings/BuildingConfig";
+import { getBuildingConfig, IIOBuilding } from "../buildings/BuildingConfig";
+import { ChestConfigType } from "../buildings/chest/ChestConfig";
 import { createBuildingLogic } from "../buildings/BuildingFactory";
 import { IWorld, WorldData, SerializedBuilding } from "../entities/types";
 import { getAllowedCount } from "../buildings/hub/shop/ShopConfig";
@@ -233,10 +230,18 @@ export class World implements IWorld {
       if (b instanceof Conveyor) b.isResolved = false;
     });
 
-    // 2. Propagate resolution backwards from Chests
+    // 2. Propagate resolution backwards from all sinks (buildings that can receive input)
     const queue: { x: number; y: number }[] = [];
     this.buildings.forEach((b) => {
-      if (b instanceof Chest) queue.push({ x: b.x, y: b.y });
+      if (b instanceof Conveyor) return; // Conveyors are intermediate
+      if ("canInput" in b) {
+        // Add all tiles of the building as potential sink origins
+        for (let dx = 0; dx < b.width; dx++) {
+          for (let dy = 0; dy < b.height; dy++) {
+            queue.push({ x: b.x + dx, y: b.y + dy });
+          }
+        }
+      }
     });
 
     const processed = new Set<string>();
@@ -260,11 +265,19 @@ export class World implements IWorld {
         const neighbor = this.getBuilding(nx, ny);
 
         if (neighbor && neighbor instanceof Conveyor) {
-          // If the conveyor points at us (x, y), mark it resolved
+          // If the conveyor points at us (x, y), check if it's a valid connection
           if (neighbor.direction === d.dir) {
-            if (!neighbor.isResolved) {
-              neighbor.isResolved = true;
-              queue.push({ x: nx, y: ny });
+            // Validate that the sink building at (x, y) accepts input from (nx, ny)
+            const sinkBuilding = this.getBuilding(x, y);
+            if (
+              sinkBuilding &&
+              "canInput" in sinkBuilding &&
+              (sinkBuilding as unknown as IIOBuilding).canInput(nx, ny)
+            ) {
+              if (!neighbor.isResolved) {
+                neighbor.isResolved = true;
+                queue.push({ x: nx, y: ny });
+              }
             }
           }
         }
@@ -350,7 +363,8 @@ export class World implements IWorld {
     // Update Store
     useGameStore.getState().updateBuildingCount(building.getType(), -1);
 
-    // Update Network
+    // Update Network & Connectivity
+    this.updateNeighborConnectivity(x, y);
     this.updateConveyorNetwork();
 
     return true;
@@ -524,7 +538,8 @@ export class World implements IWorld {
 
             if (neighbor) {
               const nType = neighbor.getType();
-              if (nType === "conveyor" || nType === "chest") {
+              // Can snap to anything that can receive input
+              if (nType === "conveyor" || "canInput" in neighbor) {
                 conv.direction = dir;
                 break;
               }

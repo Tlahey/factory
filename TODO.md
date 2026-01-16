@@ -199,3 +199,51 @@ Le modèle du batiment montrera une presse qui tappe vers le sol (TODO: trouver 
 - Pour 1 iron Ingot -> 4secondes = 1 Iron Rod
 - Les améliorations pourront être acheté dans le HUB pour accélérer le processus
 - Des plans pourront être acheté dans le HUB pour avoir plus de possibilité de craft
+
+---
+
+Les ressources nécessaire pour constuire un batiments s'affichent au dessus de la barre en bas quand je sélectionne le batiment ou quand le le hover sur le batiment
+
+- Il n'y a plus de tooltip qui affiche les ressources nécessaires
+
+---
+
+Au hover des batiments qui craft des éléments comme la fournaise, on affiche la ressource en train d'être crafté au hover avec en background la progression (background transition de la gauche vers la droite)
+
+---
+
+Crée un batiment tour qui quand il est placé va augmenter la vision autour de lui sous forme de zone en cercle. Sur cette zone on y génèra des ressources aléatoirement.
+
+- Pour des raisons d'équilibre on ne mettra pas les plus grosses ressources mais d'autres.
+- Plus on s'éloignera du HUB de départ, plus on aura des ressources rare.
+
+---
+
+On va essayer une nouvelle méthode pour le drag and drop des convoyeurs.
+
+- L'objectif n'est plus de faire un drag and drop pour placer un ensemble d'un coup mais sur les placer dès lors qu'on reste appuyé sur la souris.
+- Exemple, je positionne la souris sur un point, ça crée le convoyeur, je la glisse dans un sens, il me créer les autre convoyeurs directement à la position de la souris et ça en continue.
+
+---
+
+Ajouter le bois en ressource
+
+- Il faut créer un modèle qui ressemble à un arbre (il faudra le faire à la taille par rapport aux reste)
+- Un arbre doit être une ressource commune.
+- On définira une notion de rareté par rapport aux ressources pour éviter qu'on ait des ressources trop facilement disponibles.
+- Les arbres seront récupérable via une scierie (qui n'est pas encore développé)
+- Les arbres seront en groupe entre 1 et 3 arbres. On les placera aléatoirement sur la map.
+- Le bois est une ressource qui s'épuise progressivement mais la ressource contiendra beaucoup de bois (paramétrable et aléatoire)
+- Au fur et à mesure que le bois est récupéré, le modèle de la ressource sera modifié en réduisant sa taille par le haut (gérer via le % restant)
+
+---
+
+Création de la Centrale à Biomasse qui permet de générer de l'énergie grâce à la biomasse.
+
+- On pourra lui donner du bois pour gérer cette ressource.
+- Chaque morceau de bois va prendre 5 secondes à se consommer.
+- Pour améliorer la centrale, on pourra acheter des améliorations dans le HUB.
+- La centrale génèra du courant qu'on va devoir réinjecter dans le réseau grâce à aux câbles
+- La centrale aura aussi un bouton on / off pour activer/desactiver la centrale. Et donc ne plus consommer de bois
+- La centrale généra une faible quantité d'énergie par seconde (au allentour de 20 et cette valeur fluctura)
+- On reprendra le même affichage que pour le HUB pour voir la quantité d'énergie produit

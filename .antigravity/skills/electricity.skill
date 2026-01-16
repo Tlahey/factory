@@ -1,0 +1,53 @@
+---
+name: electricity
+description: Technical breakdown of the game's power grid system: generation, consumption, battery storage, and circuit breaking.
+---
+
+# Electricity System Skill
+
+This skill explains how electric power is managed, balanced, and distributed across the factory.
+
+## Power Grids (Networks)
+
+Power is distributed via a **Grid-based System** (not a global pool). Multiple separate grids can exist in the world.
+
+### 1. Grid Formation
+A grid is formed by connecting buildings together using **Cables**.
+- **Nodes**: Any building implementing `IPowered` or acting as a connector (Relay/Electric Pole).
+- **Recalculation**: Grids are rebuilt (`rebuildNetworks`) whenever a cable is placed/removed or a building is added/destroyed.
+- **Traversal**: The system uses a Breadth-First Search (BFS) to find all connected buildings.
+
+### 2. Circuit Breakers (Disjoncteurs)
+Batteries double as **Circuit Breakers**.
+- **Disabled State**: If a Battery is toggled to "OFF", the power system stops traversal at that tile.
+- **Grid Splitting**: Turning off a battery physically separates the power network into two distinct grids, effectively acting as a master switch or fuse.
+
+## Power Balancing Logic
+
+The `PowerSystem` calculates the balance for each grid every tick.
+
+### 1. Production vs. Demand
+The system aggregates:
+- **Total Generation ($G$):** Sum of all producers (Hubs, Biomass Burners, etc.).
+- **Total Demand ($D$):** Sum of all active consumers (Extractors, Furnaces).
+
+### 2. Battery Dynamics
+Batteries act as a buffer between generation and demand.
+- **Surplus ($G > D$):** Surplus power is distributed among batteries. They charge at a rate up to their `maxChargeRate`.
+- **Deficit ($G < D$):** Batteries discharge to cover the gap. The system attempts to maintain 100% satisfaction as long as battery stored energy is available.
+
+### 3. Satisfaction Factor
+The **Satisfaction ($S$)** is a value between 0 and 1 that defines how well the grid's demand is met.
+- If $(G + \text{Discharge}) \ge D$, then $S = 1.0$.
+- If $(G + \text{Discharge}) < D$, then $S = \text{TotalAvailable} / D$.
+- **Impact**: Machines typically slow down or stop working if $S < 1.0$.
+
+## Implementation Protocols
+
+- **Status Updates**: Every tick, the system calls `updatePowerStatus(satisfaction, hasSource, gridId)` on all powered entities.
+- **Global History**: The Hub stores a rolling history (last 60 seconds) of the grid's production and consumption for UI visualization.
+- **Biomass Burner (New)**: New generation buildings should implement `IPowered` with `type: "producer"` and handle their internal fuel logic before returning a value in `getPowerGeneration()`.
+
+## Tips for Scaling
+- **Relays**: Electric poles have much larger connection ranges than standard buildings but consume no power themselves. Use them to bridge long distances.
+- **Isolating Grids**: Use batteries or physical cable gaps to prevent a high-demand consumer (like a heavy furnace array) from "tripping" the power to critical infrastructure like the Hub.

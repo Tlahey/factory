@@ -1,0 +1,54 @@
+---
+name: skill-tree
+description: Architecture and logic of the HUB's Skill Tree system, covering progression, unlocks, and global stat multipliers.
+---
+
+# Skill Tree System Skill
+
+This skill documents the architecture of the HUB's Skill Tree, which serves as the primary progression system for the game.
+
+## Architecture Overview
+
+The system is split into **Configuration** (Static Graph) and **Management** (Runtime Logic).
+
+### 1. Static Graph (`SkillTreeConfig.ts`)
+The tree is a directed graph defined as an array of `SkillNode` objects.
+- **Root Node**: The starting point of the entire tree (the Hub itself).
+- **Node Types**:
+    - `unlock`: Marks a building as available for purchase/placement.
+    - `upgrade`: Adds bonuses (multipliers/additives) to an existing building.
+    - `tech`: Acts as a milestone or "gate" for further progression.
+- **Dependencies**: Each node lists its prerequisites in the `requires` array.
+
+### 2. Runtime Management (`SkillTreeManager.ts`)
+A singleton manager handles the business logic and provides the bridge between the skill tree state and the game world.
+
+#### Progression Lifecycle:
+1.  **Visibility**: A node is visible in the UI if it is already unlocked OR if all its prerequisites are unlocked.
+2.  **Validation**: `canUnlock` checks prerequisites; `canAfford` checks player inventory against `getNodeCost`.
+3.  **Start Unlock**: Deducts resources and initiates a timer if `unlockDuration > 0`.
+4.  **Completion**: Once the timer elapses, the node ID is added to the `unlockedSkills` array in the global store.
+
+## Global Stat Application
+
+The Skill Tree affects building behavior globally. It does NOT modify building instances directly; instead, buildings query the manager during their `tick()`.
+
+### Multipliers vs. Additives
+- **Multipliers**: Used for rates (e.g., `extractionRate`, `transportSpeed`).
+    - Formula: $ActualValue = BaseValue \times Multiplier$
+- **Additives**: Used for capacities (e.g., `maxSlots`, `maxConnections`).
+    - Formula: $ActualValue = BaseValue + Bonus$
+
+### Querying Stats
+Buildings should use the `skillTreeManager` to get their current stats:
+```typescript
+const multiplier = skillTreeManager.getStatMultiplier("conveyor", "speed");
+const speed = baseSpeed * multiplier;
+```
+
+## Integration Rules
+
+1.  **Never Hardcode Costs**: Costs for upgrades should be defined in the building's own configuration (e.g., `ExtractorConfig.ts`) and referenced by the manager.
+2.  **Persistence**: The state of the skill tree (unlocked IDs and pending progress) MUST be part of the `useGameStore` to be saved and loaded correctly.
+3.  **Incremental Levels**: Upgrades for a building must follow a linear level progression (Level 1 must be unlocked before Level 2).
+4.  **Visual Positioning**: The `position` property in `SkillNode` uses a grid-based coordinate system for the UI render engine. Ensure new nodes don't overlap.

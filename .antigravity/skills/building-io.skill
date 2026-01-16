@@ -1,0 +1,68 @@
+---
+name: building-io
+description: Detailed explanation of the IIOBuilding interface and the logic for connecting inputs and outputs between buildings.
+---
+
+# Building IO System Skill
+
+This skill explains the technical implementation of item transfers and port connectivity via the `IIOBuilding` interface.
+
+## The IIOBuilding Interface
+
+Any building that interacts with items (production, storage, logistics) MUST implement `IIOBuilding`. This interface standardizes how buildings identify their "ports" in world space.
+
+### Core Properties
+- `io`: A configuration object (`hasInput`, `hasOutput`, `inputSide`, `outputSide`).
+- `isInputConnected` / `isOutputConnected`: Boolean flags updated by the simulation to track active connections.
+
+### Core Methods
+- `getInputPosition()`: Returns the world coordinates `{x, y}` of the cell that feeds into this building's input.
+- `getOutputPosition()`: Returns the world coordinates `{x, y}` of the cell where this building's output port targets.
+- `canInput(fromX, fromY)`: Validates if an item coming from a specific coordinate is allowed to enter.
+- `canOutput(world)`: Checks if the target location is ready and able to receive an item.
+- `tryOutput(world)`: Executes the physical transfer of an item from this building to the next.
+
+## Port Calculation Logic
+
+The physical location of a port is relative to the building's `direction` (facing).
+
+### 1. Relative Sides (`IOSide`)
+Ports are defined using relative positions:
+- `front`: Same as `direction`.
+- `back`: Opposite of `direction`.
+- `left` / `right`: 90° rotations from `direction`.
+
+### 2. Dimension Handling
+For multi-tile buildings (e.g., $3 \times 3$ Hub), the `getIOOffset` helper calculates the port position based on the building's width/height and current rotation.
+- **Example**: A $2 \times 2$ building facing North with an output on the `front` will have its output offset at `{dx: 0, dy: -1}` relative to its origin.
+
+## Connectivity Rules
+
+A "Connection" is established when two ports "handshake":
+1.  **Source Check**: The `feeder` building's `getOutputPosition()` must match the `target` building's occupied tile(s).
+2.  **Target Check**: The `target` building's `getInputPosition()` must match the `feeder` building's coordinates.
+
+### Validation Flow (The Handshake)
+```typescript
+// From BuildingIOHelper.ts
+const inputPos = building.getInputPosition();
+const feeder = world.getBuilding(inputPos.x, inputPos.y);
+const feederOutput = feeder.getOutputPosition();
+const targetBuilding = world.getBuilding(feederOutput.x, feederOutput.y);
+
+// Successful connection if:
+building.isInputConnected = (targetBuilding === building);
+```
+
+## Special Cases: Conveyors
+
+Conveyors are unique because they act as both a consumer and a producer in the same cell.
+- **Dynamic Input**: Conveyors accept input from any side *except* their front.
+- **Visual Feedback**: The `isInputConnected` and `isOutputConnected` flags are used by the visual engine to show/hide status arrows (typically Green for Input, Red for Output). If a port is connected, the arrow is hidden to reduce visual clutter.
+
+## Implementation Checklist for New Buildings
+1.  Add `IIOBuilding` to the class implements list.
+2.  Define `io` in the static building configuration.
+3.  Implement `getInputPosition` / `getOutputPosition` using `getIOOffset`.
+4.  Call `updateBuildingConnectivity(this, world)` inside the `tick()` method to refresh flags.
+5.  Implement `canOutput` and `tryOutput` to handle the actual item movement logic.

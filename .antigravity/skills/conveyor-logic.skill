@@ -1,0 +1,66 @@
+---
+name: conveyor-logic
+description: Deep dive into the logic, connection rules, and mathematical calculations of the conveyor belt system.
+---
+
+# Conveyor Logic Skill
+
+This skill explains the technical implementation of conveyor belts, focusing on how they connect, rotate, and transport items.
+
+## Core Concepts
+
+### 1. Direction vs. Flow
+In our system, a conveyor's `direction` property always represents its **Output Direction**.
+- **Fixed at Placement**: Unlike some games where belts auto-recalculate their output, our belts fix their output direction when placed.
+- **Dynamic Input**: The input direction (`flowIn`) is determined at runtime by checking neighbors. A neighbor "connects" to a conveyor if its output port targets the conveyor's tile.
+
+### 2. Connection Rules (The IO Link)
+Connections are established using the `IIOBuilding` interface:
+- **Output Port**: Located at `(x, y) + offset(direction)`.
+- **Input Port**:
+  - **Straight**: Opposite of `direction`.
+  - **Left Turn**: 90° clockwise from `direction`.
+  - **Right Turn**: 90° counter-clockwise from `direction`.
+- **Validation**: A connection is valid only if the source's `OutputPosition` matches the target's `InputPosition` (or the target's tile for conveyors).
+
+## Mathematical Logic
+
+### 1. Turn Type Calculation
+The `visualType` ("straight", "left", "right") is derived from the relationship between the `flowIn` direction and the `direction` (output).
+
+| flowIn | direction | Turn Type | Logic |
+| :--- | :--- | :--- | :--- |
+| North | North | Straight | No change in angle |
+| North | West | Left | Counter-clockwise 90° |
+| North | East | Right | Clockwise 90° |
+
+### 2. Item Movement (Path Interpolation)
+Items move based on `transportProgress` (0 to 1). The 3D position depends on the `visualType`.
+
+#### Straight Path
+- **Calculation**: Linear interpolation along the direction axis.
+- **Formula**: `position = 0.5 - progress` (relative to tile center on the local Z axis).
+
+#### Curved Path (Turns)
+For turns, items follow a quarter-circle arc.
+- **Center of Arc ($cx, cz$)**: Calculated at the pivot point of the turn (e.g., `-0.5, 0.5` for a standard left-turn mesh).
+- **Angle ($\theta$)**: Interpolated from $0$ to $-\pi/2$ (90°).
+  - $\theta = -(\pi / 2) \times progress$
+- **Position ($x, z$)**:
+  - $x = cx + radius \cdot \cos(\theta)$
+  - $z = cz + radius \cdot \sin(\theta)$
+- **Local Rotation**: The item mesh rotates by $-\theta$ to stay aligned with the belt's direction.
+
+## Placement & Rotation Logic
+
+### Auto-Orientation
+When placing a conveyor, the `ConveyorPlacementHelper` evaluates the surroundings:
+1.  **Output Priority**: If adjacent to a building that accepts input (Chest/Hub), point toward it.
+2.  **Input Priority**: If placed at the output of a producer (Extractor), continue its direction.
+3.  **Conflict Resolution**: If both exist, the path toward the output (sink) takes priority to facilitate turn creation.
+
+### Input-Source Validation
+To prevent "Impossible Loops", `isValidConveyorDirection` prevents a belt from being rotated to face the very tile that is feeding it. This ensures flow always moves away from the source.
+
+### Resolution System (`isResolved`)
+A conveyor only "ticks" its progress if it is part of a resolved chain. A chain is resolved if it eventually terminates at a "Sink" building (e.g., a Chest). This prevents items from piling up at the end of a dead-end belt, keeping the simulation efficient.

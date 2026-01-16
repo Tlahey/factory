@@ -1,0 +1,78 @@
+---
+name: buildings-architecture
+description: Guide for creating and maintaining buildings using the Plugin-Based Building Architecture.
+---
+
+# Buildings Architecture Skill
+
+This skill provides the architectural blueprints and protocols for developing buildings and logistics within the factory game. It ensures that every new building is modular, type-safe, and follows the project's core principles.
+
+## Domain Description
+
+The building system uses a **Plugin-Based Architecture**. Each building is a self-contained module that defines its logic, visual representation, and configuration. Buildings are "composed" of capabilities through **Traits** (Interfaces) like `IPowered`, `IExtractable`, or `IIOBuilding`.
+
+- **Logic**: Handles state, simulation, and business rules (extends `BuildingEntity`).
+- **Visual**: Handles 3D rendering and animations (extends `VisualEntity`).
+- **Configuration**: Static data defining building properties, costs, and upgrades.
+
+## Golden Rules (Constraints)
+
+1.  **Strict Colocation**: All files related to a specific building (Logic, Config, Visual, Model, Tests) MUST reside in `src/game/buildings/[building-id]/`.
+2.  **Decoupling (Logic vs. Visual)**: Logic MUST NOT import Three.js or rendering code. Visuals react to logic state changes.
+3.  **No Building-to-Building Dependencies**: A building implementation MUST NOT import another building's class. Use generic interfaces for communication (e.g., `IIOBuilding`).
+4.  **Interface-Driven Configuration**: Use the `ConfigOf<T>` utility to derive configuration types from trait interfaces. This ensures the config statically mirrors the required logic properties.
+5.  **Centralized Registration**: All buildings MUST be registered in `BuildingConfig.ts` (`BUILDINGS`) and `BuildingFactory.ts` (`BuildingRegistry`).
+6.  **I18n Compliance**: No hardcoded strings. Use `id` as the key for translations in `public/locales/en.json`.
+7.  **Z-Index & Styling**: Use Tailwind theme variables (e.g., `z-hud`, `z-panel`) for UI. Never hardcode Z-Index values.
+
+## Creation Protocol
+
+To implement a new building or a new conveyor variant, follow these steps:
+
+### 1. Structure the Directory
+Create a folder in `apps/game/src/game/buildings/[building-id]/`.
+
+### 2. Define the Configuration (`[BuildingName]Config.ts`)
+- Define the specific `ConfigType` by extending `BaseBuildingConfig` and using `ConfigOf<Trait>` for its capabilities.
+- Export a `[ID]_CONFIG` constant.
+
+```typescript
+export type MyBuildingConfigType = BaseBuildingConfig & ConfigOf<IPowered> & { ... };
+export const MY_BUILDING_CONFIG: MyBuildingConfigType = { ... };
+```
+
+### 3. Implement the Logic (`[BuildingName].ts`)
+- Inherit from `BuildingEntity`.
+- Implement required capability interfaces.
+- Use the configuration data for initial values and upgrade calculations.
+
+### 4. Implement the Visual (`[BuildingName]Visual.ts`)
+- Inherit from `VisualEntity` (or a specific helper).
+- Handle the 3D model instantiation and state-based animations.
+
+### 5. Central Registration
+- **`BuildingConfig.ts`**:
+    - Import the config and type.
+    - Add to the `BuildingConfig` union type.
+    - Register in the `BUILDINGS` record.
+- **`BuildingFactory.ts`**:
+    - Import Logic and Visual classes.
+    - Register in `BuildingRegistry`.
+
+### 6. Internationalization
+Add the building's name and description to the i18n JSON files:
+```json
+"buildings": {
+  "[building-id]": {
+    "name": "...",
+    "description": "..."
+  }
+}
+```
+
+### 7. Automated Tests
+Generate unit tests (`[BuildingName].test.ts`) covering:
+- Placement and initialization.
+- Core capability logic (e.g., power consumption, item production).
+- Upgrades applying correctly.
+- Save/Load state persistence.

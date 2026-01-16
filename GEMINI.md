@@ -55,3 +55,4 @@ To add a new building (e.g., "SolarPanel"):
 - **Development**: Keep it simple. Don't create huge files, prefer to split logic into smaller files and folders. Use naming conventions to make it easy to understand what each file does.
 - **Testing**: Before considering a solution complete, ensure unit tests are created and passing. Run tests to validate there are no regressions. **Automatic Test Generation**: Always generate tests for new features to ensure stability and prevent regressions.
 - **Linting**: We must strictly validate the linter before merging. `lint-staged` is used to ensure code quality. **All code must adhere to the defined ESLint rules without exception.**
+- **Build**: We must strictly validate the build before merging. `npm run build` is used to ensure the build is successful. **Automatic Build**: Always generate a build before merging to ensure stability and prevent regressions.

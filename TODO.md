@@ -248,3 +248,10 @@ Il faudrait à la fin que l'IHM des batiments puissent hériter des types de l'i
 
 - Automatiquement on saura qu'un batiment qui est de type ressource / chargeur / etc ... doivent avoir cette interface
 - Tout sera géré de façon automatique. Sauf pour certains batiments tel que le HUB qui seront des exceptions car plus d'informations à l'intérieur.
+
+---
+
+Voir la faisabilité et le gain de passer sur React Three Fiber
+
+- Le gain que ça peut apporter
+- ???

@@ -1,10 +1,10 @@
 import { BuildingEntity } from "@/game/entities/BuildingEntity";
-import { ElectricPoleConfigType } from "@/game/buildings/BuildingConfig";
 import { Activity } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ElectricPole } from "@/game/buildings/electric-pole/ElectricPole";
 import { GameApp } from "@/game/GameApp";
 import { useGameStore } from "@/game/state/store";
+import { ElectricPoleConfigType } from "@/game/buildings/electric-pole/ElectricPoleConfig";
 
 interface ElectricPolePanelProps {
   building: BuildingEntity;

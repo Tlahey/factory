@@ -1,0 +1,63 @@
+---
+name: ui-system
+description: Guide for creating and maintaining the premium UI system of the factory game.
+---
+
+# UI System Skill
+
+This skill defines the visual language, architectural patterns, and interaction rules for the Factory Game's user interface. It ensures a premium, cohesive, and "high-tech" aesthetic across all panels and HUD elements.
+
+## Design Aesthetic (The "Premium" Look)
+
+The UI follows a **Modern Dark Industrial** aesthetic with heavy use of glassmorphism and vibrant accents.
+
+- **Backgrounds**: Use `bg-gray-900/95` or `bg-slate-900/95` with `backdrop-blur-md` or `backdrop-blur-xl`.
+- **Borders**: Subtle `border-white/10` or `border-white/20`. Use `rounded-xl` for panels and `rounded-lg` for internal elements.
+- **Accents**: 
+  - Amber/Yellow (`text-amber-400`, `text-yellow-500`) for interaction points and highlights.
+  - Cyan/Blue (`text-cyan-400`, `text-blue-500`) for technology and logistics.
+  - Green/Red for status indicators.
+- **Typography**: Clean sans-serif (Inter/Outfit). Use `font-mono` for numbers, rates, and technical data. Use `uppercase` and `tracking-widest` for headers/labels.
+- **Shadows**: Heavy `shadow-2xl` for main panels. Pulse effects (`animate-pulse`) for active status indicators.
+
+## Z-Index Management
+
+Never use ad-hoc z-index classes like `z-[100]`. Always refer to the theme variables defined in `globals.css`:
+
+- `z-hud`: Base HUD elements.
+- `z-panel`: Secondary panels (Building Info, Shop).
+- `z-overlay`: Modals and fullscreen overlays.
+- `z-tooltip`: Helper tooltips (must be on top of everything).
+
+## Component Architecture
+
+1.  **Panel Pattern**: Every info panel must follow the header/content/footer structure.
+    - **Header**: Icon, Title, Subtitle, Close Button.
+    - **Content**: Use a scrollable container with `.custom-scrollbar`.
+    - **Sections**: Use cards (`bg-white/5 border border-white/10 p-4 rounded-xl`) to group related stats.
+
+2.  **Stat Labels**: Use a consistent layout for statistics:
+    - Small, uppercase, tracking-wide label at the top.
+    - Large, bold mono value in the center.
+    - Unit or subtitle at the bottom.
+
+3.  **Animations**:
+    - Use `animate-in fade-in slide-in-from-right-10` for panels appearing from the side.
+    - Use `transition-all duration-200` for hover states.
+
+## Golden Rules
+
+1.  **No Hardcoded Strings**: All text must use the `useTranslation` hook (`t('key')`).
+2.  **No Direct State Mutation**: Use `useGameStore` for all global state (inventory, unlocks, selection).
+3.  **Colocation**: Specific sub-panels for buildings should live in `src/components/ui/panels/`.
+4.  **Responsive**: While primarily a desktop game, use relative widths (e.g., `w-80`) and flexbox to ensure the layout doesn't break on different resolutions.
+5.  **Interactive Previews**: Use `<ModelPreview />` for items and buildings. Never use static placeholders if a 3D model is available.
+
+## Interaction Patterns
+
+- **Hover Selection**: Buildings should show a glow or border change when hovered in the menu.
+- **Click to Open**: Clicking a building in the world opens the `BuildingInfoPanel`.
+- **Drag and Drop**: 
+  - Source must set `source`, `type`, `count`, and `index` in `dataTransfer`.
+  - Target must prevent default and handle the drop logic via the store.
+  - Use `TrashZone` for item deletion.

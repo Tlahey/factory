@@ -1,10 +1,11 @@
 import { Furnace } from "@/game/buildings/furnace/Furnace";
-import { FURNACE_CONFIG, Recipe } from "@/game/buildings/furnace/FurnaceConfig";
+import { FURNACE_CONFIG } from "@/game/buildings/furnace/FurnaceConfig";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useEffect, useState } from "react";
 import ModelPreview from "../ModelPreview";
 import { ChevronRight, ChevronDown, Flame, ChevronUp } from "lucide-react";
 import { ItemBufferPanel } from "./ItemBufferPanel";
+import { Recipe } from "@/game/buildings/BuildingConfig";
 
 interface FurnacePanelProps {
   building: Furnace;

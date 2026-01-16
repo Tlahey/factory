@@ -1,7 +1,7 @@
 import { BuildingEntity } from "../../entities/BuildingEntity";
 import { IWorld, Direction } from "../../entities/types";
-import { IIOBuilding, IPowered, PowerConfig } from "../BuildingConfig";
-import { FURNACE_RECIPES, FurnaceConfigType, Recipe } from "./FurnaceConfig";
+import { IIOBuilding, IPowered, PowerConfig, Recipe } from "../BuildingConfig";
+import { FURNACE_RECIPES, FurnaceConfigType } from "./FurnaceConfig";
 import { updateBuildingConnectivity, getIOOffset } from "../BuildingIOHelper";
 import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
 import { Conveyor } from "../conveyor/Conveyor";

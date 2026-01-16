@@ -1,13 +1,11 @@
 "use client";
 
 import { useGameStore } from "@/game/state/store";
-import {
-  FURNACE_RECIPES,
-  Recipe,
-} from "@/game/buildings/furnace/FurnaceConfig";
+import { FURNACE_RECIPES } from "@/game/buildings/furnace/FurnaceConfig";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Lock, Unlock, ChevronRight } from "lucide-react";
 import ModelPreview from "./ModelPreview";
+import { Recipe } from "@/game/buildings/BuildingConfig";
 
 /**
  * RecipeUnlockView - Displays furnace recipes that can be unlocked

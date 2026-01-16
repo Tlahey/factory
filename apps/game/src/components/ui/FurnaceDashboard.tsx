@@ -13,9 +13,10 @@ import {
 import { useTranslation } from "@/hooks/useTranslation";
 import ModelPreview from "./ModelPreview";
 import { Furnace } from "@/game/buildings/furnace/Furnace";
-import { FURNACE_CONFIG, Recipe } from "@/game/buildings/furnace/FurnaceConfig";
+import { FURNACE_CONFIG } from "@/game/buildings/furnace/FurnaceConfig";
 import { ItemBufferPanel } from "./panels/ItemBufferPanel";
 import { useGameStore } from "@/game/state/store";
+import { Recipe } from "@/game/buildings/BuildingConfig";
 
 interface FurnaceDashboardProps {
   furnace: Furnace;

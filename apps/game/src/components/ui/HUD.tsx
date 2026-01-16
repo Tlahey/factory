@@ -4,7 +4,6 @@ import { useGameStore, InventorySlot } from "@/game/state/store";
 import { useEffect, useRef, useState } from "react";
 import { Package, X, ArrowUpDown } from "lucide-react";
 import ModelPreview from "./ModelPreview";
-import { PlacementResourceTooltip } from "./PlacementResourceTooltip";
 import { TrashZone } from "./TrashZone";
 
 import { useDraggable } from "@/hooks/useDraggable";
@@ -233,7 +232,6 @@ export default function HUD() {
           </span>
         </div>
       </div>
-      <PlacementResourceTooltip />
       <TrashZone isDragging={isDraggingItem} onDrop={handleTrashDrop} />
     </>
   );

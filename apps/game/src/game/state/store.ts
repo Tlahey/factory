@@ -90,6 +90,10 @@ interface GameState {
   // Interactive Tutorial / Highlight System
   focusedElement: string | null; // ID of the DOM element or World Entity to highlight
   setFocusedElement: (id: string | null) => void;
+
+  // New state for UI interactions
+  hoveredBarBuilding: string | null;
+  setHoveredBarBuilding: (id: string | null) => void;
 }
 
 const INVENTORY_SIZE = 10;
@@ -293,6 +297,7 @@ export const useGameStore = create<GameState>()(
           focusedElement: null,
           unlockedRecipes: [],
           purchasedCounts: {},
+          hoveredBarBuilding: null,
         }),
 
       // Skill Tree
@@ -464,6 +469,9 @@ export const useGameStore = create<GameState>()(
       // Interactive Tutorial
       focusedElement: null,
       setFocusedElement: (id) => set({ focusedElement: id }),
+
+      hoveredBarBuilding: null,
+      setHoveredBarBuilding: (id) => set({ hoveredBarBuilding: id }),
 
       // Shop
       purchasedCounts: {},

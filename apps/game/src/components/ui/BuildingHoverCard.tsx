@@ -47,51 +47,9 @@ export default function BuildingHoverCard({
           </h3>
         </div>
         <div className="p-2">
-          <div className="flex flex-col gap-1">
-            {(() => {
-              const costEntries = Object.entries(config.cost || {});
-              const totalCost = costEntries.reduce(
-                (acc, [, amount]) => acc + amount,
-                0,
-              );
-              const isEmpty = costEntries.length === 0 || totalCost === 0;
-
-              if (isEmpty) {
-                return (
-                  <div className="flex justify-between items-center bg-black/20 p-1.5 rounded">
-                    <span className="text-xs text-gray-400 font-bold uppercase">
-                      {t("common.free")}
-                    </span>
-                  </div>
-                );
-              }
-
-              return costEntries.map(([res, amount]) => {
-                const playerAmount = getPlayerResourceCount(res);
-                const canAfford = playerAmount >= amount;
-
-                return (
-                  <div
-                    key={res}
-                    className="flex justify-between items-center bg-black/20 p-1.5 rounded"
-                  >
-                    <span className="text-xs text-gray-400 font-bold uppercase">
-                      {t(`common.${res}`)}
-                    </span>
-                    <span
-                      className={clsx(
-                        "text-xs font-bold flex items-center gap-1",
-                        canAfford ? "text-amber-400" : "text-red-500",
-                      )}
-                    >
-                      <div className="w-1.5 h-1.5 rounded-full bg-stone-400" />
-                      {amount}
-                    </span>
-                  </div>
-                );
-              });
-            })()}
-          </div>
+          <p className="text-[10px] text-gray-400 leading-tight italic">
+            {getDescription()}
+          </p>
         </div>
       </div>
     );

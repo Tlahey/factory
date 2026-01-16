@@ -4,7 +4,7 @@ import { useGameStore } from "@/game/state/store";
 import { X, Hammer, Lock, Ban, TriangleAlert } from "lucide-react";
 import ModelPreview from "./ModelPreview";
 import { BUILDINGS } from "@/game/buildings/BuildingConfig";
-import { useState } from "react";
+import { useEffect } from "react";
 import BuildingHoverCard from "./BuildingHoverCard";
 import { useTranslation } from "@/hooks/useTranslation";
 import clsx from "clsx";
@@ -24,9 +24,17 @@ export default function BuildingMenu() {
   const _inventory = useGameStore((state) => state.inventory);
   const hasResources = useGameStore((state) => state.hasResources);
 
-  const [hoveredBuildingId, setHoveredBuildingId] = useState<string | null>(
-    null,
+  const setHoveredBarBuilding = useGameStore(
+    (state) => state.setHoveredBarBuilding,
   );
+  const hoveredBarBuilding = useGameStore((state) => state.hoveredBarBuilding);
+
+  // Reset hovered when menu closes
+  useEffect(() => {
+    if (!isBuildingMenuOpen) {
+      setHoveredBarBuilding(null);
+    }
+  }, [isBuildingMenuOpen, setHoveredBarBuilding]);
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.setData("buildingId", id);
@@ -50,7 +58,7 @@ export default function BuildingMenu() {
   return (
     <div
       className={clsx(
-        "fixed inset-0 z-50 flex items-center justify-center transition-all duration-200",
+        "fixed inset-0 z-overlay flex items-center justify-center transition-all duration-200",
         isBuildingMenuOpen
           ? "opacity-100 pointer-events-auto visible"
           : "opacity-0 pointer-events-none invisible",
@@ -93,14 +101,14 @@ export default function BuildingMenu() {
             className="w-80 shrink-0 border-r border-white/10 bg-gray-900/80 p-6 flex flex-col overflow-y-auto"
           >
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-6 flex items-center gap-2">
-              {hoveredBuildingId ? t("common.building") : t("common.overview")}
+              {hoveredBarBuilding ? t("common.building") : t("common.overview")}
             </h3>
 
-            {hoveredBuildingId && BUILDINGS[hoveredBuildingId] ? (
+            {hoveredBarBuilding && BUILDINGS[hoveredBarBuilding] ? (
               <div className="flex-1 space-y-3">
                 {/* Limit Reached Warning */}
                 {(() => {
-                  const b = BUILDINGS[hoveredBuildingId];
+                  const b = BUILDINGS[hoveredBarBuilding];
                   const currentCount = buildingCounts[b.type] || 0;
                   const isLimitReached = b.maxCount
                     ? currentCount >= b.maxCount
@@ -119,7 +127,7 @@ export default function BuildingMenu() {
                 })()}
 
                 {/* Insufficient Resources Warning */}
-                {!hasResources(BUILDINGS[hoveredBuildingId].cost) && (
+                {!hasResources(BUILDINGS[hoveredBarBuilding].cost) && (
                   <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex items-center gap-3">
                     <TriangleAlert className="w-5 h-5 text-amber-400 shrink-0" />
                     <span className="text-xs font-medium text-amber-200/90">
@@ -129,7 +137,7 @@ export default function BuildingMenu() {
                 )}
 
                 <BuildingHoverCard
-                  config={BUILDINGS[hoveredBuildingId]}
+                  config={BUILDINGS[hoveredBarBuilding]}
                   variant="full"
                   className="!static !w-full !mr-0 !bg-transparent !border-0 !shadow-none !p-0"
                 />
@@ -182,7 +190,7 @@ export default function BuildingMenu() {
                         isDisabled
                           ? "bg-gray-900/40 border-red-500/20 opacity-60 cursor-not-allowed"
                           : "bg-black/20 border-white/5 hover:border-blue-500/50 hover:bg-blue-500/10 cursor-grab active:cursor-grabbing hover:scale-105 hover:shadow-lg",
-                        hoveredBuildingId === b.type && !isDisabled
+                        hoveredBarBuilding === b.type && !isDisabled
                           ? "ring-2 ring-blue-500/50 border-transparent"
                           : "",
                         !canAfford && !isDisabled
@@ -193,8 +201,8 @@ export default function BuildingMenu() {
                       onDragStart={(e) =>
                         !isDisabled && handleDragStart(e, b.type)
                       }
-                      onMouseEnter={() => setHoveredBuildingId(b.type)}
-                      onMouseLeave={() => setHoveredBuildingId(null)}
+                      onMouseEnter={() => setHoveredBarBuilding(b.type)}
+                      onMouseLeave={() => setHoveredBarBuilding(null)}
                       onClick={() => {
                         if (!isDisabled) {
                           setSelectedBuilding(b.type);

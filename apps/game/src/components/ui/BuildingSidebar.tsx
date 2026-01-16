@@ -4,7 +4,6 @@ import { useGameStore } from "@/game/state/store";
 import clsx from "clsx";
 import ModelPreview from "./ModelPreview";
 import { getBuildingConfig } from "@/game/buildings/BuildingConfig";
-import { useState } from "react";
 import BuildingHoverCard from "./BuildingHoverCard";
 import { getAllowedCount } from "@/game/buildings/hub/shop/ShopConfig";
 
@@ -22,12 +21,15 @@ export default function BuildingSidebar() {
   const _inventory = useGameStore((state) => state.inventory);
   const hasResources = useGameStore((state) => state.hasResources);
 
-  const [hoveredBuildingId, setHoveredBuildingId] = useState<string | null>(
-    null,
+  const setHoveredBarBuilding = useGameStore(
+    (state) => state.setHoveredBarBuilding,
   );
+  const isBuildingMenuOpen = useGameStore((state) => state.isBuildingMenuOpen);
+  const hoveredBarBuilding = useGameStore((state) => state.hoveredBarBuilding);
 
   const handleDrop = (e: React.DragEvent, index: number) => {
     e.preventDefault();
+    e.stopPropagation();
     const source = e.dataTransfer.getData("source");
     console.log("Drop source:", source);
 
@@ -112,17 +114,19 @@ export default function BuildingSidebar() {
             {countDisplay}
 
             {/* Hover Card */}
-            {buildingId && hoveredBuildingId === buildingId && (
-              <BuildingHoverCard
-                config={getBuildingConfig(buildingId)!}
-                variant="minimal"
-              />
-            )}
+            {buildingId &&
+              !isBuildingMenuOpen &&
+              hoveredBarBuilding === buildingId && (
+                <BuildingHoverCard
+                  config={getBuildingConfig(buildingId)!}
+                  variant="minimal"
+                />
+              )}
 
             <button
               draggable={!!buildingId}
-              onMouseEnter={() => setHoveredBuildingId(buildingId)}
-              onMouseLeave={() => setHoveredBuildingId(null)}
+              onMouseEnter={() => setHoveredBarBuilding(buildingId)}
+              onMouseLeave={() => setHoveredBarBuilding(null)}
               onDragStart={(e) => {
                 if (buildingId) {
                   e.dataTransfer.setData("source", "hotbar");

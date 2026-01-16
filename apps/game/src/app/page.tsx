@@ -15,6 +15,7 @@ import DebugMenu from "@/components/ui/DebugMenu";
 import DialogueOverlay from "@/components/ui/DialogueOverlay";
 import HighlightOverlay from "@/components/ui/HighlightOverlay";
 import WorldTooltip from "@/components/ui/WorldTooltip";
+import { PlacementCostHUD } from "@/components/ui/PlacementCostHUD";
 
 const GameCanvas = dynamic(() => import("@/components/GameCanvas"), {
   ssr: false,
@@ -145,6 +146,11 @@ export default function Home() {
           },
         }),
       );
+    } else if (source === "hotbar") {
+      const sourceIndex = parseInt(e.dataTransfer.getData("index"));
+      if (!isNaN(sourceIndex)) {
+        useGameStore.getState().setHotbarSlot(sourceIndex, null);
+      }
     }
   };
 
@@ -183,16 +189,31 @@ export default function Home() {
         <WorldTooltip />
         <PendingUnlocksHUD />
         <BuildingInfoPanel />
-        <BuildingMenu />
-        <div className="absolute inset-0 z-[60] pointer-events-none p-6">
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-end z-10">
-            <BuildingSidebar />
-          </div>
+
+        {/* Level 1: Control Bar & World Tools (Behind Menu) */}
+        <div className="absolute inset-0 z-panel pointer-events-none p-6 text-white">
           <div className="absolute bottom-28 left-1/2 -translate-x-1/2">
             <ControlBar />
           </div>
           <div className="absolute bottom-6 right-6">
             <CameraControls />
+          </div>
+        </div>
+
+        {/* Level 3: Cost HUD (Behind Menu / HUD level) */}
+        <div className="absolute inset-0 z-hud pointer-events-none p-6 text-white">
+          <div className="absolute bottom-44 left-1/2 -translate-x-1/2">
+            <PlacementCostHUD />
+          </div>
+        </div>
+
+        {/* Level 4: Building Menu (Modal - z-overlay: 150) */}
+        <BuildingMenu />
+
+        {/* Level 5: Hotbar Sidebar (On Top for Interaction - z-dialog: 200) */}
+        <div className="absolute inset-0 z-dialog pointer-events-none p-6 text-white">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-end">
+            <BuildingSidebar />
           </div>
         </div>
       </div>

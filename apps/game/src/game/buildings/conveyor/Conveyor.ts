@@ -8,11 +8,8 @@ import {
 } from "./ConveyorLogicSystem";
 import { IWorld, Direction } from "../../entities/types";
 
-import {
-  IIOBuilding,
-  ConveyorConfigType,
-  PowerConfig,
-} from "../BuildingConfig";
+import { IIOBuilding, PowerConfig } from "../BuildingConfig";
+import { ConveyorConfigType } from "./ConveyorConfig";
 import { updateBuildingConnectivity } from "../BuildingIOHelper";
 import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
 

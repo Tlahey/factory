@@ -13,6 +13,29 @@ import {
 } from "./electric-pole/ElectricPoleConfig";
 import { IWorld, Direction } from "../entities/types";
 
+// --- CORE TYPES & ENUMS ---
+
+/**
+ * Building Categories for Visual Grouping
+ */
+export type BuildingCategory =
+  | "production"
+  | "logistics"
+  | "storage"
+  | "power"
+  | "special";
+
+/**
+ * Side relative to building's facing direction
+ * - 'front': Direction the building faces
+ * - 'back': Opposite of front
+ * - 'left': 90° counter-clockwise from front
+ * - 'right': 90° clockwise from front
+ */
+export type IOSide = "front" | "back" | "left" | "right";
+
+// --- CONFIGURATION SUB-STRUCTURES ---
+
 export interface PowerConfig {
   type: "consumer" | "producer" | "relay";
   rate: number; // Consumption or Generation
@@ -32,7 +55,7 @@ export interface Recipe {
  * Effect type for building upgrades
  * - multiplier: Multiplies a stat by the value (e.g., 1.2 = +20%)
  * - additive: Adds the value to a stat (e.g., +2 slots)
- * - unlock: Unlocks a new feature
+ * - unlock: Unlocked a new feature
  */
 export interface UpgradeEffect {
   type: "multiplier" | "additive" | "unlock";
@@ -68,15 +91,17 @@ export interface ShopBuildingConfig {
   initialCount?: number;
 }
 
-/**
- * Building Categories for Visual Grouping
- */
-export type BuildingCategory =
-  | "production"
-  | "logistics"
-  | "storage"
-  | "power"
-  | "special";
+export interface IOConfig {
+  hasInput: boolean;
+  hasOutput: boolean;
+  showArrow?: boolean;
+  /** Side where input port is located (relative to building direction) */
+  inputSide?: IOSide;
+  /** Side where output port is located (relative to building direction) */
+  outputSide?: IOSide;
+}
+
+// --- BASE BUILDING CONFIGURATION ---
 
 export interface BaseBuildingConfig {
   name: string;
@@ -97,7 +122,7 @@ export interface BaseBuildingConfig {
   previewImage?: any; // StaticImageData or string
 }
 
-// --- Unified Traits (SOLID) ---
+// --- SOLID TRAIT INTERFACES ---
 
 /**
  * Utility to extract only data properties (non-functions) from a trait interface.
@@ -126,25 +151,6 @@ export interface IPowered {
   ): void;
 }
 
-/**
- * Side relative to building's facing direction
- * - 'front': Direction the building faces
- * - 'back': Opposite of front
- * - 'left': 90° counter-clockwise from front
- * - 'right': 90° clockwise from front
- */
-export type IOSide = "front" | "back" | "left" | "right";
-
-export interface IOConfig {
-  hasInput: boolean;
-  hasOutput: boolean;
-  showArrow?: boolean;
-  /** Side where input port is located (relative to building direction) */
-  inputSide?: IOSide;
-  /** Side where output port is located (relative to building direction) */
-  outputSide?: IOSide;
-}
-
 export interface IIOBuilding {
   io: IOConfig;
   /** Get world position of input port, or null if no input */
@@ -157,6 +163,34 @@ export interface IIOBuilding {
   isInputConnected?: boolean;
   isOutputConnected?: boolean;
 }
+
+export interface IStorage {
+  maxSlots: number;
+  isFull(): boolean;
+  addItem(type: string, amount: number): boolean;
+}
+
+export interface ITransportable {
+  speed: number;
+}
+
+export interface IUpgradable {
+  upgrades: BuildingUpgrade[];
+}
+
+/**
+ * Interface for buildings that can be connected to the power grid via cables.
+ */
+export interface IPowerConnectable {
+  /** Maximum number of simultaneous cable connections */
+  maxConnections: number;
+}
+
+export interface IRecipeBuilding {
+  recipes: Recipe[];
+}
+
+// --- HELPER FUNCTIONS ---
 
 /**
  * Convert a relative IOSide to an absolute world direction based on the building's facing direction.
@@ -197,27 +231,7 @@ export function getDirectionOffset(dir: Direction): { dx: number; dy: number } {
   return offsets[dir];
 }
 
-export interface IStorage {
-  maxSlots: number;
-  isFull(): boolean;
-  addItem(type: string, amount: number): boolean;
-}
-
-export interface ITransportable {
-  speed: number;
-}
-
-export interface IUpgradable {
-  upgrades: BuildingUpgrade[];
-}
-
-export interface IConnectable {
-  maxConnections: number;
-}
-
-export interface IRecipeBuilding {
-  recipes: Recipe[];
-}
+// --- BUILDING REGISTRY ---
 
 // Union of all specialized configs
 export type BuildingConfig =

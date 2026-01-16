@@ -1,11 +1,7 @@
 import { BuildingEntity } from "../../entities/BuildingEntity";
 import { Tile } from "../../core/Tile";
-import {
-  IPowered,
-  IIOBuilding,
-  HubConfigType,
-  PowerConfig,
-} from "../BuildingConfig";
+import { IPowered, IIOBuilding, PowerConfig } from "../BuildingConfig";
+import { HubConfigType } from "./HubConfig";
 import { skillTreeManager } from "./skill-tree/SkillTreeManager";
 // import { IWorld } from '../../entities/types';
 

@@ -3,14 +3,14 @@ import {
   ConfigOf,
   IPowered,
   IIOBuilding,
-  IConnectable,
+  IPowerConnectable,
   IUpgradable,
 } from "../BuildingConfig";
 
 export type HubConfigType = BaseBuildingConfig &
   ConfigOf<IPowered> &
   ConfigOf<IIOBuilding> &
-  ConfigOf<IConnectable> &
+  ConfigOf<IPowerConnectable> &
   ConfigOf<IUpgradable>;
 
 export const HUB_CONFIG: HubConfigType = {

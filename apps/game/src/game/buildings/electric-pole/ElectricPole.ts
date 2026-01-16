@@ -1,10 +1,7 @@
 import { BuildingEntity } from "../../entities/BuildingEntity";
 import { Tile } from "../../core/Tile";
-import {
-  IPowered,
-  ElectricPoleConfigType,
-  PowerConfig,
-} from "../BuildingConfig";
+import { IPowered, PowerConfig } from "../BuildingConfig";
+import { ElectricPoleConfigType } from "./ElectricPoleConfig";
 import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
 
 export class ElectricPole extends BuildingEntity implements IPowered {

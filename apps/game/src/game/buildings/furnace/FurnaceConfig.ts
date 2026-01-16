@@ -3,7 +3,7 @@ import {
   ConfigOf,
   IIOBuilding,
   IPowered,
-  IConnectable,
+  IPowerConnectable,
   IUpgradable,
   IRecipeBuilding,
   Recipe,
@@ -45,7 +45,7 @@ export interface IFurnace {
 export type FurnaceConfigType = BaseBuildingConfig &
   ConfigOf<IPowered> &
   ConfigOf<IIOBuilding> &
-  ConfigOf<IConnectable> &
+  ConfigOf<IPowerConnectable> &
   ConfigOf<IFurnace> &
   ConfigOf<IUpgradable> &
   ConfigOf<IRecipeBuilding>;

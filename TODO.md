@@ -247,3 +247,10 @@ Création de la Centrale à Biomasse qui permet de générer de l'énergie grâc
 - La centrale aura aussi un bouton on / off pour activer/desactiver la centrale. Et donc ne plus consommer de bois
 - La centrale généra une faible quantité d'énergie par seconde (au allentour de 20 et cette valeur fluctura)
 - On reprendra le même affichage que pour le HUB pour voir la quantité d'énergie produit
+
+---
+
+Il faudrait à la fin que l'IHM des batiments puissent hériter des types de l'interface du batiments.
+
+- Automatiquement on saura qu'un batiment qui est de type ressource / chargeur / etc ... doivent avoir cette interface
+- Tout sera géré de façon automatique. Sauf pour certains batiments tel que le HUB qui seront des exceptions car plus d'informations à l'intérieur.

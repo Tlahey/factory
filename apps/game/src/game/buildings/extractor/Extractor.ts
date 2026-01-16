@@ -8,9 +8,9 @@ import {
   IExtractable,
   IPowered,
   IIOBuilding,
-  ExtractorConfigType,
   PowerConfig,
 } from "../BuildingConfig";
+import { ExtractorConfigType } from "./ExtractorConfig";
 import { updateBuildingConnectivity, getIOOffset } from "../BuildingIOHelper";
 import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
 import { gameEventManager } from "../../events/GameEventManager";

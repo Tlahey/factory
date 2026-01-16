@@ -2,13 +2,13 @@ import {
   BaseBuildingConfig,
   ConfigOf,
   IPowered,
-  IConnectable,
+  IPowerConnectable,
   IUpgradable,
 } from "../BuildingConfig";
 
 export type ElectricPoleConfigType = BaseBuildingConfig &
   ConfigOf<IPowered> &
-  ConfigOf<IConnectable> &
+  ConfigOf<IPowerConnectable> &
   ConfigOf<IUpgradable>;
 
 export const ELECTRIC_POLE_CONFIG: ElectricPoleConfigType = {

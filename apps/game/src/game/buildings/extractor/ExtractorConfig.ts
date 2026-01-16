@@ -4,7 +4,7 @@ import {
   IExtractable,
   IPowered,
   IIOBuilding,
-  IConnectable,
+  IPowerConnectable,
   IUpgradable,
 } from "../BuildingConfig";
 
@@ -12,7 +12,7 @@ export type ExtractorConfigType = BaseBuildingConfig &
   ConfigOf<IExtractable> &
   ConfigOf<IPowered> &
   ConfigOf<IIOBuilding> &
-  ConfigOf<IConnectable> &
+  ConfigOf<IPowerConnectable> &
   ConfigOf<IUpgradable>;
 // import { Extractor } from "./Extractor";
 // import { BuildingEntity } from "../../entities/BuildingEntity";

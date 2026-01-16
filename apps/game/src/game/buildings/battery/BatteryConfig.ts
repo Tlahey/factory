@@ -4,7 +4,7 @@ import {
   IIOBuilding,
   IPowered,
   IUpgradable,
-  IConnectable,
+  IPowerConnectable,
 } from "../BuildingConfig";
 
 export interface IBattery {
@@ -17,7 +17,7 @@ export type BatteryConfigType = BaseBuildingConfig &
   ConfigOf<IIOBuilding> &
   ConfigOf<IPowered> &
   ConfigOf<IBattery> &
-  ConfigOf<IConnectable> &
+  ConfigOf<IPowerConnectable> &
   ConfigOf<IUpgradable>;
 
 export const BATTERY_CONFIG: BatteryConfigType = {

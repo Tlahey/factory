@@ -1,16 +1,31 @@
-import { CHEST_CONFIG } from "./chest/ChestConfig";
-import { CONVEYOR_CONFIG } from "./conveyor/ConveyorConfig";
-import { EXTRACTOR_CONFIG } from "./extractor/ExtractorConfig";
-import { HUB_CONFIG } from "./hub/HubConfig";
-import { ELECTRIC_POLE_CONFIG } from "./electric-pole/ElectricPoleConfig";
 import { BATTERY_CONFIG, BatteryConfigType } from "./battery/BatteryConfig";
 import { FURNACE_CONFIG, FurnaceConfigType } from "./furnace/FurnaceConfig";
+import {
+  EXTRACTOR_CONFIG,
+  ExtractorConfigType,
+} from "./extractor/ExtractorConfig";
+import { CONVEYOR_CONFIG, ConveyorConfigType } from "./conveyor/ConveyorConfig";
+import { CHEST_CONFIG, ChestConfigType } from "./chest/ChestConfig";
+import { HUB_CONFIG, HubConfigType } from "./hub/HubConfig";
+import {
+  ELECTRIC_POLE_CONFIG,
+  ElectricPoleConfigType,
+} from "./electric-pole/ElectricPoleConfig";
 import { IWorld, Direction } from "../entities/types";
 
 export interface PowerConfig {
   type: "consumer" | "producer" | "relay";
   rate: number; // Consumption or Generation
   range?: number; // For poles
+}
+
+export interface Recipe {
+  id: string;
+  input: string; // Resource ID (e.g., 'iron_ore')
+  output: string; // Resource ID (e.g., 'iron_ingot')
+  inputCount: number; // Number of input items consumed per craft
+  duration: number; // Seconds
+  unlockCost: Record<string, number>; // Cost to unlock this recipe in the HUB
 }
 
 /**
@@ -192,22 +207,17 @@ export interface ITransportable {
   speed: number;
 }
 
-// Specialized Config Types
-export type ExtractorConfigType = BaseBuildingConfig &
-  ConfigOf<IExtractable> &
-  ConfigOf<IPowered> &
-  ConfigOf<IIOBuilding> & { upgrades: BuildingUpgrade[] };
-export type ConveyorConfigType = BaseBuildingConfig &
-  ConfigOf<IIOBuilding> &
-  ConfigOf<ITransportable>;
-export type ChestConfigType = BaseBuildingConfig &
-  ConfigOf<IStorage> &
-  ConfigOf<IIOBuilding> & { upgrades: BuildingUpgrade[] };
-export type HubConfigType = BaseBuildingConfig &
-  ConfigOf<IPowered> &
-  ConfigOf<IIOBuilding> & { upgrades: BuildingUpgrade[] };
-export type ElectricPoleConfigType = BaseBuildingConfig &
-  ConfigOf<IPowered> & { maxConnections: number; upgrades: BuildingUpgrade[] };
+export interface IUpgradable {
+  upgrades: BuildingUpgrade[];
+}
+
+export interface IConnectable {
+  maxConnections: number;
+}
+
+export interface IRecipeBuilding {
+  recipes: Recipe[];
+}
 
 // Union of all specialized configs
 export type BuildingConfig =

@@ -1,4 +1,19 @@
-import { ExtractorConfigType } from "../BuildingConfig";
+import {
+  BaseBuildingConfig,
+  ConfigOf,
+  IExtractable,
+  IPowered,
+  IIOBuilding,
+  IConnectable,
+  IUpgradable,
+} from "../BuildingConfig";
+
+export type ExtractorConfigType = BaseBuildingConfig &
+  ConfigOf<IExtractable> &
+  ConfigOf<IPowered> &
+  ConfigOf<IIOBuilding> &
+  ConfigOf<IConnectable> &
+  ConfigOf<IUpgradable>;
 // import { Extractor } from "./Extractor";
 // import { BuildingEntity } from "../../entities/BuildingEntity";
 
@@ -22,6 +37,7 @@ export const EXTRACTOR_CONFIG: ExtractorConfigType = {
     type: "consumer",
     rate: 20,
   },
+  maxConnections: 1,
   shop: {
     baseCost: { iron: 50 },
     priceMultiplier: 2.5,

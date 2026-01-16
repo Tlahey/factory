@@ -42,11 +42,21 @@ class MockWorld implements IWorld {
     return { isStone: () => false, isWater: () => false };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getBuildingConnectionsCount(_building: any): number {
+    return 0;
+  }
+
+  getConnectionsCount(_x: number, _y: number): number {
+    return 0;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setTile(_x: number, _y: number, _tile: any): void {}
+  cables = [];
+
   hasPathTo(): boolean {
     return false;
   }
-  propagateFlowFromSources(): void {}
-  updateConveyorNetwork(): void {}
 }
 
 describe("Conveyor Item Transport", () => {

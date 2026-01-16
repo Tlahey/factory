@@ -14,6 +14,7 @@ import {
   PowerConfig,
 } from "../BuildingConfig";
 import { updateBuildingConnectivity } from "../BuildingIOHelper";
+import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
 
 export class Conveyor extends BuildingEntity implements IIOBuilding {
   constructor(x: number, y: number, direction: Direction = "north") {
@@ -29,7 +30,10 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
   public isOutputConnected: boolean = false;
 
   public get transportSpeed(): number {
-    return ((this.getConfig() as ConveyorConfigType).speed ?? 60) / 60; // tiles per second
+    const baseSpeed =
+      ((this.getConfig() as ConveyorConfigType).speed ?? 60) / 60; // tiles per second
+    const multiplier = skillTreeManager.getStatMultiplier("conveyor", "speed");
+    return baseSpeed * multiplier;
   }
 
   public tick(delta: number, world?: IWorld): void {

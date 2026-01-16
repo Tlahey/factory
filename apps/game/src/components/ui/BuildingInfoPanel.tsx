@@ -8,6 +8,7 @@ import { Extractor } from "@/game/buildings/extractor/Extractor";
 import { Hub } from "@/game/buildings/hub/Hub";
 import { Battery } from "@/game/buildings/battery/Battery";
 import { Furnace } from "@/game/buildings/furnace/Furnace";
+import { Conveyor } from "@/game/buildings/conveyor/Conveyor";
 import { BuildingEntity } from "@/game/entities/BuildingEntity";
 import { IWorld } from "@/game/entities/types";
 import ModelPreview from "./ModelPreview";
@@ -21,6 +22,7 @@ import {
   UpgradeReminder,
   ElectricPolePanel,
   FurnacePanel,
+  ConveyorPanel,
 } from "./panels";
 import FurnaceDashboard from "./FurnaceDashboard";
 
@@ -145,6 +147,7 @@ export default function BuildingInfoPanel() {
   const isBattery = building instanceof Battery;
   const isExtractor = building instanceof Extractor;
   const isFurnace = building instanceof Furnace;
+  const isConveyor = building instanceof Conveyor;
 
   // Get current upgrade level for buildings
   const buildingType = building.getType();
@@ -285,10 +288,13 @@ export default function BuildingInfoPanel() {
           {/* isFurnace handled by special dashboard check above */}
           {isFurnace && <FurnacePanel building={building} />}
 
+          {isConveyor && <ConveyorPanel building={building} />}
+
           {!isChest &&
             !isExtractor &&
             !isBattery &&
             !isFurnace &&
+            !isConveyor &&
             building.getType() !== "electric_pole" && (
               <div className="flex items-center justify-center h-full text-gray-500 text-sm italic py-8 text-center uppercase tracking-widest opacity-50">
                 No statistics available

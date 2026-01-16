@@ -1,4 +1,15 @@
-import { ChestConfigType } from "../BuildingConfig";
+import {
+  BaseBuildingConfig,
+  ConfigOf,
+  IStorage,
+  IIOBuilding,
+  IUpgradable,
+} from "../BuildingConfig";
+
+export type ChestConfigType = BaseBuildingConfig &
+  ConfigOf<IStorage> &
+  ConfigOf<IIOBuilding> &
+  ConfigOf<IUpgradable>;
 // import { BuildingEntity } from "../../entities/BuildingEntity";
 
 export const CHEST_CONFIG: ChestConfigType = {

@@ -1,4 +1,17 @@
-import type { HubConfigType } from "../BuildingConfig";
+import {
+  BaseBuildingConfig,
+  ConfigOf,
+  IPowered,
+  IIOBuilding,
+  IConnectable,
+  IUpgradable,
+} from "../BuildingConfig";
+
+export type HubConfigType = BaseBuildingConfig &
+  ConfigOf<IPowered> &
+  ConfigOf<IIOBuilding> &
+  ConfigOf<IConnectable> &
+  ConfigOf<IUpgradable>;
 
 export const HUB_CONFIG: HubConfigType = {
   id: "hub",
@@ -21,6 +34,7 @@ export const HUB_CONFIG: HubConfigType = {
     type: "producer",
     rate: 60,
   },
+  maxConnections: 1,
   upgrades: [
     {
       level: 1,

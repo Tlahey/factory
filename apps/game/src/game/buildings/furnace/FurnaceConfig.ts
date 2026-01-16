@@ -1,19 +1,13 @@
 import {
   BaseBuildingConfig,
-  BuildingUpgrade,
   ConfigOf,
   IIOBuilding,
   IPowered,
+  IConnectable,
+  IUpgradable,
+  IRecipeBuilding,
+  Recipe,
 } from "../BuildingConfig";
-
-export interface Recipe {
-  id: string;
-  input: string; // Resource ID (e.g., 'iron_ore')
-  output: string; // Resource ID (e.g., 'iron_ingot')
-  inputCount: number; // Number of input items consumed per craft
-  duration: number; // Seconds
-  unlockCost: Record<string, number>; // Cost to unlock this recipe in the HUB
-}
 
 export const FURNACE_RECIPES: Recipe[] = [
   {
@@ -51,10 +45,10 @@ export interface IFurnace {
 export type FurnaceConfigType = BaseBuildingConfig &
   ConfigOf<IPowered> &
   ConfigOf<IIOBuilding> &
-  ConfigOf<IFurnace> & {
-    recipes: Recipe[];
-    upgrades: BuildingUpgrade[];
-  };
+  ConfigOf<IConnectable> &
+  ConfigOf<IFurnace> &
+  ConfigOf<IUpgradable> &
+  ConfigOf<IRecipeBuilding>;
 
 export const FURNACE_CONFIG: FurnaceConfigType = {
   id: "furnace",
@@ -76,6 +70,7 @@ export const FURNACE_CONFIG: FurnaceConfigType = {
     type: "consumer",
     rate: 20, // kW
   },
+  maxConnections: 1,
 
   // Shop Config
   shop: {

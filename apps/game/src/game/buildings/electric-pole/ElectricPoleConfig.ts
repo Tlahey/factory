@@ -1,4 +1,15 @@
-import type { ElectricPoleConfigType } from "../BuildingConfig";
+import {
+  BaseBuildingConfig,
+  ConfigOf,
+  IPowered,
+  IConnectable,
+  IUpgradable,
+} from "../BuildingConfig";
+
+export type ElectricPoleConfigType = BaseBuildingConfig &
+  ConfigOf<IPowered> &
+  ConfigOf<IConnectable> &
+  ConfigOf<IUpgradable>;
 
 export const ELECTRIC_POLE_CONFIG: ElectricPoleConfigType = {
   id: "electric_pole",

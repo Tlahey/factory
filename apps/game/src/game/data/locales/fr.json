@@ -181,6 +181,16 @@
         "description": "Augmente le taux d'extraction de 60%"
       }
     },
+    "conveyor": {
+      "speed_1": {
+        "name": "Roulements Huilés I",
+        "description": "Augmente la vitesse du convoyeur de 50%"
+      },
+      "speed_2": {
+        "name": "Roulements Huilés II",
+        "description": "Augmente la vitesse du convoyeur de 100% (total)"
+      }
+    },
     "chest": {
       "slots_1": {
         "name": "Stockage Étendu I",

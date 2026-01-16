@@ -5,3 +5,4 @@ export * from "./ElectricPolePanel";
 export * from "./UpgradeReminder";
 export * from "./FurnacePanel";
 export * from "./ItemBufferPanel";
+export * from "./ConveyorPanel";

@@ -172,6 +172,25 @@ export const SKILL_TREE: SkillNode[] = [
     position: { x: 0, y: 5 },
     unlockDuration: 120,
   },
+  // Conveyor Upgrades
+  {
+    id: "conveyor_1",
+    type: "upgrade",
+    buildingId: "conveyor",
+    level: 1,
+    requires: ["conveyor_unlock"],
+    position: { x: 1, y: 4 },
+    unlockDuration: 60,
+  },
+  {
+    id: "conveyor_2",
+    type: "upgrade",
+    buildingId: "conveyor",
+    level: 2,
+    requires: ["conveyor_1"],
+    position: { x: 1, y: 5 },
+    unlockDuration: 120,
+  },
 
   // Chest Upgrades
   {

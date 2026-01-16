@@ -181,6 +181,16 @@
         "description": "Increases extraction rate by 60%"
       }
     },
+    "conveyor": {
+      "speed_1": {
+        "name": "Greased Rollers I",
+        "description": "Increases conveyor belt speed by 50%"
+      },
+      "speed_2": {
+        "name": "Greased Rollers II",
+        "description": "Increases conveyor belt speed by 100% (total)"
+      }
+    },
     "chest": {
       "slots_1": {
         "name": "Expanded Storage I",

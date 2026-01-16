@@ -3,7 +3,8 @@ import {
   ConfigOf,
   IIOBuilding,
   IPowered,
-  BuildingUpgrade,
+  IUpgradable,
+  IConnectable,
 } from "../BuildingConfig";
 
 export interface IBattery {
@@ -15,7 +16,9 @@ export interface IBattery {
 export type BatteryConfigType = BaseBuildingConfig &
   ConfigOf<IIOBuilding> &
   ConfigOf<IPowered> &
-  ConfigOf<IBattery> & { upgrades: BuildingUpgrade[] };
+  ConfigOf<IBattery> &
+  ConfigOf<IConnectable> &
+  ConfigOf<IUpgradable>;
 
 export const BATTERY_CONFIG: BatteryConfigType = {
   id: "battery",
@@ -39,6 +42,7 @@ export const BATTERY_CONFIG: BatteryConfigType = {
     type: "relay", // Takes participation in grid, but logic is custom
     rate: 0,
   },
+  maxConnections: 2,
   capacity: 2000, // 2000 kWs (kJ?)
   maxChargeRate: 50, // 50 kW
   maxDischargeRate: 50, // 50 kW

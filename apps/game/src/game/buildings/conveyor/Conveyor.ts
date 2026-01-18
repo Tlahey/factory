@@ -23,8 +23,6 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
   public transportProgress: number = 0;
   public isResolved: boolean = false; // True only if connected to a valid destination (chest)
   public visualType: "straight" | "left" | "right" = "straight";
-  public isInputConnected: boolean = false;
-  public isOutputConnected: boolean = false;
 
   public get transportSpeed(): number {
     const baseSpeed =

@@ -12,8 +12,6 @@ import { Conveyor } from "../conveyor/Conveyor";
 export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   public slots: { type: string; count: number }[] = [];
   public bonusSlots: number = 0;
-  public isInputConnected: boolean = false;
-  public isOutputConnected: boolean = false;
 
   constructor(x: number, y: number, direction: Direction = "north") {
     super(x, y, "chest", direction);

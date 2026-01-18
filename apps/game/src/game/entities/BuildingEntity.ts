@@ -5,6 +5,7 @@ import {
   BuildingConfig,
   PowerConfig,
   BuildingId,
+  IOSide,
 } from "../buildings/BuildingConfig";
 import { Direction, IWorld } from "./types";
 
@@ -14,6 +15,11 @@ export abstract class BuildingEntity extends Entity {
 
   public width: number = 1;
   public height: number = 1;
+
+  public isInputConnected: boolean = false;
+  public isOutputConnected: boolean = false;
+  public connectedInputSides: IOSide[] = [];
+  public connectedOutputSides: IOSide[] = [];
 
   public abstract get powerConfig(): PowerConfig | undefined;
 

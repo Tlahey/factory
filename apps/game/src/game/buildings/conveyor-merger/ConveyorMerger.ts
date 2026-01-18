@@ -19,9 +19,6 @@ export class ConveyorMerger extends BuildingEntity implements IIOBuilding {
   public itemId: number | null = null;
   public transportProgress: number = 0;
 
-  public isInputConnected: boolean = false;
-  public isOutputConnected: boolean = false;
-
   /**
    * Tracks the last side from which an item was taken for round-robin fairness.
    * Using explicit sides instead of indices for better readability.

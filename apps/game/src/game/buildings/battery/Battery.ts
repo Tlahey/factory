@@ -18,9 +18,6 @@ export class Battery
   // Breaker functionality
   public isEnabled: boolean = true;
 
-  public isInputConnected: boolean = false;
-  public isOutputConnected: boolean = false;
-
   public active: boolean = false;
   private currentFlow: number = 0;
 

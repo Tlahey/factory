@@ -20,7 +20,7 @@ import { logChanged } from "../utils/DebugLog";
  */
 
 /**
- * Check if output is connected (any building at output position)
+ * Check if output is connected (a building exists at output position AND accepts input)
  */
 function isOutputConnectedInternal(
   world: IWorld,
@@ -32,21 +32,28 @@ function isOutputConnectedInternal(
   if (!building) return false;
 
   // Use building's current world-space dimensions
-  const { width = 1, height = 1 } = building;
+  const config = building.getConfig();
+  const width = config?.width || 1;
+  const height = config?.height || 1;
 
-  const offset = getDirectionOffset(outputDirection);
-  let targetX = x + offset.dx;
-  let targetY = y + offset.dy;
-
-  if (outputDirection === "south") targetX = x; // Ensure we only shift the axis we care about
-  if (outputDirection === "south") targetY = y + height;
-  if (outputDirection === "east") targetX = x + width;
-  if (outputDirection === "east") targetY = y;
+  const offset = getIOOffset("front", outputDirection, width, height);
+  const targetX = x + offset.dx;
+  const targetY = y + offset.dy;
 
   const neighbor = world.getBuilding(targetX, targetY);
 
-  // Simple rule: output connected if ANY building at output position (that is not us)
-  return neighbor !== undefined && neighbor !== null && neighbor !== building;
+  if (!neighbor || neighbor === building) return false;
+
+  // Check if neighbor accepts input from us
+  if ("canInput" in neighbor) {
+    const sourceX = targetX - Math.sign(offset.dx);
+    const sourceY = targetY - Math.sign(offset.dy);
+    return (neighbor as unknown as IIOBuilding).canInput(sourceX, sourceY);
+  }
+
+  // Fallback: if neighbor doesn't have IIOBuilding interface but exists
+  // (e.g. some decorative building?), we consider it blocked/connected
+  return true;
 }
 
 /**
@@ -147,8 +154,20 @@ export function updateBuildingConnectivity(
 
       // Check if there is a building at target (that is not us)
       const neighbor = world.getBuilding(targetX, targetY);
-      const isConnected =
+      let isConnected =
         neighbor !== undefined && neighbor !== null && neighbor !== building;
+
+      // Smarter check: is the neighbor actually receptive to our input?
+      if (isConnected && neighbor && "canInput" in neighbor) {
+        // For multi-tile buildings, we need to pass the tile that is actually adjacent to the neighbor
+        const sourceX = targetX - Math.sign(offset.dx);
+        const sourceY = targetY - Math.sign(offset.dy);
+
+        isConnected = (neighbor as unknown as IIOBuilding).canInput(
+          sourceX,
+          sourceY,
+        );
+      }
 
       if (isConnected) {
         connectedOutputSides.push(side);
@@ -217,6 +236,26 @@ export function updateBuildingConnectivity(
       if (isConnected) {
         connectedInputSides.push(side);
         anyInputConnected = true;
+      }
+    }
+
+    // SPECIAL CASE FOR CONVEYORS:
+    // Regular conveyors (1x1) accept input from Back, Left, and Right.
+    // They only have ONE arrow (Back). We want to hide this arrow if ANY side is connected.
+    if (building.buildingType === "conveyor" && !anyInputConnected) {
+      if (
+        isInputConnectedInternal(
+          world,
+          building.x,
+          building.y,
+          building.direction,
+        )
+      ) {
+        anyInputConnected = true;
+        // Also mark 'back' as connected to hide the canonical arrow
+        if (!connectedInputSides.includes("back")) {
+          connectedInputSides.push("back");
+        }
       }
     }
   }

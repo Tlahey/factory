@@ -20,8 +20,6 @@ export class Extractor
   implements IExtractable, IPowered, IIOBuilding
 {
   public active: boolean = false;
-  public isInputConnected: boolean = false;
-  public isOutputConnected: boolean = false;
 
   public speedMultiplier: number = 1.0;
   private accumTime: number = 0;

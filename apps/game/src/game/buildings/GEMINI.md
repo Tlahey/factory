@@ -61,8 +61,18 @@ Buildings larger than 1x1 (e.g., the 1x2 Furnace) require specific handling for 
 - **Dimension Source of Truth**: When calculating I/O offsets (using `getIOOffset`), always use the **base dimensions from the configuration** (un-rotated). The `BuildingEntity` instance's `width` and `height` properties are already swapped based on rotation, and using them in offset calculations would lead to a "double-swap" bug.
 - **Port Detection**:
   - **Input**: A building is considered "connected" if an adjacent building's output points to **any tile** occupied by the building.
-  - **Output**: A building is considered "connected" if there is a building at the calculated output tile (the tile just outside the building's footprint in the output direction).
+  - **Output (Strict)**: A building is considered "connected" if there is a building at the calculated output tile AND that neighbor **accepts input** from our position (validated via `neighbor.canInput(sourceX, sourceY)`). Simply being adjacent is not enough to hide the output arrow.
+- **Multi-Tile Coordinates**: When calling `canInput` for a neighbor, use the coordinates of our tile that is **actually adjacent** to the neighbor, not our anchor (0,0) position.
 - **Self-Connection**: A building must **not** consider itself as a neighbor. This is particularly important for multi-tile buildings during rotation to avoid false connectivity locks.
+
+## 🏹 Arrow Visibility Rules
+
+Visual indicators (Arrows) follow specific logic to avoid clutter and provide accurate feedback:
+
+- **Output Arrow (Red)**: Hidden only if `isOutputConnected` is true (Strict check passed).
+- **Input Arrow (Green)**: Hidden if `isInputConnected` is true.
+- **Conveyor Special Rule (1x1)**: A standard conveyor has one input arrow at the back, but accepts input from **Back, Left, and Right**. The back arrow must be hidden if ANY of these three sides receives a connection.
+- **Centralized State**: All connectivity flags (`isInputConnected`, `connectedInputSides`, etc.) are defined in the `BuildingEntity` base class. Always use `updateBuildingConnectivity()` to refresh these flags.
 
 ## 🏭 The Building Factory
 

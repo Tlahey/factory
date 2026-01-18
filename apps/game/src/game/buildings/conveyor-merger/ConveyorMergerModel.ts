@@ -35,37 +35,5 @@ export function createConveyorMergerModel(): THREE.Group {
   logo.position.y = 0.53;
   group.add(logo);
 
-  // --- Port "Gates" ---
-  addPortGate(group, 0, -0.4, 0, 0xff4444); // FRONT (Output)
-  addPortGate(group, 0, 0.4, 0, 0x00ff88); // BACK (Input)
-  addPortGate(group, 0.4, 0, Math.PI / 2, 0x00ff88); // RIGHT (Input)
-  addPortGate(group, -0.4, 0, Math.PI / 2, 0x00ff88); // LEFT (Input)
-
   return group;
-}
-
-function addPortGate(
-  group: THREE.Group,
-  x: number,
-  z: number,
-  rotation: number,
-  color: number,
-) {
-  const gateGeom = new THREE.BoxGeometry(0.5, 0.3, 0.1);
-  const gateMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
-  const gate = new THREE.Mesh(gateGeom, gateMat);
-
-  const indicatorGeom = new THREE.BoxGeometry(0.3, 0.05, 0.02);
-  const indicatorMat = new THREE.MeshStandardMaterial({
-    color: color,
-    emissive: color,
-    emissiveIntensity: 1,
-  });
-  const indicator = new THREE.Mesh(indicatorGeom, indicatorMat);
-  indicator.position.z = 0.06 * (z > 0 ? -1 : 1);
-  gate.add(indicator);
-
-  gate.position.set(x, 0.2, z);
-  gate.rotation.y = rotation;
-  group.add(gate);
 }

@@ -17,8 +17,12 @@ vi.mock("three", async () => {
   return {
     ...actual,
     Group: class {
-      children: { name: string; position: { z: number }; visible: boolean }[] =
-        [];
+      children: {
+        name: string;
+        position: { z: number; x: number };
+        rotation: { y: number };
+        visible: boolean;
+      }[] = [];
       name: string = "";
       position = {
         x: 0,
@@ -31,7 +35,12 @@ vi.mock("three", async () => {
         },
       };
       rotation = { x: 0, y: 0, z: 0 };
-      add(obj: { name: string; position: { z: number }; visible: boolean }) {
+      add(obj: {
+        name: string;
+        position: { z: number; x: number };
+        rotation: { y: number };
+        visible: boolean;
+      }) {
         this.children.push(obj);
       }
       getObjectByName(name: string) {
@@ -75,7 +84,7 @@ describe("IOArrowHelper", () => {
     expect(group.children.length).toBe(1);
 
     const arrow = group.children[0];
-    expect(arrow.name).toBe("output_arrow");
+    expect(arrow.name).toBe("output_arrow_front");
 
     // Front (North) means output arrow should point North?
     // Wait, output arrow points AWAY from building.
@@ -89,13 +98,21 @@ describe("IOArrowHelper", () => {
 
   test("Chest has input and output arrows", () => {
     // Chest config: inputSide='front', outputSide='back'
+    // Actually Chest defaults:
+    // - Input Front (from old code comments: "inputSide: 'front'")
+    // - Output Back ("outputSide: 'back'")
+    // BUT we need to check ChestConfig to be sure or just assume default test logic is correct about specific sides
+
+    // In ChestConfig.ts (not seen here but derived from assumed logic):
+    // inputSide: 'front', outputSide: 'back' (from the previous test logic which passed before naming change)
+
     const chest = new Chest(0, 0, "north");
     const group = createIOArrows(chest as BuildingEntity & IIOBuilding);
 
     expect(group.children.length).toBe(2);
 
-    const inputArrow = group.getObjectByName("input_arrow");
-    const outputArrow = group.getObjectByName("output_arrow");
+    const inputArrow = group.getObjectByName("input_arrow_front");
+    const outputArrow = group.getObjectByName("output_arrow_back");
 
     expect(inputArrow).toBeDefined();
     expect(outputArrow).toBeDefined();
@@ -121,8 +138,9 @@ describe("IOArrowHelper", () => {
 
     const group = createIOArrows(furnace as BuildingEntity & IIOBuilding);
 
-    const inputArrow = group.getObjectByName("input_arrow");
-    const outputArrow = group.getObjectByName("output_arrow");
+    // Check with new naming conventions
+    const inputArrow = group.getObjectByName("input_arrow_back");
+    const outputArrow = group.getObjectByName("output_arrow_front");
 
     expect(inputArrow).toBeDefined();
     expect(outputArrow).toBeDefined();
@@ -148,6 +166,7 @@ describe("IOArrowHelper", () => {
     const groupEast = createIOArrows(
       eastExtractor as BuildingEntity & IIOBuilding,
     );
+    // Extractor has only output on front
     const arrowEast = groupEast.children[0];
 
     // Positions should be identical because the helper now ignores building direction
@@ -160,11 +179,12 @@ describe("IOArrowHelper", () => {
   test("Arrow visibility follows connectivity", () => {
     const extractor = new Extractor(0, 0, "north");
     const group = createIOArrows(extractor as BuildingEntity & IIOBuilding);
-    const arrow = group.getObjectByName("output_arrow") as unknown as {
+    const arrow = group.getObjectByName("output_arrow_front") as unknown as {
       visible: boolean;
     };
 
     // Default: visible
+    expect(arrow).toBeDefined();
     expect(arrow.visible).toBe(true);
 
     // Connected: hidden
@@ -189,7 +209,7 @@ describe("IOArrowHelper", () => {
     const group = createIOArrowsFromConfig(ioConfig, 1, 1);
     expect(group.children.length).toBe(2);
 
-    const input = group.getObjectByName("input_arrow");
+    const input = group.getObjectByName("input_arrow_back");
     expect(input).toBeDefined();
     // Static creation defaults to visible
     expect((input as unknown as { visible: boolean }).visible).toBe(true);

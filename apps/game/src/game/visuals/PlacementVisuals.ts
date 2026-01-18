@@ -280,7 +280,10 @@ export class PlacementVisuals {
             // Skip IO arrows - preserve their green/red colors
             if (child.parent?.name === "ghost_io_arrows") return;
             // Skip input/output arrows explicitly if structure differs
-            if (child.name === "input_arrow" || child.name === "output_arrow")
+            if (
+              child.name.includes("input_arrow") ||
+              child.name.includes("output_arrow")
+            )
               return;
 
             child.material = ghostMat;

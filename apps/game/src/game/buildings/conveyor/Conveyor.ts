@@ -77,8 +77,8 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
       typeof (targetBuilding as any).addItem === "function"
     ) {
       // Pass coordinates to support round-robin in Mergers
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (targetBuilding as any).addItem(this.currentItem!, 1, this.x, this.y)
       ) {
         this.currentItem = null;

@@ -7,6 +7,10 @@
 
 - La popup de dialogue s'ouvre toujours quand on ouvre le menu de construction. Elle ne devrait s'ouvrir qu'une seule fois la première fois qu'on l'ouvre.
 
+---
+
+- La battegy ne garde pas dans la sauvegarde la quantité d'énergie qu'elle a.
+
 # Features
 
 - Il faudrait trouver un moyen de récupérer de la roche au départ du jeu sans forcément avoir d'équipement.

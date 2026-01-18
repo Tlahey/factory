@@ -132,6 +132,10 @@ export interface IOConfig {
   inputSide?: IOSide;
   /** Side where output port is located (relative to building direction) */
   outputSide?: IOSide;
+  /** Valid input sides (overrides inputSide if present) */
+  validInputSides?: IOSide[];
+  /** Valid output sides (overrides outputSide if present) */
+  validOutputSides?: IOSide[];
 }
 
 // --- BASE BUILDING CONFIGURATION ---
@@ -199,6 +203,9 @@ export interface IIOBuilding {
   tryOutput(world: IWorld): boolean;
   isInputConnected?: boolean;
   isOutputConnected?: boolean;
+  /** Specific connected sides for granular arrow visibility */
+  connectedInputSides?: IOSide[];
+  connectedOutputSides?: IOSide[];
 }
 
 export interface IStorage {

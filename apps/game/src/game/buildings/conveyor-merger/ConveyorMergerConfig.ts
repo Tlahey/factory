@@ -22,6 +22,8 @@ export const CONVEYOR_MERGER_CONFIG: ConveyorMergerConfigType = {
     showArrow: true,
     inputSide: "back",
     outputSide: "front",
+    validInputSides: ["back", "left", "right"],
+    validOutputSides: ["front"],
   },
   speed: 60, // Items per minute
 };

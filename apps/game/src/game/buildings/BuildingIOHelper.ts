@@ -1,6 +1,12 @@
 import { BuildingEntity } from "../entities/BuildingEntity";
 import { IWorld, Direction } from "../entities/types";
-import { IIOBuilding, getDirectionOffset } from "./BuildingConfig";
+import {
+  IIOBuilding,
+  getDirectionOffset,
+  IOSide,
+  BuildingConfig,
+  IOConfig,
+} from "./BuildingConfig";
 
 /**
  * SIMPLIFIED ARROW VISIBILITY RULES:
@@ -92,65 +98,94 @@ export function updateBuildingConnectivity(
   world: IWorld,
 ): void {
   const io = building.io;
+  const { width = 1, height = 1 } = building;
 
-  // Handle Output - simple: any building at output = connected
-  if (io.hasOutput && "getOutputPosition" in building) {
-    const outputPos = (
-      building as unknown as {
-        getOutputPosition: () => { x: number; y: number } | null;
+  // --- OUTPUT CONNECTIVITY ---
+  const validOutputSides = io.validOutputSides ||
+    (io.outputSide ? [io.outputSide] : []) || ["front"];
+
+  const connectedOutputSides: IOSide[] = [];
+  let anyOutputConnected = false;
+
+  if (io.hasOutput) {
+    for (const side of validOutputSides) {
+      // We calculate the source position (edge of the building)
+      // For multi-tile buildings, this logic might need refinement if ports are not centered
+      // But currently we assume ports are logically at the "center" or standard offset
+      // Since isOutputConnectedInternal uses standard offset from (x,y), let's stick to that for 1x1
+      // For larger buildings, getIOOffset usually handles it relative to (x,y).
+
+      // Use getIOOffset to find the external tile
+      const offset = getIOOffset(side, building.direction, width, height);
+      const targetX = building.x + offset.dx;
+      const targetY = building.y + offset.dy;
+
+      // Check if there is a building at target
+      const neighbor = world.getBuilding(targetX, targetY);
+      const isConnected = neighbor !== undefined && neighbor !== null;
+
+      if (isConnected) {
+        connectedOutputSides.push(side);
+        anyOutputConnected = true;
       }
-    ).getOutputPosition();
-    if (outputPos) {
-      const neighbor = world.getBuilding(outputPos.x, outputPos.y);
-      building.isOutputConnected = neighbor !== undefined && neighbor !== null;
-    } else {
-      building.isOutputConnected = false;
     }
-  } else {
-    building.isOutputConnected = false;
   }
 
-  // Handle Input - check if the building at our input position outputs to us
-  // getInputPosition() returns the external tile where feeders should be located
+  building.isOutputConnected = anyOutputConnected;
+  building.connectedOutputSides = connectedOutputSides;
+
+  // --- INPUT CONNECTIVITY ---
+  const validInputSides = io.validInputSides ||
+    (io.inputSide ? [io.inputSide] : []) || ["back"];
+
+  const connectedInputSides: IOSide[] = [];
+  let anyInputConnected = false;
+
   if (io.hasInput) {
-    const inputPositions: ({ x: number; y: number } | null)[] = [];
-    if ("getInputPositions" in building && building.getInputPositions) {
-      inputPositions.push(...building.getInputPositions());
-    } else if ("getInputPosition" in building) {
-      inputPositions.push(building.getInputPosition());
-    }
+    for (const side of validInputSides) {
+      const offset = getIOOffset(side, building.direction, width, height);
+      const feederX = building.x + offset.dx;
+      const feederY = building.y + offset.dy;
 
-    let anyConnected = false;
-    for (const inputPos of inputPositions) {
-      if (!inputPos) continue;
+      // Check if building at feederX/Y is pointing at us
+      const neighbor = world.getBuilding(feederX, feederY);
+      let isConnected = false;
 
-      // Get the potential feeder at the input position
-      const feeder = world.getBuilding(inputPos.x, inputPos.y);
-
-      if (feeder && "getOutputPosition" in feeder) {
-        const feederOutput = (
-          feeder as unknown as {
+      if (neighbor && "getOutputPosition" in neighbor) {
+        const neighborOutput = (
+          neighbor as unknown as {
             getOutputPosition: () => { x: number; y: number } | null;
           }
         ).getOutputPosition();
-
-        if (feederOutput) {
-          // Check if feeder outputs to any tile of our building
-          const targetBuilding = world.getBuilding(
-            feederOutput.x,
-            feederOutput.y,
-          );
-          if (targetBuilding === building) {
-            anyConnected = true;
-            break;
-          }
+        if (
+          neighborOutput &&
+          // Check if neighbor outputs to THIS exact building
+          // We check basic coordinates of the building anchor
+          // TODO: For multi-tile buildings, strict intersection check might be needed if they output to a specific 'part'
+          neighborOutput.x === building.x &&
+          neighborOutput.y === building.y
+        ) {
+          isConnected = true;
         }
       }
+
+      // Special handling for Conveyor as 'building':
+      // Conveyor visual logic relies on 'getInputPosition' which dynamically changes based on turn type?
+      // Actually, standard Conveyor logic uses 'updateBuildingConnectivity' generic helper too.
+      // But if Conveyor is Curving, its 'Input' might physically be on the side.
+      // IF this generic helper says 'Back' is valid input side, but Conveyor is Curving Left,
+      // then Back is NOT actually valid for data flow, but valid for structural...
+      // However, for pure visual 'Arrow Hiding', if a machine is feeding into the Back, and Conveyor accepts it...
+
+      if (isConnected) {
+        connectedInputSides.push(side);
+        anyInputConnected = true;
+      }
     }
-    building.isInputConnected = anyConnected;
-  } else {
-    building.isInputConnected = false;
   }
+
+  building.isInputConnected = anyInputConnected;
+  building.connectedInputSides = connectedInputSides;
 }
 
 /**
@@ -217,4 +252,48 @@ export function getIOOffset(
       return _exhaustiveCheck;
     }
   }
+}
+
+/**
+ * Definition for an Arrow to be rendered
+ */
+export interface IOArrowDefinition {
+  side: IOSide;
+  type: "input" | "output";
+}
+
+/**
+ * Get all required arrows for a building configuration.
+ * Always returns a list of all POTENTIAL arrows (even if hidden).
+ */
+export function getIOArrowDefinitions(
+  config: BuildingConfig,
+): IOArrowDefinition[] {
+  const arrows: IOArrowDefinition[] = [];
+  const io = (config as unknown as { io?: IOConfig }).io;
+  if (!io) return arrows;
+
+  // Inputs
+  if (io.hasInput) {
+    const sides = io.validInputSides || (io.inputSide ? [io.inputSide] : []);
+    // Default to back if nothing specified but hasInput is true
+    if (sides.length === 0) sides.push("back");
+
+    sides.forEach((side: IOSide) => {
+      arrows.push({ side, type: "input" });
+    });
+  }
+
+  // Outputs
+  if (io.hasOutput) {
+    const sides = io.validOutputSides || (io.outputSide ? [io.outputSide] : []);
+    // Default to front if nothing specified but hasOutput is true
+    if (sides.length === 0) sides.push("front");
+
+    sides.forEach((side: IOSide) => {
+      arrows.push({ side, type: "output" });
+    });
+  }
+
+  return arrows;
 }

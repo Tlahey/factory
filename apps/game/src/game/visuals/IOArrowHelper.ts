@@ -1,7 +1,12 @@
 import * as THREE from "three";
 import type { BuildingEntity } from "../entities/BuildingEntity";
-import type { IIOBuilding, IOConfig } from "../buildings/BuildingConfig";
+import type {
+  IIOBuilding,
+  IOConfig,
+  BuildingConfig,
+} from "../buildings/BuildingConfig";
 import type { Direction } from "../entities/types";
+import { getIOArrowDefinitions } from "../buildings/BuildingIOHelper";
 
 /**
  * IO Arrow Helper
@@ -70,23 +75,6 @@ function createArrowMesh(color: number, pointsInward: boolean): THREE.Group {
 }
 
 /**
- * Get the Y rotation to make the arrow face the given direction
- * The arrow is built to point toward +Z, so we rotate to match world direction
- */
-function getDirectionRotation(direction: Direction): number {
-  switch (direction) {
-    case "north":
-      return Math.PI; // +Z to -Z
-    case "south":
-      return 0; // +Z stays +Z
-    case "east":
-      return -Math.PI / 2; // +Z to +X
-    case "west":
-      return Math.PI / 2; // +Z to -X
-  }
-}
-
-/**
  * Get the world position offset for placing arrow at tile edge
  */
 function getEdgePosition(
@@ -112,7 +100,11 @@ function getSideDirection(
   side: "front" | "back" | "left" | "right",
 ): Direction {
   // Return relative direction assuming building faces 'north'
-  // Rotation is handled by the parent mesh
+  // Remember:
+  // - Front = North
+  // - Back = South
+  // - Left = West
+  // - Right = East
   switch (side) {
     case "front":
       return "north";
@@ -122,6 +114,73 @@ function getSideDirection(
       return "east";
     case "left":
       return "west";
+  }
+}
+
+/**
+ * Get the rotation for an ARROW based on if it's IN or OUT.
+ * The standard 'getDirectionRotation' assumes the arrow points +Z (South).
+ *
+ * For SIDE INPUTS (Left/Right), an input arrow (Green) should point INWARD.
+ *
+ * If Input is on RIGHT (East), arrow is at X+, pointing West (-X).
+ * If Input is on LEFT (West), arrow is at X-, pointing East (+X).
+ *
+ * The `createArrowMesh` helper ALREADY rotates the arrow to point along Z.
+ * - pointsInward=true: Tip at -Z (points North relative to arrow space)
+ * - pointsInward=false: Tip at +Z (points South relative to arrow space)
+ *
+ * Let's revisit the rotation logic for inputs.
+ */
+function getArrowRotation(sideDirection: Direction, isInput: boolean): number {
+  // sideDirection is where the arrow IS relative to center.
+  // e.g. RIGHT side = EAST.
+  // If INPUT (Green): Arrow should point TOWARD center.
+  //   - At East, point West.
+  //   - At West, point East.
+  //   - At North, point South.
+  //   - At South, point North.
+  //
+  // If OUTPUT (Red): Arrow should point AWAY from center.
+  //   - At East, point East.
+  //   - At West, point West.
+  //   - At South, point South.
+  //   - At North, point North.
+
+  // Base rotation for "South" (+Z)
+  const rotMap: Record<Direction, number> = {
+    north: Math.PI, // Points North (-Z)
+    south: 0, // Points South (+Z)
+    east: -Math.PI / 2, // Points East (+X)
+    west: Math.PI / 2, // Points West (-X)
+  };
+
+  if (isInput) {
+    // Input arrow needs to point OPPOSITE to the side location
+    // e.g. Side=East, Arrow should point West.
+    switch (sideDirection) {
+      case "north":
+        return rotMap.south; // At North, point South (In)
+      case "south":
+        return rotMap.north; // At South, point North (In)
+      case "east":
+        return rotMap.east; // At East, point East (Out) - Wait, we want IN.
+      // If Arrow @ East, pointing East is OUT.
+      // Pointing West is IN.
+      // User says my previous logic (Point West) was wrong.
+      // So they want it to point East?? That would be OUT.
+      // OR my previous logic resulted in OUT and they want IN.
+      // Previous logic: case "east": return rotMap.west; // Point West (In)
+      // User says "not in good direction. rotate 180".
+      // So let's flip it.
+      case "east":
+        return rotMap.east;
+      case "west":
+        return rotMap.west;
+    }
+  } else {
+    // Output arrow points WITH the side location
+    return rotMap[sideDirection];
   }
 }
 
@@ -139,13 +198,12 @@ export function createIOArrowsFromConfig(
 
   if (!io || !io.showArrow) return group;
 
-  const margin = 0.2; // Distance from edge
+  // Assume simple config wrapper to reuse helper
+  const dummyConfig = { io } as unknown as BuildingConfig;
+  const defs = getIOArrowDefinitions(dummyConfig);
 
-  // Local Space: Footprint Center is (0,0,0).
-  // Front (-Z) Edge: -Height/2
-  // Back (+Z) Edge: +Height/2
-  // Left (-X) Edge: -Width/2
-  // Right (+X) Edge: +Width/2
+  const margin = 0.2;
+
   const getDistanceForSide = (side: "front" | "back" | "left" | "right") => {
     switch (side) {
       case "front":
@@ -157,46 +215,37 @@ export function createIOArrowsFromConfig(
     }
   };
 
-  // Create INPUT arrow (green, pointing toward building)
-  if (io.hasInput) {
-    const inputSide = io.inputSide || "front";
-    const inputDir = getSideDirection(inputSide); // Relative direction (e.g. 'south' for back)
+  defs.forEach((def) => {
+    const isInput = def.type === "input";
+    const sideDir = getSideDirection(def.side);
 
-    // For arrow rotation, we align it with the input direction
-    const rotation = getDirectionRotation(inputDir);
+    // Use new rotation logic
+    const rotation = getArrowRotation(sideDir, isInput);
 
-    // For position, we need the distance from the pivot (first tile center)
-    const dist = getDistanceForSide(inputSide);
-    const pos = getEdgePosition(inputDir, dist);
+    const dist = getDistanceForSide(def.side);
+    const pos = getEdgePosition(sideDir, dist);
 
-    const inputArrow = createArrowMesh(INPUT_COLOR, true); // points inward
-    inputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
-    inputArrow.rotation.y = rotation;
-    inputArrow.name = "input_arrow";
-    // Always visible by default in static creation
-    inputArrow.visible = true;
+    // Pass false to pointsInward because we now handle orientation via Y rotation fully
+    // createArrowMesh(color, false) creates an arrow pointing +Z (South) locally.
+    // getArrowRotation returns the Y angle to rotate that +Z to the correct world dir.
+    const color = isInput ? INPUT_COLOR : OUTPUT_COLOR;
 
-    group.add(inputArrow);
-  }
+    // Important: createArrowMesh is designed such that:
+    // pointsInward=true -> points -Z (North)
+    // pointsInward=false -> points +Z (South)
+    //
+    // Our getArrowRotation assumes the base arrow points +Z (South).
+    // So we should use pointsInward=false always, and simply rotate it.
+    const arrow = createArrowMesh(color, false);
 
-  // Create OUTPUT arrow (red, pointing away from building)
-  if (io.hasOutput) {
-    const outputSide = io.outputSide || "front";
-    const outputDir = getSideDirection(outputSide);
+    arrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
+    arrow.rotation.y = rotation;
+    // Naming convention: type_arrow_side
+    arrow.name = `${def.type}_arrow_${def.side}`;
+    arrow.visible = true;
 
-    const rotation = getDirectionRotation(outputDir);
-    const dist = getDistanceForSide(outputSide);
-    const pos = getEdgePosition(outputDir, dist);
-
-    const outputArrow = createArrowMesh(OUTPUT_COLOR, false); // points outward
-    outputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
-    outputArrow.rotation.y = rotation;
-    outputArrow.name = "output_arrow";
-    // Always visible by default in static creation
-    outputArrow.visible = true;
-
-    group.add(outputArrow);
-  }
+    group.add(arrow);
+  });
 
   return group;
 }
@@ -214,12 +263,8 @@ export function createIOArrows(
 
   const group = createIOArrowsFromConfig(io, width, height);
 
-  // Set initial visibility state based on connection
-  const inputArrow = group.getObjectByName("input_arrow");
-  if (inputArrow) inputArrow.visible = !building.isInputConnected;
-
-  const outputArrow = group.getObjectByName("output_arrow");
-  if (outputArrow) outputArrow.visible = !building.isOutputConnected;
+  // Initial update
+  updateIOArrows(group, building);
 
   return group;
 }
@@ -231,54 +276,41 @@ export function updateIOArrows(
   arrowGroup: THREE.Group,
   building: BuildingEntity & IIOBuilding,
 ): void {
-  const io = building.io;
-
-  // Reuse logic: Distance from center to edge based on side and dimensions
-  // Use CONFIG dimensions for local space consistency
   const config = building.getConfig();
-  const width = (config && config.width) || 1;
-  const height = (config && config.height) || 1;
-  const margin = 0.2;
+  if (!config) return;
+  const defs = getIOArrowDefinitions(config);
 
-  const getDistanceForSide = (side: "front" | "back" | "left" | "right") => {
-    switch (side) {
-      case "front":
-      case "back":
-        return height / 2 + margin;
-      case "left":
-      case "right":
-        return width / 2 + margin;
+  defs.forEach((def) => {
+    const name = `${def.type}_arrow_${def.side}`;
+    const arrow = arrowGroup.getObjectByName(name);
+
+    // If arrow doesn't exist (e.g. config changed or dynamic update?), strictly we shouldn't add it here
+    // but usually createIOArrowsFromConfig created it.
+    if (!arrow) return;
+
+    // Toggle visibility based on connectivity
+    // If granular data exists, use it. Fallback to global flag if not.
+    // The global flag is ANY input/output connected.
+    // Ideally we want SPECIFIC input/output connected.
+    let isConnected = false;
+    if (def.type === "input") {
+      if (building.connectedInputSides) {
+        isConnected = building.connectedInputSides.includes(def.side);
+      } else {
+        // Fallback for buildings not using new system yet
+        isConnected = !!building.isInputConnected;
+      }
+    } else {
+      if (building.connectedOutputSides) {
+        isConnected = building.connectedOutputSides.includes(def.side);
+      } else {
+        isConnected = !!building.isOutputConnected;
+      }
     }
-  };
 
-  // Update input arrow
-  const inputArrow = arrowGroup.getObjectByName("input_arrow");
-  if (inputArrow && io.hasInput) {
-    // Re-verify position in case visual got out of sync, or just update visibility
-    // But since config doesn't change runtime, just visibility is enough usually.
-    // However, if we want to be robust:
-    const inputSide = io.inputSide || "front";
-    const inputDir = getSideDirection(inputSide);
-    const rotation = getDirectionRotation(inputDir);
-    const dist = getDistanceForSide(inputSide);
-    const pos = getEdgePosition(inputDir, dist);
+    arrow.visible = !isConnected;
 
-    inputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
-    inputArrow.rotation.y = rotation;
-    inputArrow.visible = !building.isInputConnected;
-  }
-
-  // Update output arrow
-  const outputArrow = arrowGroup.getObjectByName("output_arrow");
-  if (outputArrow && io.hasOutput) {
-    const outputSide = io.outputSide || "front";
-    const outputDir = getSideDirection(outputSide);
-    const rotation = getDirectionRotation(outputDir);
-    const dist = getDistanceForSide(outputSide);
-    const pos = getEdgePosition(outputDir, dist);
-
-    outputArrow.position.set(pos.x, ARROW_HEIGHT, pos.z);
-    outputArrow.rotation.y = rotation;
-    outputArrow.visible = !building.isOutputConnected;
-  }
+    // Optional: Re-position if needed (usually static relative to building)
+    // but in case dimensions dynamic? (Unlikely)
+  });
 }

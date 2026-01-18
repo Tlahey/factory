@@ -26,7 +26,7 @@ export function ItemBufferPanel({
   capacity,
   color = "orange",
   onDragStart,
-  // onDragEnd, // Unused
+  onDragEnd,
   onDragOver,
   onDrop,
   sourceId = "chest",
@@ -70,10 +70,15 @@ export function ItemBufferPanel({
   const theme = colorMap[color] || colorMap.orange;
 
   // Handle drag over for the entire panel
+  /* 
+    Strict Mode Update: 
+    We DO NOT set dropEffect = "move" here blindly.
+    We just preventDefault to allow dropping. 
+    The browser or parent logic will determine the final effect.
+    If we set "move", dragging FROM this panel onto ITSELF might trigger a false positive "move" success in dragEnd.
+  */
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    console.log("[ItemBufferPanel] DragOver firing");
     if (onDragOver) onDragOver(e);
   };
 
@@ -134,6 +139,7 @@ export function ItemBufferPanel({
               onDragStart(e, sourceId, 0, mainItem);
             }
           }}
+          onDragEnd={onDragEnd}
           onDragOver={(e) => {
             e.preventDefault();
             if (onDragOver) onDragOver(e);

@@ -4,11 +4,25 @@ import { Conveyor } from "@/game/buildings/conveyor/Conveyor";
 import { Zap, FastForward } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
+import { InventorySlot } from "@/game/state/store";
+import ModelPreview from "../ModelPreview";
+
 interface ConveyorPanelProps {
   building: Conveyor;
+  onDragStart: (
+    e: React.DragEvent,
+    source: string,
+    index: number,
+    slot: InventorySlot,
+  ) => void;
+  onDragEnd: (e: React.DragEvent) => void;
 }
 
-export function ConveyorPanel({ building }: ConveyorPanelProps) {
+export function ConveyorPanel({
+  building,
+  onDragStart,
+  onDragEnd,
+}: ConveyorPanelProps) {
   const { t } = useTranslation();
 
   // transportSpeed is in tiles per second.
@@ -67,6 +81,65 @@ export function ConveyorPanel({ building }: ConveyorPanelProps) {
           </p>
         </div>
       )}
+
+      {/* Visual Item on Belt (Draggable) */}
+      <div className="p-4 bg-white/5 border border-white/10 rounded-xl flex flex-col items-center">
+        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+          On Belt
+        </h4>
+        <div
+          className={`
+            w-16 h-16 rounded-xl flex items-center justify-center relative
+            transition-all duration-200 border
+            ${
+              building.currentItem
+                ? "bg-slate-800 border-white/20 hover:border-cyan-400/80 hover:bg-slate-700 cursor-grab active:cursor-grabbing shadow-lg"
+                : "bg-black/30 border-white/5 border-dashed"
+            }
+          `}
+          draggable={!!building.currentItem}
+          onDragStart={(e) => {
+            if (building.currentItem) {
+              onDragStart(e, "conveyor", 0, {
+                type: building.currentItem,
+                count: 1,
+              });
+            }
+          }}
+          onDragEnd={onDragEnd}
+        >
+          {!building.currentItem && (
+            <div className="absolute inset-0 rounded-xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] pointer-events-none" />
+          )}
+
+          {building.currentItem && (
+            <>
+              <div className="w-14 h-14 pointer-events-none">
+                <ModelPreview
+                  type="item"
+                  id={building.currentItem}
+                  width={56}
+                  height={56}
+                  static
+                  seed={0}
+                />
+              </div>
+              <div className="absolute -bottom-2 -right-2 bg-slate-900 text-xs font-mono font-bold text-cyan-400 px-1.5 py-0.5 rounded-md border border-white/20 shadow-md min-w-[20px] text-center z-10">
+                1
+              </div>
+            </>
+          )}
+
+          {!building.currentItem && (
+            <span className="text-[10px] text-gray-600 uppercase">Empty</span>
+          )}
+        </div>
+        <p className="text-[10px] text-gray-500 mt-2 text-center">
+          {building.currentItem
+            ? "Drag to remove item"
+            : "Waiting for items..."}
+        </p>
+      </div>
     </div>
   );
 }

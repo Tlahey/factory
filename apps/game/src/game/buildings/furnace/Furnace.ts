@@ -341,6 +341,20 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
     return true;
   }
 
+  public addItemsToOutput(type: string, amount: number): boolean {
+    if (this.outputSlot && this.outputSlot.type !== type) return false;
+
+    const currentCount = this.outputSlot?.count || 0;
+    if (currentCount + amount > this.OUTPUT_CAPACITY) return false;
+
+    if (!this.outputSlot) {
+      this.outputSlot = { type, count: amount };
+    } else {
+      this.outputSlot.count += amount;
+    }
+    return true;
+  }
+
   public canOutput(world: IWorld): boolean {
     // Check if target is clear
     // Similar to Extractor logic

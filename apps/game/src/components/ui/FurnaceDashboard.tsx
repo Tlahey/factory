@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   X,
   Zap,
@@ -35,6 +35,7 @@ export default function FurnaceDashboard({
   const updateInventorySlot = useGameStore(
     (state) => state.updateInventorySlot,
   );
+  const setIsDraggingItem = useGameStore((state) => state.setIsDraggingItem);
 
   // Filter recipes to only show unlocked ones
   const availableRecipes = FURNACE_CONFIG.recipes.filter((recipe) =>
@@ -57,36 +58,104 @@ export default function FurnaceDashboard({
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  // Handle drag for Output
-  const handleOutputDragStart = (
+  // Track which item is being dragged
+  const draggedItemRef = useRef<{
+    source: string;
+    index: number;
+    type: string;
+    count: number;
+  } | null>(null);
+
+  // Track successful transfer explicitly
+  const transferSuccessRef = useRef(false);
+
+  // Listen for explicit transfer success events
+  useEffect(() => {
+    const handleTransferSuccess = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (
+        draggedItemRef.current &&
+        detail.source === draggedItemRef.current.source
+      ) {
+        // Confirm successful transfer for current item
+        transferSuccessRef.current = true;
+      }
+    };
+    window.addEventListener(
+      "GAME_ITEM_TRANSFER_SUCCESS",
+      handleTransferSuccess,
+    );
+    return () => {
+      window.removeEventListener(
+        "GAME_ITEM_TRANSFER_SUCCESS",
+        handleTransferSuccess,
+      );
+    };
+  }, []);
+
+  const handleDragStart = (
     e: React.DragEvent,
     source: string,
     index: number,
     slot: { type: string; count: number },
   ) => {
-    // We set data mostly for the HUD to read
-    e.dataTransfer.setData("source", source); // "furnace_output"
+    e.dataTransfer.setData("source", source);
+    e.dataTransfer.setData("index", index.toString());
     e.dataTransfer.setData("type", slot.type);
     e.dataTransfer.setData("count", slot.count.toString());
     e.dataTransfer.effectAllowed = "move";
-  };
 
-  const handleOutputDragEnd = (e: React.DragEvent) => {
-    // If drop was successful (move), remove items
-    if (e.dataTransfer.dropEffect === "move") {
+    draggedItemRef.current = {
+      source,
+      index,
+      type: slot.type,
+      count: slot.count,
+    };
+
+    // IMMEDIATELY REMOVE TO PREVENT DUPLICATION
+    if (source === "furnace_input") {
+      if (furnace.inputQueue.length > index) {
+        furnace.inputQueue.splice(index, 1);
+      }
+    } else if (source === "furnace_output") {
       if (furnace.outputSlot) {
         furnace.removeItemsFromOutput(furnace.outputSlot.count);
-        forceUpdate((n) => n + 1);
       }
     }
+    forceUpdate((n) => n + 1);
+
+    forceUpdate((n) => n + 1);
+
+    transferSuccessRef.current = false;
+    setIsDraggingItem(true);
+  };
+
+  const handleDragEnd = (_e: React.DragEvent) => {
+    setIsDraggingItem(false);
+
+    // If we received an explicit success event
+    // Strict Mode: We IGNORE e.dataTransfer.dropEffect because it returns "move" even for invalid drops
+    // that called preventDefault() (like dropping on the panel itself).
+    const isSuccess = transferSuccessRef.current;
+
+    // If NOT a move (cancelled), restore items
+    if (!isSuccess && draggedItemRef.current) {
+      const { source, type, count } = draggedItemRef.current;
+      if (source === "furnace_input") {
+        furnace.addItem(type, count);
+      } else if (source === "furnace_output") {
+        furnace.addItemsToOutput(type, count);
+      }
+      forceUpdate((n) => n + 1);
+    }
+    draggedItemRef.current = null;
+    transferSuccessRef.current = false;
   };
 
   // Handle drop from inventory to furnace input
   const handleInputDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    console.log("[FurnaceDashboard] handleInputDrop called");
     const source = e.dataTransfer.getData("source");
-    console.log("[FurnaceDashboard] Drop source:", source);
     if (source !== "inventory") return;
 
     const sourceIndex = parseInt(e.dataTransfer.getData("index"));
@@ -95,30 +164,16 @@ export default function FurnaceDashboard({
 
     if (!itemType || isNaN(sourceIndex) || isNaN(itemCount)) return;
 
-    console.log("[FurnaceDashboard] Processing Drop:", {
-      itemType,
-      itemCount,
-      selectedRecipeId: furnace.selectedRecipeId,
-    });
-
     if (!furnace.selectedRecipeId) {
-      console.log("[FurnaceDashboard] Rejected: No recipe selected");
-      // TODO: Add visual feedback (toast/shake)
-      // For now, maybe we can try to auto-select recipe if valid?
-      // Let's just return to avoid confusion
       return;
     }
 
     // Try to add the item to the furnace
     if (furnace.addItem(itemType, itemCount)) {
-      console.log("[FurnaceDashboard] addItem (Full) Success");
       // Success - clear the inventory slot
       clearInventorySlot(sourceIndex);
       forceUpdate((n) => n + 1);
     } else {
-      console.log(
-        "[FurnaceDashboard] addItem (Full) Failed. Trying partial...",
-      );
       // Furnace rejected - maybe it's full or wrong item type
       // Try adding partial amount if capacity allows
       const currentQueueCount = furnace.inputQueue.reduce(
@@ -127,16 +182,10 @@ export default function FurnaceDashboard({
       );
       const maxQueue = furnace.getQueueSize();
       const spaceAvailable = maxQueue - currentQueueCount;
-      console.log("[FurnaceDashboard] State:", {
-        currentQueueCount,
-        maxQueue,
-        spaceAvailable,
-      });
 
       if (spaceAvailable > 0) {
         const toAdd = Math.min(spaceAvailable, itemCount);
         if (furnace.addItem(itemType, toAdd)) {
-          console.log("[FurnaceDashboard] addItem (Partial) Success");
           // Partial success - update inventory with remaining
           const remaining = itemCount - toAdd;
           if (remaining > 0) {
@@ -150,6 +199,24 @@ export default function FurnaceDashboard({
           forceUpdate((n) => n + 1);
         }
       }
+    }
+  };
+
+  // Handle drop from inventory to furnace output
+  const handleOutputDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const source = e.dataTransfer.getData("source");
+    if (source !== "inventory") return;
+
+    const sourceIndex = parseInt(e.dataTransfer.getData("index"));
+    const itemType = e.dataTransfer.getData("type");
+    const itemCount = parseInt(e.dataTransfer.getData("count"));
+
+    if (!itemType || isNaN(sourceIndex) || isNaN(itemCount)) return;
+
+    if (furnace.addItemsToOutput(itemType, itemCount)) {
+      clearInventorySlot(sourceIndex);
+      forceUpdate((n) => n + 1);
     }
   };
 
@@ -440,7 +507,9 @@ export default function FurnaceDashboard({
                   items={furnace.inputQueue}
                   capacity={furnace.getQueueSize()}
                   color="blue"
-                  sourceId="inventory"
+                  sourceId="furnace_input"
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
                   onDrop={handleInputDrop}
                 />
                 <p className="text-xs text-center text-gray-500 mt-2">
@@ -455,8 +524,9 @@ export default function FurnaceDashboard({
                 capacity={furnace.OUTPUT_CAPACITY}
                 color="orange"
                 sourceId="furnace_output"
-                onDragStart={handleOutputDragStart}
-                onDragEnd={handleOutputDragEnd}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDrop={handleOutputDrop}
               />
             </div>
           </div>

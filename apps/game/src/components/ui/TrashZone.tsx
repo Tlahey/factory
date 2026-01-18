@@ -34,7 +34,7 @@ export function TrashZone({ isDragging, onDrop }: TrashZoneProps) {
     <div
       onDragOver={handleDragOver}
       onDrop={handleDrop}
-      className="fixed bottom-24 right-8 z-[110]
+      className="fixed bottom-24 right-8 z-hud
                  w-48 h-48 
                  bg-red-900/80 backdrop-blur-md
                  border-2 border-dashed border-red-500/60

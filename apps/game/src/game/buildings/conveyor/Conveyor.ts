@@ -89,6 +89,16 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
     if (this.transportProgress > 1) this.transportProgress = 1;
   }
 
+  /**
+   * Safely removes the current item from the conveyor.
+   * Used when player drags an item off the belt.
+   */
+  public removeItem(): void {
+    this.currentItem = null;
+    this.itemId = null;
+    this.transportProgress = 0;
+  }
+
   // --- Traits Implementation ---
 
   public get io() {

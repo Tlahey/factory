@@ -53,6 +53,7 @@ To add a new building (e.g., "SolarPanel"):
 - **Performance**: Minimize heavy calculations in `tick()`. Use deltas.
 - **Persistence**: Ensure new state data is correctly saved/loaded if necessary.
 - **UI**: Buildings with `hasMenu: true` must have their `upgrades` defined in their config to automatically appear in the info panel.
+- **Drag & Drop Safety**: When implementing drag-and-drop affecting game state (e.g. moving items), use **Immediate Removal** from source to prevent duplication bugs (e.g. items being processed by conveyor while dragged). Implement **Transaction Confirmation** (e.g. `GAME_ITEM_TRANSFER_SUCCESS` event) to robustly confirm successful drops across different UI components, rather than relying solely on `dropEffect`.
 - **Development**: Keep it simple. Don't create huge files, prefer to split logic into smaller files and folders. Use naming conventions to make it easy to understand what each file does.
 - **Testing**: Before considering a solution complete, ensure unit tests are created and passing. Run tests to validate there are no regressions. **Automatic Test Generation**: Always generate tests for new features to ensure stability and prevent regressions.
 - **Linting**: We must strictly validate the linter before merging. `lint-staged` is used to ensure code quality. **All code must adhere to the defined ESLint rules without exception.**

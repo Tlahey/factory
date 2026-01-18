@@ -1,7 +1,7 @@
 "use client";
 
 import { useGameStore, InventorySlot } from "@/game/state/store";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { Chest } from "@/game/buildings/chest/Chest";
 import { Extractor } from "@/game/buildings/extractor/Extractor";
@@ -29,11 +29,23 @@ import FurnaceDashboard from "./FurnaceDashboard";
 export default function BuildingInfoPanel() {
   const { t } = useTranslation();
   const openedEntityKey = useGameStore((state) => state.openedEntityKey);
+  // const _setOpenedEntityKey = useGameStore((state) => state.setOpenedEntityKey);
   const setOpenedEntityKey = useGameStore((state) => state.setOpenedEntityKey);
-  const inventory = useGameStore((state) => state.inventory);
+  const setIsDraggingItem = useGameStore((state) => state.setIsDraggingItem);
 
   const [building, setBuilding] = useState<BuildingEntity | null>(null);
-  const [_, forceUpdate] = useState(0);
+  const [, forceUpdate] = useState(0);
+
+  // Track the source of the drag for deletion on successful drop
+  const draggedItemRef = useRef<{
+    source: string;
+    index: number;
+    type: string | null;
+    count: number;
+  } | null>(null);
+
+  // Track if a transfer was explicitly successful (robust cross-component confirmation)
+  const transferSuccessRef = useRef(false);
 
   // Clear building immediately when key changes
   useEffect(() => {
@@ -64,74 +76,31 @@ export default function BuildingInfoPanel() {
     };
   }, [openedEntityKey]);
 
-  // Event Listener for Drops on HUD (Chest -> HUD)
+  // Listen for explicit transfer success events
   useEffect(() => {
-    const handleInventoryDrop = (e: Event) => {
+    const handleTransferSuccess = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (
-        !building ||
-        (!(building instanceof Chest) && !(building instanceof Extractor))
-      )
-        return;
-
-      const { source, sourceIndex, targetIndex, type } = detail;
-
-      if (source === "chest") {
-        const slot = building.slots[sourceIndex];
-        if (!slot) return;
-
-        // 1. Add to Player Inventory
-        const currentInv = useGameStore.getState().inventory;
-        const existingSlot = currentInv[targetIndex];
-
-        let finalCount = slot.count;
-        if (existingSlot && existingSlot.type === type) {
-          finalCount += existingSlot.count;
-        }
-
-        useGameStore
-          .getState()
-          .updateInventorySlot(targetIndex, { type, count: finalCount });
-
-        // 2. Remove from Chest/Extractor
-        if (building.removeSlot) {
-          building.removeSlot(sourceIndex);
-        } else {
-          building.slots.splice(sourceIndex, 1);
-        }
-        setBuilding(building);
-        forceUpdate((n) => n + 1);
+        draggedItemRef.current &&
+        detail.source === draggedItemRef.current.source
+      ) {
+        // Confirm successful transfer for current item
+        transferSuccessRef.current = true;
       }
     };
-
-    const handleItemDelete = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (
-        !building ||
-        (!(building instanceof Chest) && !(building instanceof Extractor))
-      )
-        return;
-
-      const { source, sourceIndex } = detail;
-
-      if (source === "chest") {
-        if (building.removeSlot) {
-          building.removeSlot(sourceIndex);
-        } else {
-          building.slots.splice(sourceIndex, 1);
-        }
-        setBuilding(building);
-        forceUpdate((n) => n + 1);
-      }
-    };
-
-    window.addEventListener("GAME_INVENTORY_DROP", handleInventoryDrop);
-    window.addEventListener("GAME_ITEM_DELETE", handleItemDelete);
+    window.addEventListener(
+      "GAME_ITEM_TRANSFER_SUCCESS",
+      handleTransferSuccess,
+    );
     return () => {
-      window.removeEventListener("GAME_INVENTORY_DROP", handleInventoryDrop);
-      window.removeEventListener("GAME_ITEM_DELETE", handleItemDelete);
+      window.removeEventListener(
+        "GAME_ITEM_TRANSFER_SUCCESS",
+        handleTransferSuccess,
+      );
     };
-  }, [building]);
+  }, []);
+
+  // Building state is now managed via drag lifecycle (onDragStart/onDragEnd)
 
   if (!openedEntityKey || !building) return null;
 
@@ -168,12 +137,61 @@ export default function BuildingInfoPanel() {
     e.dataTransfer.setData("index", index.toString());
     e.dataTransfer.setData("type", slot.type);
     e.dataTransfer.setData("count", slot.count.toString());
+
+    draggedItemRef.current = {
+      source,
+      index,
+      type: slot.type,
+      count: slot.count,
+    };
+
+    // IMMEDIATELY REMOVE TO PREVENT DUPLICATION (e.g. chest outputting to conveyor while dragging)
+    if (source === "chest" && (isChest || isExtractor)) {
+      if (building.removeSlot) {
+        building.removeSlot(index);
+      } else {
+        building.slots.splice(index, 1);
+      }
+      setBuilding(building);
+      forceUpdate((n) => n + 1);
+    } else if (source === "conveyor" && isConveyor) {
+      (building as Conveyor).removeItem();
+      setBuilding(building);
+      forceUpdate((n) => n + 1);
+    }
+
+    transferSuccessRef.current = false; // Reset success flag
+    setIsDraggingItem(true);
+  };
+
+  const handleDragEnd = (_e: React.DragEvent) => {
+    setIsDraggingItem(false);
+
+    // If we received an explicit success event, consider it done.
+    // Strict Mode: We IGNORE e.dataTransfer.dropEffect because it returns "move" even for invalid drops.
+    const isSuccess = transferSuccessRef.current;
+
+    // If NOT a success (drag cancelled or dropped on invalid target), restore the item
+    if (!isSuccess && draggedItemRef.current) {
+      const { source, type, count } = draggedItemRef.current;
+      if (source === "chest" && (isChest || isExtractor) && type) {
+        if (isChest) {
+          (building as Chest).addItem(type, count);
+        } else if (isExtractor) {
+          building.slots.push({ type, count });
+        }
+        setBuilding(building);
+        forceUpdate((n) => n + 1);
+      }
+    }
+    draggedItemRef.current = null;
+    transferSuccessRef.current = false;
   };
 
   const handleDrop = (
     e: React.DragEvent,
     target: "chest" | "inventory",
-    _targetIndex: number,
+    targetIndex: number,
   ) => {
     e.preventDefault();
     const source = e.dataTransfer.getData("source") as "chest" | "inventory";
@@ -181,17 +199,31 @@ export default function BuildingInfoPanel() {
 
     if (source === target) return;
 
-    if (source === "inventory" && target === "chest") {
-      // Move Inventory (HUD) -> Chest
-      const invSlot = inventory[sourceIndex];
-      if (!invSlot.type) return;
+    // Check if target is 'chest' or general building drop via sub-component bubbling
+    // If targetIndex is undefined, we might just be dropping "on the panel" generally, but ChestPanel slots provide index.
+    if (target === "chest" && isChest && targetIndex !== undefined) {
+      const type = e.dataTransfer.getData("type");
+      const count = parseInt(e.dataTransfer.getData("count"));
 
-      const success = (building as Chest).addItem(invSlot.type, invSlot.count);
+      if (!type || isNaN(count)) return;
+
+      const success = (building as Chest).addItem(type, count);
 
       if (success) {
-        useGameStore
-          .getState()
-          .updateInventorySlot(sourceIndex, { type: null, count: 0 });
+        // If from inventory, clear it locally
+        if (source === "inventory") {
+          useGameStore
+            .getState()
+            .updateInventorySlot(sourceIndex, { type: null, count: 0 });
+        } else {
+          // If from explicit other source (Furnace, etc), dispatch success event
+          window.dispatchEvent(
+            new CustomEvent("GAME_ITEM_TRANSFER_SUCCESS", {
+              detail: { source, sourceIndex },
+            }),
+          );
+        }
+
         setBuilding(building);
         forceUpdate((n) => n + 1);
       }
@@ -200,6 +232,7 @@ export default function BuildingInfoPanel() {
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    void e; // Mark as used
   };
 
   // For Hub buildings, show the HubDashboard instead
@@ -219,6 +252,7 @@ export default function BuildingInfoPanel() {
       onDragOver={(e) => {
         e.preventDefault();
         e.stopPropagation();
+        e.dataTransfer.dropEffect = "none";
       }}
       onDrop={(e) => {
         e.preventDefault();
@@ -262,6 +296,7 @@ export default function BuildingInfoPanel() {
               building={building}
               onDragStart={handleDragStart}
               onDrop={handleDrop}
+              onDragEnd={handleDragEnd}
               onDragOver={handleDragOver}
             />
           )}
@@ -270,6 +305,7 @@ export default function BuildingInfoPanel() {
             <ExtractorPanel
               building={building}
               onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
               onDragOver={handleDragOver}
             />
           )}
@@ -288,7 +324,13 @@ export default function BuildingInfoPanel() {
           {/* isFurnace handled by special dashboard check above */}
           {isFurnace && <FurnacePanel building={building} />}
 
-          {isConveyor && <ConveyorPanel building={building} />}
+          {isConveyor && (
+            <ConveyorPanel
+              building={building}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            />
+          )}
 
           {!isChest &&
             !isExtractor &&

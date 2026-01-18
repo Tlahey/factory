@@ -99,6 +99,9 @@ interface GameState {
   // New state for UI interactions
   hoveredBarBuilding: BuildingId | null;
   setHoveredBarBuilding: (id: BuildingId | null) => void;
+
+  isDraggingItem: boolean;
+  setIsDraggingItem: (dragging: boolean) => void;
 }
 
 const INVENTORY_SIZE = 10;
@@ -106,7 +109,7 @@ const STACK_SIZE = 100; // Define a stack size limit for personal inventory
 
 export const useGameStore = create<GameState>()(
   persist(
-    (set, _get) => ({
+    (set, get) => ({
       inventory: Array(INVENTORY_SIZE)
         .fill(null)
         .map(() => ({ type: null, count: 0 })),
@@ -367,7 +370,7 @@ export const useGameStore = create<GameState>()(
             : [...state.unlockedRecipes, recipeId],
         })),
       hasResources: (cost) => {
-        const state = _get();
+        const state = get();
         if (state.isUnlimitedResources) return true;
 
         // Aggregate inventory
@@ -490,6 +493,9 @@ export const useGameStore = create<GameState>()(
             },
           };
         }),
+      isDraggingItem: false,
+      setIsDraggingItem: (dragging: boolean) =>
+        set({ isDraggingItem: dragging }),
     }),
     {
       name: "factory-game-storage", // name of the item in the storage (must be unique)

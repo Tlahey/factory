@@ -19,6 +19,7 @@ interface ChestPanelProps {
     target: "chest" | "inventory",
     targetIndex: number,
   ) => void;
+  onDragEnd: (e: React.DragEvent) => void;
   onDragOver: (e: React.DragEvent) => void;
 }
 
@@ -26,6 +27,7 @@ export function ChestPanel({
   building,
   onDragStart,
   onDrop,
+  onDragEnd,
   onDragOver,
 }: ChestPanelProps) {
   const { t } = useTranslation();
@@ -48,8 +50,16 @@ export function ChestPanel({
               key={`chest-slot-${i}`}
               draggable={!!slot}
               onDragStart={(e) => slot && onDragStart(e, "chest", i, slot)}
-              onDragOver={onDragOver}
-              onDrop={(e) => onDrop(e, "chest", i)}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDragOver(e);
+              }}
+              onDrop={(e) => {
+                e.stopPropagation();
+                onDrop(e, "chest", i);
+              }}
+              onDragEnd={onDragEnd}
               className={`
                 w-16 h-16 rounded-xl flex items-center justify-center relative group
                 transition-all duration-200 border

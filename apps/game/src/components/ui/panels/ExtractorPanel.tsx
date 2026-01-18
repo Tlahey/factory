@@ -14,6 +14,7 @@ interface ExtractorPanelProps {
     index: number,
     slot: InventorySlot,
   ) => void;
+  onDragEnd: (e: React.DragEvent) => void;
   onDragOver: (e: React.DragEvent) => void;
 }
 
@@ -53,6 +54,7 @@ export function getExtractorStatusInfo(
 export function ExtractorPanel({
   building,
   onDragStart,
+  onDragEnd,
   onDragOver,
 }: ExtractorPanelProps) {
   const { t } = useTranslation();
@@ -124,6 +126,7 @@ export function ExtractorPanel({
         capacity={building.BUFFER_CAPACITY}
         color="orange"
         onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
         onDragOver={onDragOver}
         sourceId="chest"
       />

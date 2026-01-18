@@ -1,7 +1,7 @@
 "use client";
 
 import { useGameStore, InventorySlot } from "@/game/state/store";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Package, X, ArrowUpDown } from "lucide-react";
 import ModelPreview from "./ModelPreview";
 import { TrashZone } from "./TrashZone";
@@ -11,6 +11,8 @@ import { useDraggable } from "@/hooks/useDraggable";
 export default function HUD() {
   const inventory = useGameStore((state) => state.inventory);
   const isInventoryOpen = useGameStore((state) => state.isInventoryOpen);
+  const isDraggingItem = useGameStore((state) => state.isDraggingItem);
+  const setIsDraggingItem = useGameStore((state) => state.setIsDraggingItem);
 
   // Helper to format count
   const formatCount = (count: number) => {
@@ -54,7 +56,6 @@ export default function HUD() {
 
   // Track dragged item index for trash zone deletion
   const draggedIndexRef = useRef<number | null>(null);
-  const [isDraggingItem, setIsDraggingItem] = useState(false);
 
   // Handle drag end - reset drag state (deletion now handled by TrashZone)
   const handleDragEnd = () => {
@@ -66,12 +67,24 @@ export default function HUD() {
   const handleTrashDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const source = e.dataTransfer.getData("source");
-    if (source !== "inventory") return;
 
-    const index = draggedIndexRef.current;
-    if (index !== null) {
-      useGameStore.getState().clearInventorySlot(index);
+    // If it's from inventory, we need to clear the local slot
+    if (source === "inventory") {
+      const index = draggedIndexRef.current;
+      if (index !== null) {
+        useGameStore.getState().clearInventorySlot(index);
+      }
     }
+
+    // External sources (chest, furnace) are already removed from their host on drag start.
+    // Setting dropEffect to 'move' in TrashZone's onDragOver ensures they stay removed.
+    // Dispatch explicit success event for robust cross-component communication
+    window.dispatchEvent(
+      new CustomEvent("GAME_ITEM_TRANSFER_SUCCESS", {
+        detail: { source, sourceIndex: 0 }, // Trash doesn't care about index really, but consistent Detail
+      }),
+    );
+
     draggedIndexRef.current = null;
     setIsDraggingItem(false);
   };
@@ -92,7 +105,11 @@ export default function HUD() {
 
       // Updated Logic: Atomic Swap
       useGameStore.getState().swapInventorySlots(sourceIndex, targetIndex);
-    } else if (source === "chest" || source === "furnace_output") {
+    } else if (
+      source === "chest" ||
+      source === "furnace_output" ||
+      source === "furnace_input"
+    ) {
       // Drag from Chest or Furnace (external drop)
       // Check if target is empty or match
       const targetSlot = inventory[targetIndex];
@@ -105,6 +122,12 @@ export default function HUD() {
           .updateInventorySlot(targetIndex, { type, count: newCount });
         // Signal success so source removes it
         e.dataTransfer.dropEffect = "move";
+        // Dispatch explicit success event for robust cross-component communication
+        window.dispatchEvent(
+          new CustomEvent("GAME_ITEM_TRANSFER_SUCCESS", {
+            detail: { source, sourceIndex },
+          }),
+        );
       }
     }
   };

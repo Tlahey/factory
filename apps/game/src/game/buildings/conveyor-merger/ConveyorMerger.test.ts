@@ -26,7 +26,6 @@ class MockWorld implements IWorld {
   }
 
   getTile(_x: number, _y: number): Tile {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return { isStone: () => false, isWater: () => false } as any;
   }
 

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { PlacementVisuals } from "./PlacementVisuals";
 import * as THREE from "three";

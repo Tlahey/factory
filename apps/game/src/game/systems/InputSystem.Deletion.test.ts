@@ -1,9 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, vi, beforeEach, test } from "vitest";
 import { InputSystem } from "./InputSystem";
-// import * as THREE from 'three';
-// import { World } from '../core/World';
-// import { useGameStore } from '../state/store';
 
 // Mock THREE
 vi.mock("three", async () => {

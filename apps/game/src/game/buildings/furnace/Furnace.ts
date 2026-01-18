@@ -389,9 +389,22 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public serialize(): any {
-    return {};
+    return {
+      selectedRecipeId: this.selectedRecipeId,
+      inputQueue: this.inputQueue,
+      outputSlot: this.outputSlot,
+      activeJobs: this.activeJobs,
+    };
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public deserialize(_data: any): void {}
+  public deserialize(data: any): void {
+    if (data.selectedRecipeId) this.selectedRecipeId = data.selectedRecipeId;
+    if (data.inputQueue) this.inputQueue = data.inputQueue;
+    if (data.outputSlot) this.outputSlot = data.outputSlot;
+    // Restore active jobs if present
+    if (data.activeJobs) {
+      this.activeJobs = data.activeJobs;
+    }
+  }
 }

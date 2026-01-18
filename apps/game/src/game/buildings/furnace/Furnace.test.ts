@@ -21,11 +21,9 @@ describe("Furnace", () => {
   let world: IWorld;
 
   beforeEach(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (skillTreeManager.getStatMultiplier as any)
       .mockReset()
       .mockReturnValue(1.0);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (skillTreeManager.getStatAdditive as any).mockReset().mockReturnValue(0);
 
     furnace = new Furnace(10, 10, "north");
@@ -136,7 +134,6 @@ describe("Furnace", () => {
     // Furnace (1x2) at 10,10 North.
     // Occupies 10,10 and 10,11.
     // Output is Back -> 10,12.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (world.getBuilding as any).mockReturnValue(chest);
 
     furnace.tick(0.1, world);
@@ -153,7 +150,6 @@ describe("Furnace", () => {
     furnace.powerSatisfaction = 1.0;
 
     // Mock upgrades: 2.0x speed
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (skillTreeManager.getStatMultiplier as any).mockImplementation(
       (building: string, stat: string) => {
         if (building === "furnace" && stat === "processingSpeed") return 2.0;
@@ -182,7 +178,6 @@ describe("Furnace", () => {
     const baseQueue = 20;
     const extraQueue = 5;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (skillTreeManager.getStatAdditive as any).mockImplementation(
       (building: string, stat: string) => {
         if (building === "furnace" && stat === "queueSize") return extraQueue;

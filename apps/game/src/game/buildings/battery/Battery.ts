@@ -163,11 +163,18 @@ export class Battery
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public serialize(): any {
-    return {};
+    return {
+      currentCharge: this.currentCharge,
+      isEnabled: this.isEnabled,
+    };
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public deserialize(_data: any): void {}
+  public deserialize(data: any): void {
+    if (data.currentCharge !== undefined)
+      this.currentCharge = data.currentCharge;
+    if (data.isEnabled !== undefined) this.isEnabled = data.isEnabled;
+  }
 
   // --- IIOBuilding ---
   public getInputPosition(): { x: number; y: number } | null {

@@ -86,9 +86,7 @@ class MockWorld {
     return this.buildings.get(`${x},${y}`);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getTile(_x: number, _y: number): any {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return { isStone: () => false, isWater: () => false } as any;
   }
 
@@ -177,7 +175,6 @@ describe("ConveyorLogicSystem", () => {
       // MockEntity input is BEHIND. So if chest faces East, input is West (0,0).
       const chest = new MockEntity("chest", 1, 0, "east");
       world.add(chest);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const dir = findOutputDestination(0, 0, null, world as any);
       expect(dir).toBe("east");
     });
@@ -186,7 +183,6 @@ describe("ConveyorLogicSystem", () => {
       const conv = new MockEntity("conveyor", 0, 1, "north");
       world.add(conv);
       // Conveyor at 0,0. Conv at South.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const dir = findOutputDestination(0, 0, null, world as any);
       expect(dir).toBe("south");
     });
@@ -196,7 +192,6 @@ describe("ConveyorLogicSystem", () => {
       const chest = new MockEntity("chest", 1, 0, "east");
       world.add(chest);
       // Test: Chest at East.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const dir = findOutputDestination(0, 0, "west", world as any);
       // forbid 'east' output? No, forbid 'west' input?
       // getOpposite('west') = 'east'.
@@ -215,7 +210,6 @@ describe("ConveyorLogicSystem", () => {
       world.add(conv);
 
       // We expect North because iteration order is N, S, E, W
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const dir = findOutputDestination(0, 0, null, world as any);
       expect(dir).toBe("north");
     });
@@ -230,7 +224,6 @@ describe("ConveyorLogicSystem", () => {
       world.add(conv);
 
       // Expect South
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const dir = findOutputDestination(0, 0, null, world as any);
       expect(dir).toBe("south");
     });
@@ -248,7 +241,6 @@ describe("ConveyorLogicSystem", () => {
       const ext = new MockEntity("extractor", 0, 0, "east");
       world.add(ext);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const flow = determineFlowInputDirection(1, 0, "east", world as any);
       expect(flow).toBe("east");
     });
@@ -259,7 +251,6 @@ describe("ConveyorLogicSystem", () => {
       conv.isResolved = true;
       world.add(conv);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const flow = determineFlowInputDirection(1, 0, "east", world as any);
       expect(flow).toBe("east");
     });
@@ -269,7 +260,6 @@ describe("ConveyorLogicSystem", () => {
       conv.isResolved = false;
       world.add(conv);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const flow = determineFlowInputDirection(1, 0, "east", world as any);
       // Now we detect any conveyor pointing at us for turn visuals, regardless of resolution
       expect(flow).toBe("east");
@@ -280,7 +270,6 @@ describe("ConveyorLogicSystem", () => {
       conv.isResolved = true;
       world.add(conv);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const flow = determineFlowInputDirection(1, 0, "east", world as any);
       expect(flow).toBeNull();
     });
@@ -296,7 +285,6 @@ describe("ConveyorLogicSystem", () => {
       world.add(extE);
 
       // North is checked first in array order
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const flow = determineFlowInputDirection(0, 0, "south", world as any);
       expect(flow).toBe("south"); // Input direction from North is 'south' (neighbor faces south)
     });
@@ -308,7 +296,6 @@ describe("ConveyorLogicSystem", () => {
       convW.isResolved = true;
       world.add(convW);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const flow = determineFlowInputDirection(0, 0, "south", world as any);
       expect(flow).toBe("east"); // Input direction is East (neighbor faces East)
     });

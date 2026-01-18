@@ -18,7 +18,6 @@ class MockWorld implements Partial<IWorld> {
       isVisualVisible: () => true,
       onTick: () => null,
       serialize: () => ({ type: "stone", resourceAmount: 0 }),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
   }
 }
@@ -53,7 +52,6 @@ describe("Extractor Connectivity Reproduction", () => {
 
     const ext = new Extractor(0, 0, "east");
     world.buildings.set("0,0", ext);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     world.buildings.set("1,0", mockChest as any);
 
     ext.tick(0.1, world as unknown as IWorld);

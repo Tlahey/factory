@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test, expect, beforeEach } from "vitest";
 import { Conveyor } from "./Conveyor";
 import { Chest } from "../chest/Chest";

@@ -6,7 +6,6 @@ import { Extractor } from "../extractor/Extractor";
 
 // Mock THREE to avoid canvas/webgl issues in node environment
 vi.mock("three", async () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const actual = (await vi.importActual("three")) as any;
   return {
     ...actual,

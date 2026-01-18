@@ -357,11 +357,13 @@ export class Extractor
   public serialize(): any {
     return {
       speedMultiplier: this.speedMultiplier,
+      slots: this.slots,
     };
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public deserialize(data: any): void {
     if (data.speedMultiplier) this.speedMultiplier = data.speedMultiplier;
+    if (data.slots) this.slots = data.slots;
   }
 }

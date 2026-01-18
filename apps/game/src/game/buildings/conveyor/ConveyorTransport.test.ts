@@ -32,17 +32,14 @@ class MockWorld implements IWorld {
     this.buildings.set(`${b.x},${b.y}`, b);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getBuilding(x: number, y: number): any {
     return this.buildings.get(`${x},${y}`);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getTile(_x: number, _y: number): any {
     return { isStone: () => false, isWater: () => false };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getBuildingConnectionsCount(_building: any): number {
     return 0;
   }
@@ -50,7 +47,7 @@ class MockWorld implements IWorld {
   getConnectionsCount(_x: number, _y: number): number {
     return 0;
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   setTile(_x: number, _y: number, _tile: any): void {}
   cables = [];
 

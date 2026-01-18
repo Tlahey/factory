@@ -126,9 +126,13 @@ export class Hub extends BuildingEntity implements IPowered, IIOBuilding {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public serialize(): any {
-    return {};
+    return {
+      isEnabled: this.isEnabled,
+    };
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public deserialize(_data: any): void {}
+  public deserialize(data: any): void {
+    if (data.isEnabled !== undefined) this.isEnabled = data.isEnabled;
+  }
 }

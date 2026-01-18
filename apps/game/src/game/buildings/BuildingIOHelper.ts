@@ -7,6 +7,7 @@ import {
   BuildingConfig,
   IOConfig,
 } from "./BuildingConfig";
+import { logChanged } from "../utils/DebugLog";
 
 /**
  * SIMPLIFIED ARROW VISIBILITY RULES:
@@ -27,13 +28,25 @@ function isOutputConnectedInternal(
   y: number,
   outputDirection: Direction,
 ): boolean {
+  const building = world.getBuilding(x, y);
+  if (!building) return false;
+
+  // Use building's current world-space dimensions
+  const { width = 1, height = 1 } = building;
+
   const offset = getDirectionOffset(outputDirection);
-  const targetX = x + offset.dx;
-  const targetY = y + offset.dy;
+  let targetX = x + offset.dx;
+  let targetY = y + offset.dy;
+
+  if (outputDirection === "south") targetX = x; // Ensure we only shift the axis we care about
+  if (outputDirection === "south") targetY = y + height;
+  if (outputDirection === "east") targetX = x + width;
+  if (outputDirection === "east") targetY = y;
+
   const neighbor = world.getBuilding(targetX, targetY);
 
-  // Simple rule: output connected if ANY building at output position
-  return neighbor !== undefined && neighbor !== null;
+  // Simple rule: output connected if ANY building at output position (that is not us)
+  return neighbor !== undefined && neighbor !== null && neighbor !== building;
 }
 
 /**
@@ -58,14 +71,24 @@ function isInputConnectedInternal(
 
     if (!neighbor) continue;
 
-    // Check if neighbor has an output that targets our position
     if ("getOutputPosition" in neighbor) {
       const neighborOutput = (
         neighbor as { getOutputPosition: () => { x: number; y: number } | null }
       ).getOutputPosition();
-      // Neighbor's output should equal OUR position
-      if (neighborOutput && neighborOutput.x === x && neighborOutput.y === y) {
-        return true;
+
+      if (neighborOutput) {
+        // Check if the neighbor's output targets ANY tile of the building at (x, y)
+        const targetBuilding = world.getBuilding(
+          neighborOutput.x,
+          neighborOutput.y,
+        );
+        const us = world.getBuilding(x, y);
+
+        // neighbor must be different from us (cannot point to ourselves)
+        // and targetBuilding must be the same as us
+        if (targetBuilding && us && targetBuilding === us && neighbor !== us) {
+          return true;
+        }
       }
     }
   }
@@ -98,7 +121,9 @@ export function updateBuildingConnectivity(
   world: IWorld,
 ): void {
   const io = building.io;
-  const { width = 1, height = 1 } = building;
+  const config = building.getConfig();
+  const width = config?.width || 1;
+  const height = config?.height || 1;
 
   // --- OUTPUT CONNECTIVITY ---
   const validOutputSides = io.validOutputSides ||
@@ -120,9 +145,10 @@ export function updateBuildingConnectivity(
       const targetX = building.x + offset.dx;
       const targetY = building.y + offset.dy;
 
-      // Check if there is a building at target
+      // Check if there is a building at target (that is not us)
       const neighbor = world.getBuilding(targetX, targetY);
-      const isConnected = neighbor !== undefined && neighbor !== null;
+      const isConnected =
+        neighbor !== undefined && neighbor !== null && neighbor !== building;
 
       if (isConnected) {
         connectedOutputSides.push(side);
@@ -157,15 +183,26 @@ export function updateBuildingConnectivity(
             getOutputPosition: () => { x: number; y: number } | null;
           }
         ).getOutputPosition();
-        if (
-          neighborOutput &&
-          // Check if neighbor outputs to THIS exact building
-          // We check basic coordinates of the building anchor
-          // TODO: For multi-tile buildings, strict intersection check might be needed if they output to a specific 'part'
-          neighborOutput.x === building.x &&
-          neighborOutput.y === building.y
-        ) {
-          isConnected = true;
+
+        if (neighborOutput) {
+          // Check if neighbor outputs to ANY tile that belongs to this building
+          const targetBuilding = world.getBuilding(
+            neighborOutput.x,
+            neighborOutput.y,
+          );
+          const isUs = targetBuilding === building;
+
+          if (building.buildingType === "furnace") {
+            logChanged(
+              "IOHelper",
+              `furnace_check_${side}`,
+              `neighbor=${neighbor.buildingType} at (${feederX},${feederY}), output=(${neighborOutput.x},${neighborOutput.y}), isUs=${isUs}`,
+            );
+          }
+
+          if (isUs) {
+            isConnected = true;
+          }
         }
       }
 

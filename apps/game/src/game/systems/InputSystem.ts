@@ -13,7 +13,11 @@ import {
 } from "../buildings/conveyor/ConveyorPlacementHelper";
 import { Conveyor } from "../buildings/conveyor/Conveyor";
 import { Direction } from "../entities/types";
-import { getBuildingConfig, BuildingId } from "../buildings/BuildingConfig";
+import {
+  getBuildingConfig,
+  BuildingId,
+  IIOBuilding,
+} from "../buildings/BuildingConfig";
 import { getAllowedCount } from "../buildings/hub/shop/ShopConfig";
 import { ElectricPole } from "../buildings/electric-pole/ElectricPole";
 
@@ -1168,11 +1172,52 @@ export class InputSystem {
 
     const building = this.world.getBuilding(gridX, gridY);
     if (building) {
+      // DEBUG LOG ON CLICK
+      console.log(
+        `[InputSystem] Clicked building: ${building.buildingType} at (${building.x}, ${building.y}), facing ${building.direction}`,
+      );
+      if ("getOutputPosition" in building) {
+        const out = (building as unknown as IIOBuilding).getOutputPosition();
+        console.log(
+          `[InputSystem] ${building.buildingType} output points to:`,
+          out ? `(${out.x}, ${out.y})` : "none",
+        );
+        if (out) {
+          const target = this.world.getBuilding(out.x, out.y);
+          console.log(
+            `[InputSystem] Building at output position:`,
+            target
+              ? `${target.buildingType} at (${target.x}, ${target.y})`
+              : "EMPTY",
+          );
+        }
+      }
+
+      // Check neighbors anyway
+      const dirs = [
+        { dx: 0, dy: -1, name: "North" },
+        { dx: 0, dy: 1, name: "South" },
+        { dx: 1, dy: 0, name: "East" },
+        { dx: -1, dy: 0, name: "West" },
+      ];
+      dirs.forEach((d) => {
+        const nx = gridX + d.dx;
+        const ny = gridY + d.dy;
+        const nb = this.world.getBuilding(nx, ny);
+        if (nb) {
+          console.log(
+            `[InputSystem] Neighbor at ${d.name} (${nx}, ${ny}): ${nb.buildingType} at (${nb.x}, ${nb.y})`,
+          );
+        }
+      });
+
       if (this.onInteract) {
         this.onInteract(gridX, gridY, `${building.x},${building.y}`);
       }
       if (building.hasInteractionMenu()) {
-        useGameStore.getState().setOpenedEntityKey(`${gridX},${gridY}`);
+        useGameStore
+          .getState()
+          .setOpenedEntityKey(`${building.x},${building.y}`);
         return;
       }
     }

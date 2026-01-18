@@ -72,17 +72,17 @@ export class FurnaceVisual implements VisualEntity {
 
           switch (entity.direction) {
             case "north":
-              spawnY += 0.8;
-              break; // Building North -> Model South (Pool) -> spawn +Z
+              spawnY += 0.0; // Now at anchor Tile 0
+              break;
             case "south":
-              spawnY -= 0.8;
-              break; // Building South -> Model North (Pool) -> spawn -Z
+              spawnY += 0.0; // Now at anchor Tile 0
+              break;
             case "east":
-              spawnX += 0.8;
-              break; // Building East -> Model East (Pool) -> spawn +X
+              spawnX += 0.0;
+              break;
             case "west":
-              spawnX -= 0.8;
-              break; // Building West -> Model West (Pool) -> spawn -X
+              spawnX += 0.0;
+              break;
           }
 
           this.particleSystem.spawn(spawnX, 1.2, spawnY);

@@ -1,169 +1,154 @@
-import { describe, test, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { updateBuildingConnectivity, getIOOffset } from "./BuildingIOHelper";
 import { BuildingEntity } from "../entities/BuildingEntity";
-import { IWorld } from "../entities/types";
-import { updateBuildingConnectivity } from "./BuildingIOHelper";
-import { IIOBuilding, IOConfig } from "./BuildingConfig";
-import { Direction } from "../entities/types";
+import { IWorld, Direction } from "../entities/types";
+import { IIOBuilding, BuildingId } from "./BuildingConfig";
 
-// Minimal mock implementation of an IO building
-class MockBuilding extends BuildingEntity implements IIOBuilding {
-  public io: IOConfig;
-  public isInputConnected: boolean = false;
-  public isOutputConnected: boolean = false;
+// Simple concrete class for testing
+class TestBuilding extends BuildingEntity implements IIOBuilding {
+  public io = {
+    hasInput: true,
+    hasOutput: true,
+    inputSide: "back" as const,
+    outputSide: "front" as const,
+  };
+  public isInputConnected = false;
+  public isOutputConnected = false;
+  public connectedInputSides: any[] = [];
+  public connectedOutputSides: any[] = [];
 
-  constructor(x: number, y: number, direction: Direction, io: IOConfig) {
-    super(x, y, "mock", direction);
-    this.io = io;
+  constructor(
+    x: number,
+    y: number,
+    type: BuildingId,
+    direction: Direction,
+    w: number,
+    h: number,
+  ) {
+    super(x, y, type, direction);
+    // Force dimensions as if from config
+    this.width = direction === "east" || direction === "west" ? h : w;
+    this.height = direction === "east" || direction === "west" ? w : h;
   }
-
-  getInputPosition() {
-    if (!this.io.hasInput) return null;
-    return { x: this.x, y: this.y - 1 }; // North for test simplicity
-  }
-
-  getOutputPosition() {
-    if (!this.io.hasOutput) return null;
-    return { x: this.x, y: this.y + 1 }; // South for test simplicity
-  }
-
-  canInput() {
-    return true;
-  }
-  canOutput() {
-    return true;
-  }
-  tryOutput() {
-    return true;
-  }
-  getColor() {
-    return 0;
-  }
-  isValidPlacement() {
-    return true;
-  }
-  get powerConfig() {
+  public get powerConfig() {
     return undefined;
   }
-}
+  public getColor() {
+    return 0;
+  }
+  public serialize() {
+    return {};
+  }
+  public deserialize() {}
+  public isValidPlacement() {
+    return true;
+  }
+  public getInputPosition() {
+    return null;
+  }
+  public getOutputPosition() {
+    return null;
+  }
+  public canInput() {
+    return true;
+  }
+  public canOutput() {
+    return true;
+  }
+  public tryOutput() {
+    return true;
+  }
 
-class MockWorld implements Partial<IWorld> {
-  buildings = new Map<string, BuildingEntity | MockBuilding>();
-  getBuilding(x: number, y: number) {
-    return this.buildings.get(`${x},${y}`);
+  // Mock getConfig to return our dimensions
+  public getConfig() {
+    const config: any = super.getConfig() || {};
+    const isRot = this.direction === "east" || this.direction === "west";
+    return {
+      ...config,
+      width: isRot ? this.height : this.width,
+      height: isRot ? this.width : this.height,
+    };
   }
 }
 
 describe("BuildingIOHelper", () => {
-  let world: MockWorld;
+  let world: IWorld;
 
   beforeEach(() => {
-    world = new MockWorld();
+    const buildings = new Map<string, any>();
+    world = {
+      getBuilding: vi.fn((x, y) => buildings.get(`${x},${y}`)),
+      placeBuilding: vi.fn((x, y, b) => {
+        buildings.set(`${x},${y}`, b);
+      }),
+    } as any;
   });
 
-  test("connects input when feeder at input position outputs to us", () => {
-    // Main building at (5, 5) - input position is at (5, 4)
-    const main = new MockBuilding(5, 5, "north", {
-      hasInput: true,
-      hasOutput: false,
-      inputSide: "front",
-    });
-    // Feeder at (5, 4) which is main's input position, outputs to (5, 5) which is main
-    const feeder = new MockBuilding(5, 4, "south", {
-      hasInput: false,
-      hasOutput: true,
-      outputSide: "front",
+  describe("getIOOffset", () => {
+    it("should calculate correct offset for 1x1 building", () => {
+      // North, Front -> (0, -1)
+      expect(getIOOffset("front", "north", 1, 1)).toEqual({ dx: 0, dy: -1 });
+      // North, Back -> (0, 1)
+      expect(getIOOffset("back", "north", 1, 1)).toEqual({ dx: 0, dy: 1 });
     });
 
-    main.getInputPosition = () => ({ x: 5, y: 4 });
-    feeder.getOutputPosition = () => ({ x: 5, y: 5 }); // outputs to main's position
+    it("should calculate correct offset for 1x2 building (Furnace style)", () => {
+      // North faces front. Anchor 0,0. Occupies (0,0) and (0,1).
+      // Front is North -> (0, -1)
+      expect(getIOOffset("front", "north", 1, 2)).toEqual({ dx: 0, dy: -1 });
+      // Back is South -> (0, 2)
+      expect(getIOOffset("back", "north", 1, 2)).toEqual({ dx: 0, dy: 2 });
 
-    // Register both buildings
-    world.buildings.set("5,5", main);
-    world.buildings.set("5,4", feeder);
-
-    updateBuildingConnectivity(main, world as unknown as IWorld);
-    expect(main.isInputConnected).toBe(true);
+      // Rotate East. Anchor 0,0. Occupies (0,0) and (1,0).
+      // Front is East -> (2, 0)
+      expect(getIOOffset("front", "east", 1, 2)).toEqual({ dx: 2, dy: 0 });
+      // Back is West -> (-1, 0)
+      expect(getIOOffset("back", "east", 1, 2)).toEqual({ dx: -1, dy: 0 });
+    });
   });
 
-  test("disconnects input when feeder at input position outputs away", () => {
-    const main = new MockBuilding(5, 5, "north", {
-      hasInput: true,
-      hasOutput: false,
-    });
-    // Feeder at (5, 4) which is main's input position, but outputs away (5, 3)
-    const feeder = new MockBuilding(5, 4, "north", {
-      hasInput: false,
-      hasOutput: true,
-    });
+  describe("updateBuildingConnectivity", () => {
+    it("should detect input from conveyor pointing at multi-tile building", () => {
+      // Furnace at (10, 10), 1x2, facing West
+      // Occupies (10, 10) and (11, 10)
+      const furnace = new TestBuilding(10, 10, "furnace", "west", 1, 2);
+      // West: width=2, height=1.
 
-    main.getInputPosition = () => ({ x: 5, y: 4 });
-    feeder.getOutputPosition = () => ({ x: 5, y: 3 }); // outputs away from main
+      // Conveyor pointing East at the second tile (11, 10)
+      const conveyor = {
+        buildingType: "conveyor",
+        x: 12,
+        y: 10,
+        getOutputPosition: () => ({ x: 11, y: 10 }),
+      };
 
-    world.buildings.set("5,5", main);
-    world.buildings.set("5,4", feeder);
+      (world.getBuilding as any).mockImplementation((x: number, y: number) => {
+        if (x === 10 && y === 10) return furnace;
+        if (x === 11 && y === 10) return furnace;
+        if (x === 12 && y === 10) return conveyor;
+        return null;
+      });
 
-    updateBuildingConnectivity(main, world as unknown as IWorld);
-    expect(main.isInputConnected).toBe(false);
-  });
+      updateBuildingConnectivity(furnace, world);
 
-  test("connects output when neighbor is at our output location", () => {
-    const main = new MockBuilding(5, 5, "north", {
-      hasInput: false,
-      hasOutput: true,
-      outputSide: "front",
-    });
-    const neighbor = new MockBuilding(5, 4, "south", {
-      hasInput: true,
-      hasOutput: false,
-      inputSide: "front",
+      // Furnace facing West. Input is "Back" (East).
+      // Back tile for West 1x2 is (12, 10).
+      expect(furnace.isInputConnected).toBe(true);
+      expect(furnace.connectedInputSides).toContain("back");
     });
 
-    main.getOutputPosition = () => ({ x: 5, y: 4 });
-    neighbor.getInputPosition = () => ({ x: 5, y: 5 });
+    it("should not connect building to itself on output", () => {
+      const furnace = new TestBuilding(10, 10, "furnace", "north", 1, 2);
+      // Occupies 10,10 and 10,11.
+      // Output is Front (North) -> 10,9.
 
-    world.buildings.set("5,4", neighbor);
+      (world.getBuilding as any).mockImplementation((x: number, y: number) => {
+        if (x === 10 && (y === 10 || y === 11)) return furnace;
+        return null;
+      });
 
-    updateBuildingConnectivity(main, world as unknown as IWorld);
-    expect(main.isOutputConnected).toBe(true);
-  });
-
-  test("handles buildings with no IO", () => {
-    const main = new MockBuilding(5, 5, "north", {
-      hasInput: false,
-      hasOutput: false,
+      updateBuildingConnectivity(furnace, world);
+      expect(furnace.isOutputConnected).toBe(false);
     });
-    updateBuildingConnectivity(main, world as unknown as IWorld);
-    expect(main.isInputConnected).toBe(false);
-    expect(main.isOutputConnected).toBe(false);
-  });
-
-  test("connects input when 90° angled feeder outputs to us", () => {
-    // Main building at (5, 5) facing north - has input on back (south side)
-    // Input position is at (5, 6)
-    const main = new MockBuilding(5, 5, "north", {
-      hasInput: true,
-      hasOutput: true,
-      inputSide: "back",
-      outputSide: "front",
-    });
-
-    // Feeder at (5, 6) which is main's input position, facing east
-    // Outputs to (6, 6) -- but for 90° test, let's make it output to (5, 5)
-    const feeder = new MockBuilding(5, 6, "north", {
-      hasInput: true,
-      hasOutput: true,
-      inputSide: "back",
-      outputSide: "front",
-    });
-
-    main.getInputPosition = () => ({ x: 5, y: 6 }); // back side
-    feeder.getOutputPosition = () => ({ x: 5, y: 5 }); // outputs to main's position
-
-    // Register both buildings
-    world.buildings.set("5,5", main);
-    world.buildings.set("5,6", feeder);
-
-    updateBuildingConnectivity(main, world as unknown as IWorld);
-    expect(main.isInputConnected).toBe(true);
   });
 });

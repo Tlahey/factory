@@ -54,6 +54,16 @@ Common Interfaces:
 
 **Rule**: If multiple buildings share complex logic, extract that logic into a **Game System** or a **Utility**, do not copy-paste or cross-import.
 
+## 🏗 Multi-Tile Buildings & Connectivity
+
+Buildings larger than 1x1 (e.g., the 1x2 Furnace) require specific handling for their Input/Output (I/O) ports.
+
+- **Dimension Source of Truth**: When calculating I/O offsets (using `getIOOffset`), always use the **base dimensions from the configuration** (un-rotated). The `BuildingEntity` instance's `width` and `height` properties are already swapped based on rotation, and using them in offset calculations would lead to a "double-swap" bug.
+- **Port Detection**:
+  - **Input**: A building is considered "connected" if an adjacent building's output points to **any tile** occupied by the building.
+  - **Output**: A building is considered "connected" if there is a building at the calculated output tile (the tile just outside the building's footprint in the output direction).
+- **Self-Connection**: A building must **not** consider itself as a neighbor. This is particularly important for multi-tile buildings during rotation to avoid false connectivity locks.
+
 ## 🏭 The Building Factory
 
 To avoid tight coupling and huge `switch` statements throughout the codebase, we use a Factory pattern.

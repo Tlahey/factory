@@ -8,9 +8,9 @@ import { createConveyorModel } from "@/game/buildings/conveyor/ConveyorGeometry"
 import { createChestModel } from "@/game/buildings/chest/ChestModel";
 import { createConveyorTexture } from "@/game/buildings/conveyor/ConveyorTexture";
 import {
-  createItemRockModel,
-  updateRockVisuals,
-} from "@/game/environment/rock/RockModel";
+  createItemModel,
+  updateItemVisuals,
+} from "@/game/environment/ResourceRegistryHelper";
 import { createHubModel } from "@/game/buildings/hub/HubModel";
 import { createBatteryModel } from "@/game/buildings/battery/BatteryModel";
 import { createFurnaceModel } from "@/game/buildings/furnace/FurnaceModel";
@@ -105,11 +105,18 @@ export default function ModelPreview({
     const setupScene = () => {
       const scene = new THREE.Scene();
 
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
       scene.add(ambientLight);
-      const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+
+      // Main Top Light
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
       dirLight.position.set(5, 10, 5);
       scene.add(dirLight);
+
+      // Front Diagonal Light (Rim/Key highlight)
+      const frontLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      frontLight.position.set(2, 2, 10); // Points toward the front-face
+      scene.add(frontLight);
 
       const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
       camera.position.set(2, 2, 2);
@@ -199,65 +206,19 @@ export default function ModelPreview({
           model.position.y = -0.3;
         }
       } else if (type === "item") {
-        if (id === "stone") {
-          model = createItemRockModel();
-          updateRockVisuals(model as THREE.Group, seed || 42);
-          model.scale.set(4, 4, 4);
-          model.position.y = 0;
-        } else if (id === "iron_ore") {
-          // Fallback: dark gray rough sphere for iron ore
-          console.warn(`[ModelPreview] Using fallback model for item: ${id}`);
-          const geometry = new THREE.IcosahedronGeometry(0.3, 0);
-          const material = new THREE.MeshLambertMaterial({ color: 0x555555 });
-          model = new THREE.Mesh(geometry, material);
-          model.scale.set(1.5, 1.5, 1.5);
-        } else if (id === "copper_ore") {
-          // Fallback: orange-brown rough sphere for copper ore
-          console.warn(`[ModelPreview] Using fallback model for item: ${id}`);
-          const geometry = new THREE.IcosahedronGeometry(0.3, 0);
-          const material = new THREE.MeshLambertMaterial({ color: 0xb87333 });
-          model = new THREE.Mesh(geometry, material);
-          model.scale.set(1.5, 1.5, 1.5);
-        } else if (id === "gold_ore") {
-          // Fallback: golden rough sphere for gold ore
-          console.warn(`[ModelPreview] Using fallback model for item: ${id}`);
-          const geometry = new THREE.IcosahedronGeometry(0.3, 0);
-          const material = new THREE.MeshLambertMaterial({ color: 0xffd700 });
-          model = new THREE.Mesh(geometry, material);
-          model.scale.set(1.5, 1.5, 1.5);
-        } else if (id === "iron_ingot") {
-          // Fallback: shiny silver bar for iron ingot
-          console.warn(`[ModelPreview] Using fallback model for item: ${id}`);
-          const geometry = new THREE.BoxGeometry(0.5, 0.15, 0.25);
-          const material = new THREE.MeshStandardMaterial({
-            color: 0xc0c0c0,
-            metalness: 0.8,
-            roughness: 0.3,
-          });
-          model = new THREE.Mesh(geometry, material);
-          model.scale.set(2, 2, 2);
-        } else if (id === "copper_ingot") {
-          // Fallback: shiny copper bar for copper ingot
-          console.warn(`[ModelPreview] Using fallback model for item: ${id}`);
-          const geometry = new THREE.BoxGeometry(0.5, 0.15, 0.25);
-          const material = new THREE.MeshStandardMaterial({
-            color: 0xb87333,
-            metalness: 0.8,
-            roughness: 0.3,
-          });
-          model = new THREE.Mesh(geometry, material);
-          model.scale.set(2, 2, 2);
-        } else if (id === "gold_ingot") {
-          // Fallback: shiny gold bar for gold ingot
-          console.warn(`[ModelPreview] Using fallback model for item: ${id}`);
-          const geometry = new THREE.BoxGeometry(0.5, 0.15, 0.25);
-          const material = new THREE.MeshStandardMaterial({
-            color: 0xffd700,
-            metalness: 0.9,
-            roughness: 0.2,
-          });
-          model = new THREE.Mesh(geometry, material);
-          model.scale.set(2, 2, 2);
+        const itemModel = createItemModel(id);
+        if (itemModel) {
+          model = itemModel;
+          updateItemVisuals(id, model as THREE.Group, seed || 0);
+
+          // Scaling adjustment based on resource
+          if (id === "stone") {
+            model.scale.set(4, 4, 4);
+          } else if (id.includes("ore")) {
+            model.scale.set(1, 1, 1);
+          } else if (id.includes("ingot")) {
+            model.scale.set(2.5, 2.5, 2.5);
+          }
         } else {
           // Generic fallback for any unknown item
           console.warn(

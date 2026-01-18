@@ -108,7 +108,7 @@ describe("Extractor Connectivity Reproduction", () => {
     world.buildings.set("1,0", conv);
 
     ext.tick(0.1, world as unknown as IWorld);
-    // New simplified rule: any building at output = output connected (arrow hidden)
-    expect(ext.isOutputConnected).toBe(true);
+    // Smarter rule: neighbor MUST accept input for output to be considered connected
+    expect(ext.isOutputConnected).toBe(false);
   });
 });

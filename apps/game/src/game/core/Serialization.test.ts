@@ -50,6 +50,7 @@ describe("Serialization Persistence", () => {
 
   describe("Chest Persistence", () => {
     it("should store inventory", () => {
+      world.grid[15][15] = TileFactory.createTile(TileType.GRASS);
       world.placeBuilding(15, 15, "chest");
       const chest = world.getBuilding(15, 15) as any;
       chest.addItem("iron-ore", 10);
@@ -68,6 +69,7 @@ describe("Serialization Persistence", () => {
 
   describe("Conveyor Persistence", () => {
     it("should store items on belt", () => {
+      world.grid[16][16] = TileFactory.createTile(TileType.GRASS);
       world.placeBuilding(16, 16, "conveyor");
       const belt = world.getBuilding(16, 16) as any;
       belt.currentItem = "copper-wire";
@@ -86,6 +88,7 @@ describe("Serialization Persistence", () => {
     });
 
     it("should store merger state", () => {
+      world.grid[17][17] = TileFactory.createTile(TileType.GRASS);
       world.placeBuilding(17, 17, "conveyor_merger");
       const merger = world.getBuilding(17, 17) as any;
       merger.currentItem = "coal";
@@ -104,6 +107,7 @@ describe("Serialization Persistence", () => {
 
   describe("Power Grid Building Persistence", () => {
     it("should store battery charge", () => {
+      world.grid[18][18] = TileFactory.createTile(TileType.GRASS);
       world.placeBuilding(18, 18, "battery");
       const battery = world.getBuilding(18, 18) as any;
       battery.currentCharge = 500;
@@ -120,6 +124,10 @@ describe("Serialization Persistence", () => {
     });
 
     it("should store hub state", () => {
+      world.grid[20][20] = TileFactory.createTile(TileType.GRASS);
+      world.grid[20][21] = TileFactory.createTile(TileType.GRASS);
+      world.grid[21][20] = TileFactory.createTile(TileType.GRASS);
+      world.grid[21][21] = TileFactory.createTile(TileType.GRASS);
       world.placeBuilding(20, 20, "hub");
       const hub = world.getBuilding(20, 20) as any;
       hub.isEnabled = false;
@@ -134,6 +142,7 @@ describe("Serialization Persistence", () => {
     });
 
     it("should exist after reload (Electric Pole - stateless)", () => {
+      world.grid[22][22] = TileFactory.createTile(TileType.GRASS);
       world.placeBuilding(22, 22, "electric_pole");
 
       const data = world.serialize();

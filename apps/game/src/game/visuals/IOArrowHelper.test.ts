@@ -188,13 +188,16 @@ describe("IOArrowHelper", () => {
     expect(arrow.visible).toBe(true);
 
     // Connected: hidden
-    (extractor as BuildingEntity & IIOBuilding).isOutputConnected = true;
-    updateIOArrows(group, extractor as BuildingEntity & IIOBuilding);
+    const ioExt = extractor as BuildingEntity & IIOBuilding;
+    ioExt.isOutputConnected = true;
+    ioExt.connectedOutputSides = ["front"];
+    updateIOArrows(group, ioExt);
     expect(arrow.visible).toBe(false);
 
     // Disconnected: visible
-    (extractor as BuildingEntity & IIOBuilding).isOutputConnected = false;
-    updateIOArrows(group, extractor as BuildingEntity & IIOBuilding);
+    ioExt.isOutputConnected = false;
+    ioExt.connectedOutputSides = [];
+    updateIOArrows(group, ioExt);
     expect(arrow.visible).toBe(true);
   });
 

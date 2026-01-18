@@ -4,9 +4,9 @@ import { Conveyor } from "./Conveyor";
 import { createConveyorTexture } from "./ConveyorTexture";
 import { createConveyorModel } from "./ConveyorGeometry";
 import {
-  createItemRockModel,
-  updateRockVisuals,
-} from "../../environment/rock/RockModel";
+  createItemModel,
+  updateItemVisuals,
+} from "@/game/environment/ResourceRegistryHelper";
 import { createIOArrows, updateIOArrows } from "../../visuals/IOArrowHelper";
 import type { IIOBuilding } from "../../buildings/BuildingConfig";
 
@@ -16,8 +16,9 @@ export class ConveyorVisual implements VisualEntity {
   private itemContainer: THREE.Group; // Wrapper for Transform/Scale correction
   public type: "straight" | "left" | "right";
   private lastResolved: boolean;
-  private itemMesh: THREE.Group;
+  private itemMesh: THREE.Group | null = null;
   private lastItemId: number | null = null;
+  private lastItemType: string | null = null;
   private lastDirection: string;
   private ioArrows: THREE.Group;
 
@@ -37,15 +38,11 @@ export class ConveyorVisual implements VisualEntity {
       this.beltMaterial = belt.material as THREE.MeshLambertMaterial;
     }
 
-    // Setup Item Container & Mesh
+    // Setup Item Container (Mesh will be added dynamically)
     this.itemContainer = new THREE.Group();
     this.mesh.add(this.itemContainer);
 
-    this.itemMesh = createItemRockModel();
-    this.itemMesh.visible = false;
-    this.itemContainer.add(this.itemMesh);
-
-    // Counter-scale for Right turns to preserve rock shape (Parent is Scale X=-1)
+    // Counter-scale for Right turns to preserve shapes (Parent is Scale X=-1)
     if (this.type === "right") {
       this.itemContainer.scale.set(-1, 1, 1);
     } else {
@@ -137,10 +134,28 @@ export class ConveyorVisual implements VisualEntity {
 
     // 3. Update Item
     if (conveyor.currentItem) {
-      if (this.lastItemId !== conveyor.itemId) {
-        updateRockVisuals(this.itemMesh, conveyor.itemId || 0); // itemId can be null but usually set if currentItem is set
+      // If item type changed, swap the mesh
+      if (this.lastItemType !== conveyor.currentItem) {
+        if (this.itemMesh) {
+          this.itemContainer.remove(this.itemMesh);
+          // Optional: Dispose old mesh if needed, but they are simple
+        }
+        this.itemMesh = createItemModel(conveyor.currentItem);
+        if (this.itemMesh) {
+          this.itemContainer.add(this.itemMesh);
+          this.itemMesh.visible = true;
+        }
+        this.lastItemType = conveyor.currentItem;
+        this.lastItemId = null; // Force visual update for the new mesh
+      }
+
+      if (this.itemMesh && this.lastItemId !== conveyor.itemId) {
+        updateItemVisuals(
+          conveyor.currentItem,
+          this.itemMesh,
+          conveyor.itemId || 0,
+        );
         this.lastItemId = conveyor.itemId;
-        this.itemMesh.visible = true;
       }
 
       // Position item based on progress
@@ -176,7 +191,10 @@ export class ConveyorVisual implements VisualEntity {
         }
       }
     } else {
-      this.itemMesh.visible = false;
+      if (this.itemMesh) {
+        this.itemMesh.visible = false;
+      }
+      this.lastItemType = null;
       this.lastItemId = null;
     }
   }
@@ -225,7 +243,9 @@ export class ConveyorVisual implements VisualEntity {
     // Re-setup item container
     this.itemContainer = new THREE.Group();
     this.mesh.add(this.itemContainer);
-    this.itemContainer.add(this.itemMesh);
+    if (this.itemMesh) {
+      this.itemContainer.add(this.itemMesh);
+    }
 
     // Counter-scale for Right turns
     if (newType === "right") {

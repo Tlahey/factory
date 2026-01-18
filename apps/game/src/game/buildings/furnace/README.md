@@ -22,6 +22,10 @@ Smelts raw ores into useable ingots. The heart of basic production.
 - **Input/Output**:
   - **Input**: Back
   - **Output**: Front
+- **I/O Validation**:
+  - **Strict Routing**: Items only enter via the Back port and exit via the Front port.
+  - **Type Checking**: Rejects any items not matching the active recipe's input.
+  - **Connectivity**: Automatically manages output flow; only pushes to active recipients (Conveyors, Chests) when connected.
 - **Queue**: Holds multiple input items.
 
 ## 🏗️ Placement

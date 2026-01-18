@@ -128,13 +128,15 @@ describe("Furnace", () => {
   it("should try to output to neighbor", () => {
     furnace.selectedRecipeId = "iron_ingot";
     furnace.outputSlot = { type: "iron_ingot", count: 1 };
+    furnace.isOutputConnected = true;
 
     // Mock neighbor
-    const chest = new Chest(10, 12); // South of 10,10 + 1 (Back is +2 for 1x2?)
-    // Furnace (1x2) at 10,10 North.
-    // Occupies 10,10 and 10,11.
-    // Output is Back -> 10,12.
-    (world.getBuilding as any).mockReturnValue(chest);
+    const chest = new Chest(10, 9, "south"); // North of furnace, facing south
+    (world.getBuilding as any).mockImplementation((x: number, y: number) => {
+      if (x === 10 && y === 9) return chest;
+      if ((x === 10 && y === 10) || (x === 10 && y === 11)) return furnace;
+      return null;
+    });
 
     furnace.tick(0.1, world);
 
@@ -222,6 +224,84 @@ describe("Furnace", () => {
       expect(furnace.direction).toBe("south");
       expect(furnace.width).toBe(1);
       expect(furnace.height).toBe(2);
+    });
+  });
+
+  describe("I/O Ports & Validation", () => {
+    it("should provide correct port positions", () => {
+      // Furnace at 10,10 North (1x2)
+      // Body: (10,10), (10,11)
+      // Input: back (south of 10,11) -> (10,12)
+      // Output: front (north of 10,10) -> (10,9)
+      expect(furnace.getInputPosition()).toEqual({ x: 10, y: 12 });
+      expect(furnace.getOutputPosition()).toEqual({ x: 10, y: 9 });
+    });
+
+    it("should accept items ONLY through the input port", () => {
+      furnace.selectedRecipeId = "iron_ingot";
+
+      // Accept from back
+      expect(furnace.canInput(10, 12)).toBe(true);
+      expect(furnace.addItem("iron_ore", 1, 10, 12)).toBe(true);
+
+      // Reject from side
+      expect(furnace.canInput(11, 10)).toBe(false);
+      expect(furnace.addItem("iron_ore", 1, 11, 10)).toBe(false);
+
+      // Reject from front
+      expect(furnace.canInput(10, 9)).toBe(false);
+      expect(furnace.addItem("iron_ore", 1, 10, 9)).toBe(false);
+    });
+
+    it("should NOT output items if output port is NOT connected", () => {
+      furnace.selectedRecipeId = "iron_ingot";
+      furnace.outputSlot = { type: "iron_ingot", count: 1 };
+      furnace.isOutputConnected = false;
+
+      const chest = new Chest(10, 9, "south");
+      (world.getBuilding as any).mockImplementation((x: number, y: number) => {
+        if (x === 10 && y === 9) return chest;
+        if ((x === 10 && y === 10) || (x === 10 && y === 11)) return furnace;
+        return null;
+      });
+
+      // We explicitly skip updateBuildingConnectivity by only ticking the output logic?
+      // No, tick() calls updateBuildingConnectivity(this, world).
+      // If we want it to stay false, the mock must return something that makes it false.
+      // But we ALREADY set it to false.
+      // Wait, if tick() calls updateBuildingConnectivity, it will overwrite our manual setting.
+      // So the mock should return something that makes it false OR we should test a specific condition.
+
+      // Let's make the mock return NULL for output check to force isOutputConnected = false
+      (world.getBuilding as any).mockImplementation((x: number, y: number) => {
+        if ((x === 10 && y === 10) || (x === 10 && y === 11)) return furnace;
+        return null; // chest not found at (10,9)
+      });
+
+      furnace.tick(0.1, world);
+
+      // Should still have item because it wasn't connected
+      expect(furnace.isOutputConnected).toBe(false);
+      expect(furnace.outputSlot).not.toBeNull();
+    });
+
+    it("should output items ONLY when output port IS connected", () => {
+      furnace.selectedRecipeId = "iron_ingot";
+      furnace.outputSlot = { type: "iron_ingot", count: 1 };
+      furnace.isOutputConnected = true;
+
+      const chest = new Chest(10, 9, "south");
+      (world.getBuilding as any).mockImplementation((x: number, y: number) => {
+        if (x === 10 && y === 9) return chest;
+        if ((x === 10 && y === 10) || (x === 10 && y === 11)) return furnace;
+        return null;
+      });
+
+      furnace.tick(0.1, world);
+
+      expect(furnace.isOutputConnected).toBe(true);
+      expect(furnace.outputSlot).toBeNull();
+      expect(chest.slots[0]).toEqual({ type: "iron_ingot", count: 1 });
     });
   });
 });

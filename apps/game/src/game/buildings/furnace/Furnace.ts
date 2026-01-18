@@ -155,8 +155,13 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
       }
     }
 
-    // 4. Output Logic (Always try to output if we have items)
-    if (this.outputSlot && this.outputSlot.count > 0) {
+    // 4. Output Logic (Always try to output if we have items in Output Buffer)
+    // We only try to output if we have items AND the output is connected
+    if (
+      this.outputSlot &&
+      this.outputSlot.count > 0 &&
+      this.isOutputConnected
+    ) {
       if (this.tryOutput(world)) {
         this.outputSlot.count--;
         if (this.outputSlot.count <= 0) {
@@ -268,32 +273,22 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
     return { x: this.x + offset.dx, y: this.y + offset.dy };
   }
 
-  public canInput(_fromX: number, _fromY: number): boolean {
-    // 1. Check if queue is full
+  public canInput(fromX: number, fromY: number): boolean {
+    // 1. Check if the input is coming from the correct side/position
+    const inputPos = this.getInputPosition();
+    if (!inputPos || fromX !== inputPos.x || fromY !== inputPos.y) return false;
+
+    // 2. Check if queue is full
     const currentItems = this.inputQueue.reduce(
       (acc, item) => acc + item.count,
       0,
     );
     if (currentItems >= this.getQueueSize()) return false;
 
-    // 2. Check if valid resource for CURRENT recipe
+    // 3. Check if we have a recipe selected (machines without recipe shouldn't accept items)
     if (!this.selectedRecipeId) return false;
-    const recipe = this.getRecipe(this.selectedRecipeId);
-    if (!recipe) return false;
 
-    // We can infer the item type from what the conveyor is offering?
-    // Actually `canInput` is often called by Conveyor to check if it CAN push.
-    // But the conveyor doesn't say WHAT it is pushing in `canInput`.
-    // The strict check happens in `receiveItem` or similar?
-    // In this codebase, Conveyor pushes by modifying state directly or similar?
-    // Let's check `Extractor.ts` -> It pushes to Conveyor.
-    // Conveyor pushes to Target. `checkOutputClear` calls `target.addItem` (Chest) or just sets `currentItem` (Conveyor).
-    // So there is NO `receiveItem` on BuildingEntity?
-    // Wait, `Chest` has `addItem`. `Furnace` needs `addItem` too if it acts like a storage for input.
-    // `IIOBuilding` defines `canInput` but not `addItem`.
-    // Let's look at `BuildingEntity` definition or `Chest.ts`.
-
-    return true; // We accept generic input permission here, specific item check in addItem
+    return true;
   }
 
   // Emulate `IStorage` for input compatibility if needed, or just specific method.
@@ -302,20 +297,30 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
   // Looking at `Conveyor.ts` (not visible but I can infer), it likely calls `addItem` if target suggests it.
   // I'll implement `addItem` to be safe and compatible with Chest-like push.
 
-  public addItem(type: string, amount: number = 1): boolean {
-    // 1. Check Capacity
+  public addItem(
+    type: string,
+    amount: number = 1,
+    fromX?: number,
+    fromY?: number,
+  ): boolean {
+    // 1. Explicit check of input position if coordinates are provided
+    if (fromX !== undefined && fromY !== undefined) {
+      if (!this.canInput(fromX, fromY)) return false;
+    }
+
+    // 2. Check Capacity
     const currentItems = this.inputQueue.reduce(
       (acc, item) => acc + item.count,
       0,
     );
     if (currentItems + amount > this.getQueueSize()) return false;
 
-    // 2. Filter by Recipe
+    // 3. Filter by Recipe
     if (!this.selectedRecipeId) return false;
     const recipe = this.getRecipe(this.selectedRecipeId);
     if (!recipe || recipe.input !== type) return false;
 
-    // 3. Add to Queue
+    // 4. Add to Queue
     // Check if we can merge with last stack
     // (Or any stack, but usually queues merge same types)
     const existing = this.inputQueue.find((i) => i.type === type);

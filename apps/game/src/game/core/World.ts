@@ -2,15 +2,11 @@ import { TileType, WORLD_HEIGHT, WORLD_WIDTH } from "../constants";
 import { useGameStore } from "../state/store";
 import { BuildingEntity } from "../entities/BuildingEntity";
 import { Direction } from "../entities/types";
-import { Extractor } from "../buildings/extractor/Extractor";
-import { Conveyor } from "../buildings/conveyor/Conveyor";
-import { Chest } from "../buildings/chest/Chest";
-import { Hub } from "../buildings/hub/Hub";
-import { Battery } from "../buildings/battery/Battery";
-import { ElectricPole } from "../buildings/electric-pole/ElectricPole";
-import { Furnace } from "../buildings/furnace/Furnace";
-import { getBuildingConfig, IIOBuilding } from "../buildings/BuildingConfig";
-import { ChestConfigType } from "../buildings/chest/ChestConfig";
+import {
+  BuildingId,
+  getBuildingConfig,
+  IIOBuilding,
+} from "../buildings/BuildingConfig";
 import { createBuildingLogic } from "../buildings/BuildingFactory";
 import { IWorld, WorldData, SerializedBuilding } from "../entities/types";
 import { getAllowedCount } from "../buildings/hub/shop/ShopConfig";
@@ -71,8 +67,8 @@ export class World implements IWorld {
   public hasPathTo(
     startX: number,
     startY: number,
-    targetType: string,
-    viaTypes: string[] = ["conveyor"],
+    targetType: BuildingId,
+    viaTypes: BuildingId[] = ["conveyor"],
   ): boolean {
     // Simple BFS to check connectivity
     const start = this.getBuilding(startX, startY);
@@ -119,7 +115,7 @@ export class World implements IWorld {
   public canPlaceBuilding(
     x: number,
     y: number,
-    type: string,
+    type: BuildingId,
     direction: Direction = "north",
   ): boolean {
     if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) return false;
@@ -227,13 +223,15 @@ export class World implements IWorld {
   public updateConveyorNetwork(): void {
     // 1. Reset all conveyors to unresolved
     this.buildings.forEach((b) => {
-      if (b instanceof Conveyor) b.isResolved = false;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (b.getType() === "conveyor") (b as any).isResolved = false;
     });
 
     // 2. Propagate resolution backwards from all sinks (buildings that can receive input)
     const queue: { x: number; y: number }[] = [];
     this.buildings.forEach((b) => {
-      if (b instanceof Conveyor) return; // Conveyors are intermediate
+      if (b.getType() === "conveyor" || b.getType() === "conveyor_merger")
+        return; // Logistics are intermediate
       if ("canInput" in b) {
         // Add all tiles of the building as potential sink origins
         for (let dx = 0; dx < b.width; dx++) {
@@ -264,7 +262,7 @@ export class World implements IWorld {
         const ny = y + d.dy;
         const neighbor = this.getBuilding(nx, ny);
 
-        if (neighbor && neighbor instanceof Conveyor) {
+        if (neighbor && neighbor.getType() === "conveyor") {
           // If the conveyor points at us (x, y), check if it's a valid connection
           if (neighbor.direction === d.dir) {
             // Validate that the sink building at (x, y) accepts input from (nx, ny)
@@ -274,8 +272,10 @@ export class World implements IWorld {
               "canInput" in sinkBuilding &&
               (sinkBuilding as unknown as IIOBuilding).canInput(nx, ny)
             ) {
-              if (!neighbor.isResolved) {
-                neighbor.isResolved = true;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              if (!(neighbor as any).isResolved) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (neighbor as any).isResolved = true;
                 queue.push({ x: nx, y: ny });
               }
             }
@@ -373,7 +373,7 @@ export class World implements IWorld {
   public placeBuilding(
     x: number,
     y: number,
-    type: string,
+    type: BuildingId,
     direction: Direction = "north",
     skipValidation: boolean = false,
   ): boolean {
@@ -385,34 +385,10 @@ export class World implements IWorld {
       if (!this.canPlaceBuilding(x, y, type, direction)) return false;
     }
 
-    // ... imports
-
-    let building: BuildingEntity;
-    switch (type) {
-      case "extractor":
-        building = new Extractor(x, y, direction);
-        break;
-      case "conveyor":
-        building = new Conveyor(x, y, direction);
-        break;
-      case "chest":
-        building = new Chest(x, y, direction);
-        break;
-      case "hub":
-        building = new Hub(x, y);
-        break;
-      case "electric_pole":
-        building = new ElectricPole(x, y);
-        break;
-      case "battery":
-        building = new Battery(x, y, direction);
-        break;
-      case "furnace":
-        building = new Furnace(x, y, direction);
-        break;
-      default:
-        console.warn(`[World] Unknown building type: ${type}`);
-        return false;
+    const building = createBuildingLogic(type, x, y, direction);
+    if (!building) {
+      console.warn(`[World] Unknown building type: ${type}`);
+      return false;
     }
 
     // Register all tiles
@@ -425,10 +401,18 @@ export class World implements IWorld {
     // Direction is now fixed at placement time via ConveyorPlacementHelper
     // No runtime auto-orientation needed for conveyors
 
-    // For conveyors, compute visual state (turns) and connectivity
-    if (building instanceof Conveyor) {
-      building.updateVisualState(this);
-      updateBuildingConnectivity(building, this);
+    // For conveyors and mergers, compute visual state and connectivity
+    if (type === "conveyor" || type === "conveyor_merger") {
+      if (type === "conveyor") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (building as any).updateVisualState(this);
+      }
+      if ("io" in building) {
+        updateBuildingConnectivity(
+          building as BuildingEntity & IIOBuilding,
+          this,
+        );
+      }
 
       // Also update neighbors' connectivity (they may now be connected to us)
       this.updateNeighborConnectivity(x, y);
@@ -484,9 +468,9 @@ export class World implements IWorld {
    */
   public propagateFlowFromSources(): void {
     // Find all extractors (sources)
-    const extractors: Extractor[] = [];
+    const extractors: BuildingEntity[] = [];
     this.buildings.forEach((b) => {
-      if (b instanceof Extractor) {
+      if (b.getType() === "extractor") {
         extractors.push(b);
       }
     });
@@ -522,7 +506,7 @@ export class World implements IWorld {
         const conveyor = this.getBuilding(x, y);
         if (!conveyor || conveyor.getType() !== "conveyor") continue;
 
-        const conv = conveyor as Conveyor;
+        const conv = conveyor;
         const forbiddenDir = fromDir; // Cannot point back to where we came from
 
         // If conveyor points back toward the source, find a better direction
@@ -571,7 +555,8 @@ export class World implements IWorld {
 
   public getDistanceToChest(startX: number, startY: number): number {
     const b = this.getBuilding(startX, startY);
-    if (b instanceof Conveyor && !b.isResolved) return Infinity;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (b?.getType() === "conveyor" && !(b as any).isResolved) return Infinity;
     return 0;
   }
 
@@ -597,31 +582,10 @@ export class World implements IWorld {
           direction: b.direction,
         };
 
-        if (b instanceof Conveyor) {
-          return {
-            ...base,
-            currentItem: b.currentItem,
-            itemId: b.itemId, // Persist ID to keep same rock shape
-            transportProgress: b.transportProgress,
-          };
-        }
-
-        if (b instanceof Chest) {
-          return {
-            ...base,
-            slots: b.slots,
-            bonusSlots: b.bonusSlots,
-          };
-        }
-
-        if (b instanceof Extractor) {
-          return {
-            ...base,
-            speedMultiplier: b.speedMultiplier,
-          };
-        }
-
-        return base;
+        return {
+          ...base,
+          ...b.serialize(),
+        };
       }),
       cables: this.cables,
     };
@@ -665,24 +629,7 @@ export class World implements IWorld {
         // Restore internal state
         const building = this.getBuilding(bData.x, bData.y);
         if (building) {
-          if (building instanceof Conveyor) {
-            building.currentItem = bData.currentItem || null;
-            building.itemId = bData.itemId || null;
-            building.transportProgress = bData.transportProgress || 0;
-          } else if (building instanceof Chest) {
-            if (bData.slots) building.slots = bData.slots;
-            if (bData.bonusSlots !== undefined)
-              building.bonusSlots = bData.bonusSlots;
-            else if (bData.maxSlots) {
-              // Backward compatibility: calculate bonus from old total
-              const base =
-                (getBuildingConfig("chest") as ChestConfigType)?.maxSlots || 5;
-              building.bonusSlots = Math.max(0, bData.maxSlots - base);
-            }
-          } else if (building instanceof Extractor) {
-            if (bData.speedMultiplier)
-              building.speedMultiplier = bData.speedMultiplier;
-          }
+          building.deserialize(bData);
         }
       });
 

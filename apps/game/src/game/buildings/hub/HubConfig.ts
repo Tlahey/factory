@@ -11,7 +11,10 @@ export type HubConfigType = BaseBuildingConfig &
   ConfigOf<IPowered> &
   ConfigOf<IIOBuilding> &
   ConfigOf<IPowerConnectable> &
-  ConfigOf<IUpgradable>;
+  ConfigOf<IUpgradable> & {
+    id: "hub";
+    type: "hub";
+  };
 
 export const HUB_CONFIG: HubConfigType = {
   id: "hub",

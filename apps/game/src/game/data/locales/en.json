@@ -129,6 +129,10 @@
       "description": "Smelts raw ore into refined ingots. Requires power and input materials.",
       "recipe": "Recipe",
       "select_recipe": "Select Recipe"
+    },
+    "conveyor_merger": {
+      "name": "Conveyor Merger",
+      "description": "Merges three input conveyor belts into one output belt using round-robin logic."
     }
   },
   "skill_tree": {

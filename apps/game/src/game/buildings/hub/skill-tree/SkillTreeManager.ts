@@ -78,11 +78,11 @@ export class SkillTreeManager {
   /**
    * Check if a building is unlocked in the skill tree
    */
-  isBuildingUnlocked(buildingId: string): boolean {
+  isBuildingUnlocked(buildingId: BuildingId): boolean {
     // Hub is always unlocked (root)
     if (buildingId === "hub") return true;
 
-    const unlockNode = getBuildingUnlockNode(buildingId as BuildingId);
+    const unlockNode = getBuildingUnlockNode(buildingId);
     if (!unlockNode) return true; // No unlock node means always available
 
     return this.isUnlocked(unlockNode.id);
@@ -256,9 +256,9 @@ export class SkillTreeManager {
    * Get the current upgrade level for a building type
    * Returns 0 if no upgrades unlocked, otherwise the highest unlocked level
    */
-  getBuildingUpgradeLevel(buildingId: string): number {
+  getBuildingUpgradeLevel(buildingId: BuildingId): number {
     const unlocked = this.getUnlockedNodeIds();
-    const buildingNodes = getSkillNodesForBuilding(buildingId as BuildingId);
+    const buildingNodes = getSkillNodesForBuilding(buildingId);
 
     let maxLevel = 0;
     for (const node of buildingNodes) {
@@ -277,14 +277,15 @@ export class SkillTreeManager {
   /**
    * Get the active upgrade for a building (the highest unlocked level)
    */
-  getActiveUpgrade(buildingId: string): BuildingUpgrade | undefined {
+  getActiveUpgrade(buildingId: BuildingId): BuildingUpgrade | undefined {
     const level = this.getBuildingUpgradeLevel(buildingId);
     if (level === 0) return undefined;
 
     const config = getBuildingConfig(buildingId);
     if (!config || !("upgrades" in config)) return undefined;
 
-    const upgrades = config.upgrades as BuildingUpgrade[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const upgrades = (config as any).upgrades as BuildingUpgrade[];
     return upgrades.find((u) => u.level === level);
   }
 
@@ -292,7 +293,7 @@ export class SkillTreeManager {
    * Get the multiplier for a specific stat on a building
    * Returns 1.0 if no upgrades affect this stat
    */
-  getStatMultiplier(buildingId: string, stat: string): number {
+  getStatMultiplier(buildingId: BuildingId, stat: string): number {
     const upgrade = this.getActiveUpgrade(buildingId);
     if (!upgrade) return 1.0;
 
@@ -306,7 +307,7 @@ export class SkillTreeManager {
    * Get the additive bonus for a specific stat on a building
    * Returns 0 if no upgrades affect this stat
    */
-  getStatAdditive(buildingId: string, stat: string): number {
+  getStatAdditive(buildingId: BuildingId, stat: string): number {
     const upgrade = this.getActiveUpgrade(buildingId);
     if (!upgrade) return 0;
 

@@ -14,15 +14,25 @@ import {
 import { createHubModel } from "@/game/buildings/hub/HubModel";
 import { createBatteryModel } from "@/game/buildings/battery/BatteryModel";
 import { createFurnaceModel } from "@/game/buildings/furnace/FurnaceModel";
+import { createConveyorMergerModel } from "@/game/buildings/conveyor-merger/ConveyorMergerModel";
 
 // Singleton Renderer to prevent Context Loss (Limit ~16 contexts involved)
-import { getBuildingConfig } from "@/game/buildings/BuildingConfig";
+import { getBuildingConfig, BuildingId } from "@/game/buildings/BuildingConfig";
 
 // Singleton Renderer to prevent Context Loss (Limit ~16 contexts involved)
 // Use globalThis to survive Hot Module Reloading
 const GLOBAL_RENDERER_KEY = "__THREE_SHARED_RENDERER__";
+const GLOBAL_CACHE_KEY = "__PREVIEW_IMAGE_CACHE__";
 
-function getSharedRenderer() {
+function getSharedCache(): Map<string, string> {
+  const g = globalThis as unknown as Record<string, Map<string, string>>;
+  if (!g[GLOBAL_CACHE_KEY]) {
+    g[GLOBAL_CACHE_KEY] = new Map();
+  }
+  return g[GLOBAL_CACHE_KEY];
+}
+
+function getSharedRenderer(): THREE.WebGLRenderer {
   const g = globalThis as unknown as Record<string, THREE.WebGLRenderer>;
   if (!g[GLOBAL_RENDERER_KEY]) {
     g[GLOBAL_RENDERER_KEY] = new THREE.WebGLRenderer({
@@ -57,10 +67,18 @@ export default function ModelPreview({
   seed = 0,
 }: ModelPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [imageSrc, setImageSrc] = useState<string | null>(() => {
+    if (isStatic && id) {
+      const cache = getSharedCache();
+      const cacheKey = `${type}:${id}:${width}:${height}:${seed}`;
+      return cache.get(cacheKey) || null;
+    }
+    return null;
+  });
 
   // Check for override image in config
-  const config = type === "building" ? getBuildingConfig(id) : null;
+  const config =
+    type === "building" ? getBuildingConfig(id as BuildingId) : null;
   const previewImage = config?.previewImage;
 
   // NOTE: Early return above is safe because it only depends on props that don't change hook order?
@@ -175,6 +193,10 @@ export default function ModelPreview({
           model = createFurnaceModel();
           model.scale.set(0.75, 0.75, 0.75);
           model.position.y = -0.5;
+        } else if (id === "conveyor_merger") {
+          model = createConveyorMergerModel();
+          model.scale.set(1.2, 1.2, 1.2);
+          model.position.y = -0.3;
         }
       } else if (type === "item") {
         if (id === "stone") {
@@ -258,23 +280,34 @@ export default function ModelPreview({
 
     // --- STATIC MODE ---
     if (isStatic) {
+      const cache = getSharedCache();
+      const cacheKey = `${type}:${id}:${width}:${height}:${seed}`;
+
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        // Already initialized or set
+        return;
+      }
+
       const { scene, camera } = setupScene();
       const renderer = getSharedRenderer();
 
       // Render to Data URL
       renderer.setSize(width, height);
+      renderer.setClearColor(0x000000, 0); // Ensure transparency
       renderer.render(scene, camera);
       const url = renderer.domElement.toDataURL();
-      console.log(
-        `[ModelPreview] Generated URL for ${id}:`,
-        url.substring(0, 50) + "...",
-      );
-      setTimeout(() => {
+
+      // Save to cache
+      cache.set(cacheKey, url);
+
+      // Defer state update to avoid "set-state-in-effect"
+      Promise.resolve().then(() => {
         setImageSrc(url);
-      }, 0);
+      });
 
       // Cleanup Scene
-      scene.traverse((obj) => {
+      scene.traverse((obj: THREE.Object3D) => {
         if (obj instanceof THREE.Mesh) {
           obj.geometry.dispose();
           if (Array.isArray(obj.material)) {
@@ -339,7 +372,7 @@ export default function ModelPreview({
       renderer.dispose();
       if (container) container.innerHTML = "";
 
-      scene.traverse((obj) => {
+      scene.traverse((obj: THREE.Object3D) => {
         if (obj instanceof THREE.Mesh) {
           obj.geometry.dispose();
           if (Array.isArray(obj.material)) {

@@ -18,7 +18,10 @@ export type BatteryConfigType = BaseBuildingConfig &
   ConfigOf<IPowered> &
   ConfigOf<IBattery> &
   ConfigOf<IPowerConnectable> &
-  ConfigOf<IUpgradable>;
+  ConfigOf<IUpgradable> & {
+    id: "battery";
+    type: "battery";
+  };
 
 export const BATTERY_CONFIG: BatteryConfigType = {
   id: "battery",

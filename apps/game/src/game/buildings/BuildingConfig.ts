@@ -11,6 +11,10 @@ import {
   ELECTRIC_POLE_CONFIG,
   ElectricPoleConfigType,
 } from "./electric-pole/ElectricPoleConfig";
+import {
+  CONVEYOR_MERGER_CONFIG,
+  ConveyorMergerConfigType,
+} from "./conveyor-merger/ConveyorMergerConfig";
 import { IWorld, Direction } from "../entities/types";
 
 // --- CORE TYPES & ENUMS ---
@@ -25,6 +29,21 @@ export type BuildingCategory =
   | "power"
   | "special";
 
+// --- REPOSITORY TYPES ---
+
+/**
+ * Registry entry for a building, mapping logic and visual classes.
+ * Defined here to avoid circular dependencies when colocating in building folders.
+ */
+export interface BuildingRegistryEntry {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Logic: { new (...args: any[]): any };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Visual: { new (...args: any[]): any };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  createVisual?: (building: any, context: any) => any;
+}
+
 /**
  * Side relative to building's facing direction
  * - 'front': Direction the building faces
@@ -35,6 +54,20 @@ export type BuildingCategory =
 export type IOSide = "front" | "back" | "left" | "right";
 
 // --- CONFIGURATION SUB-STRUCTURES ---
+
+/**
+ * Literal IDs for all building types.
+ */
+export type BuildingId =
+  | "extractor"
+  | "conveyor"
+  | "chest"
+  | "hub"
+  | "electric_pole"
+  | "battery"
+  | "furnace"
+  | "conveyor_merger"
+  | "cable";
 
 export interface PowerConfig {
   type: "consumer" | "producer" | "relay";
@@ -105,13 +138,13 @@ export interface IOConfig {
 
 export interface BaseBuildingConfig {
   name: string;
-  type: string;
+  type: BuildingId;
   category: BuildingCategory;
   cost: Record<string, number>;
   locked?: boolean;
   hasMenu: boolean;
   description: string; // Fallback or Dev description
-  id: string; // Key for i18n (e.g. 'extractor', 'conveyor')
+  id: BuildingId; // Key for i18n (e.g. 'extractor', 'conveyor')
   maxCount?: number;
   width?: number;
   height?: number;
@@ -155,8 +188,12 @@ export interface IIOBuilding {
   io: IOConfig;
   /** Get world position of input port, or null if no input */
   getInputPosition(): { x: number; y: number } | null;
+  /** Get world position of ALL input ports (for buildings like mergers) */
+  getInputPositions?(): { x: number; y: number }[];
   /** Get world position of output port, or null if no output */
   getOutputPosition(): { x: number; y: number } | null;
+  /** Get world position of ALL output ports (for buildings like splitters) */
+  getOutputPositions?(): { x: number; y: number }[];
   canInput(fromX: number, fromY: number): boolean;
   canOutput(world: IWorld): boolean;
   tryOutput(world: IWorld): boolean;
@@ -242,9 +279,10 @@ export type BuildingConfig =
   | ElectricPoleConfigType
   | BatteryConfigType
   | FurnaceConfigType
+  | ConveyorMergerConfigType
   | BaseBuildingConfig; // For simple buildings like 'cable'
 
-export const BUILDINGS: Record<string, BuildingConfig> = {
+export const BUILDINGS: Record<BuildingId, BuildingConfig> = {
   extractor: EXTRACTOR_CONFIG,
   conveyor: CONVEYOR_CONFIG,
   chest: CHEST_CONFIG,
@@ -264,8 +302,11 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
 
   battery: BATTERY_CONFIG,
   furnace: FURNACE_CONFIG,
+  conveyor_merger: CONVEYOR_MERGER_CONFIG,
 };
 
-export const getBuildingConfig = (type: string): BuildingConfig | undefined => {
+export const getBuildingConfig = (
+  type: BuildingId,
+): BuildingConfig | undefined => {
   return BUILDINGS[type];
 };

@@ -1,7 +1,10 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { DIALOGUES } from "../data/Dialogues";
-import { SKILL_TREE } from "../buildings/hub/skill-tree/SkillTreeConfig";
+import {
+  BuildingId,
+  SKILL_TREE,
+} from "../buildings/hub/skill-tree/SkillTreeConfig";
 
 export interface InventorySlot {
   type: string | null;
@@ -10,10 +13,12 @@ export interface InventorySlot {
 
 interface GameState {
   inventory: InventorySlot[];
-  selectedBuilding: string | null;
+  selectedBuilding: BuildingId | "select" | "delete" | null;
   addItem: (item: string, amount: number) => void;
   removeItem: (item: string, amount: number) => void;
-  setSelectedBuilding: (building: string | null) => void;
+  setSelectedBuilding: (
+    building: BuildingId | "select" | "delete" | null,
+  ) => void;
   viewMode: "2D" | "3D";
   setViewMode: (mode: "2D" | "3D") => void;
 
@@ -37,12 +42,12 @@ interface GameState {
   // UI Overhaul
   isBuildingMenuOpen: boolean;
   toggleBuildingMenu: () => void;
-  hotbar: (string | null)[];
-  setHotbarSlot: (index: number, buildingId: string | null) => void;
+  hotbar: (BuildingId | null)[];
+  setHotbarSlot: (index: number, buildingId: BuildingId | null) => void;
 
   // Building Limits
-  buildingCounts: Record<string, number>;
-  updateBuildingCount: (type: string, delta: number) => void;
+  buildingCounts: Partial<Record<BuildingId, number>>;
+  updateBuildingCount: (type: BuildingId, delta: number) => void;
   resetBuildingCounts: () => void;
   reset: () => void;
 
@@ -64,8 +69,8 @@ interface GameState {
   completeUnlock: (skillId: string) => void;
 
   // Progression
-  unlockedBuildings: string[];
-  unlockBuilding: (buildingId: string) => void;
+  unlockedBuildings: BuildingId[];
+  unlockBuilding: (buildingId: BuildingId) => void;
   unlockedRecipes: string[];
   unlockRecipe: (recipeId: string) => void;
   hasResources: (cost: Record<string, number>) => boolean;
@@ -84,16 +89,16 @@ interface GameState {
   markDialogueSeen: (id: string) => void;
 
   // Shop
-  purchasedCounts: Record<string, number>;
-  buyBuilding: (buildingId: string) => void;
+  purchasedCounts: Partial<Record<BuildingId, number>>;
+  buyBuilding: (buildingId: BuildingId) => void;
 
   // Interactive Tutorial / Highlight System
   focusedElement: string | null; // ID of the DOM element or World Entity to highlight
   setFocusedElement: (id: string | null) => void;
 
   // New state for UI interactions
-  hoveredBarBuilding: string | null;
-  setHoveredBarBuilding: (id: string | null) => void;
+  hoveredBarBuilding: BuildingId | null;
+  setHoveredBarBuilding: (id: BuildingId | null) => void;
 }
 
 const INVENTORY_SIZE = 10;
@@ -475,7 +480,7 @@ export const useGameStore = create<GameState>()(
 
       // Shop
       purchasedCounts: {},
-      buyBuilding: (buildingId: string) =>
+      buyBuilding: (buildingId: BuildingId) =>
         set((state) => {
           const current = state.purchasedCounts[buildingId] || 0;
           return {

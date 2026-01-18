@@ -9,6 +9,7 @@ This file serves as a guide for the Antigravity AI to maintain consistency, stru
 - **Single Source of Truth**: Avoid logic duplication. Centralize global constants in `src/game/constants.ts` but keep building-specific constants within their respective folders.
 - **Language Policy**: **All files, including code (comments, variables, logs) and documentation, must be in English.**
 - **Internationalization (i18n)**: All user-facing text must be extracted into JSON files (e.g., `en.json`, `fr.json`). Hardcoded strings in UI components or building configs are strictly prohibited.
+- **Type Safety**: Prefer **String Literal Types** (unions) over primitive `string` for known sets of values (e.g., `BuildingId` or `Direction`). This ensures strict type checking and prevents typos.
 
 ## 🏗 Software Architecture
 

@@ -1,6 +1,7 @@
 import { BuildingEntity } from "./BuildingEntity";
 import { Tile } from "../core/Tile";
 import { TileType } from "../constants";
+import { BuildingId } from "../buildings/BuildingConfig";
 
 export type Direction = "north" | "south" | "east" | "west";
 export const DIRECTIONS: Direction[] = ["north", "south", "east", "west"];
@@ -19,7 +20,7 @@ export interface IResource extends IEntity {
 
 export interface IBuilding extends IEntity {
   type: "building";
-  buildingType: string;
+  buildingType: BuildingId;
 }
 
 export interface IWorld {
@@ -31,8 +32,8 @@ export interface IWorld {
   hasPathTo(
     startX: number,
     startY: number,
-    targetType: string,
-    viaTypes: string[],
+    targetType: BuildingId,
+    viaTypes: BuildingId[],
   ): boolean;
   cables: { x1: number; y1: number; x2: number; y2: number }[];
 }
@@ -40,7 +41,7 @@ export interface IWorld {
 export interface SerializedBuilding {
   x: number;
   y: number;
-  type: string;
+  type: BuildingId;
   direction: string;
   currentItem?: string | null;
   itemId?: number | null;

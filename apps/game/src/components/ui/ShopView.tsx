@@ -10,6 +10,7 @@ import {
 import ModelPreview from "./ModelPreview";
 import { ShoppingCart, AlertCircle } from "lucide-react";
 import clsx from "clsx";
+import { BuildingId } from "@/game/buildings/BuildingConfig";
 
 interface ShopViewProps {
   onPurchased?: () => void;
@@ -36,7 +37,7 @@ export default function ShopView({ onPurchased }: ShopViewProps) {
     unlockedBuildings.includes(item.id),
   );
 
-  const handleBuy = (buildingId: string) => {
+  const handleBuy = (buildingId: BuildingId) => {
     const cost = getNextPurchaseCost(
       buildingId,
       purchasedCounts[buildingId] || 0,
@@ -77,7 +78,7 @@ export default function ShopView({ onPurchased }: ShopViewProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {availableItems.map((item) => {
-            const purchasedCount = purchasedCounts[item.id] || 0;
+            const purchasedCount = purchasedCounts[item.id as BuildingId] || 0;
             const cost = getNextPurchaseCost(item.id, purchasedCount);
             const canAfford = hasResources(cost);
             const totalAllowed = getAllowedCount(item.id, purchasedCount);

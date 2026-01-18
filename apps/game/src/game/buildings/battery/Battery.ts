@@ -158,9 +158,16 @@ export class Battery
   }
 
   public isValidPlacement(tile: Tile): boolean {
-    // Prevent placement on water or rocks (stone) to avoid clipping/logic issues
     return !tile.isWater() && !tile.isStone();
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public serialize(): any {
+    return {};
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public deserialize(_data: any): void {}
 
   // --- IIOBuilding ---
   public getInputPosition(): { x: number; y: number } | null {

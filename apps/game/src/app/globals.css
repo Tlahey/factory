@@ -9,7 +9,7 @@
   /* Z-Index Hierarchy */
   --z-index-world: 10;
   /* Canvas/World elements */
-  --z-index-hud: 110;
+  --z-index-hud: 160;
   /* Base HUD (Inventory, Bottom Bar) - Must be above panels for drag & drop */
   --z-index-panel: 100;
   /* Info Panels, Windows */

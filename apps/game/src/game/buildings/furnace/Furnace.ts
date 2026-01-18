@@ -384,6 +384,14 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
   }
 
   public isValidPlacement(tile: Tile): boolean {
-    return tile.isGrass();
+    return !tile.isStone() && !tile.isWater();
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public serialize(): any {
+    return {};
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public deserialize(_data: any): void {}
 }

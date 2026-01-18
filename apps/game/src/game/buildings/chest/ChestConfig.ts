@@ -9,7 +9,10 @@ import {
 export type ChestConfigType = BaseBuildingConfig &
   ConfigOf<IStorage> &
   ConfigOf<IIOBuilding> &
-  ConfigOf<IUpgradable>;
+  ConfigOf<IUpgradable> & {
+    id: "chest";
+    type: "chest";
+  };
 // import { BuildingEntity } from "../../entities/BuildingEntity";
 
 export const CHEST_CONFIG: ChestConfigType = {

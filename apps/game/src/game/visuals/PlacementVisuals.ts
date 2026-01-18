@@ -12,7 +12,12 @@ import { createHubModel } from "../buildings/hub/HubModel";
 import { createBatteryModel } from "../buildings/battery/BatteryModel";
 import { createElectricPoleModel } from "../buildings/electric-pole/ElectricPoleModel";
 import { createFurnaceModel } from "../buildings/furnace/FurnaceModel";
-import { getBuildingConfig, IOConfig } from "../buildings/BuildingConfig";
+import { createConveyorMergerModel } from "../buildings/conveyor-merger/ConveyorMergerModel";
+import {
+  getBuildingConfig,
+  IOConfig,
+  BuildingId,
+} from "../buildings/BuildingConfig";
 import { IWorld, Direction } from "../entities/types";
 
 // 4-direction rotation mapping
@@ -57,7 +62,7 @@ export class PlacementVisuals {
 
   // Create IO arrows for building type - ALWAYS in 'north' orientation
   // The arrows will be added to the ghost mesh and inherit its rotation
-  private createIOArrows(buildingType: string): THREE.Group | null {
+  private createIOArrows(buildingType: BuildingId): THREE.Group | null {
     const config = getBuildingConfig(buildingType);
     if (!config) return null;
 
@@ -214,6 +219,8 @@ export class PlacementVisuals {
           mesh = createBatteryModel();
         } else if (ghostType === "furnace") {
           mesh = createFurnaceModel();
+        } else if (ghostType === "conveyor_merger") {
+          mesh = createConveyorMergerModel();
         }
 
         if (mesh) {
@@ -221,7 +228,7 @@ export class PlacementVisuals {
           this.scene.add(this.ghostMesh);
 
           // IO Arrows
-          this.ioArrowGroup = this.createIOArrows(ghostType);
+          this.ioArrowGroup = this.createIOArrows(ghostType as BuildingId);
           if (this.ioArrowGroup) {
             this.ghostMesh.add(this.ioArrowGroup);
           }

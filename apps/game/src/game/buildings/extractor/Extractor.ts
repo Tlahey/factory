@@ -352,4 +352,16 @@ export class Extractor
   public isValidPlacement(tile: Tile): boolean {
     return tile.isStone();
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public serialize(): any {
+    return {
+      speedMultiplier: this.speedMultiplier,
+    };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public deserialize(data: any): void {
+    if (data.speedMultiplier) this.speedMultiplier = data.speedMultiplier;
+  }
 }

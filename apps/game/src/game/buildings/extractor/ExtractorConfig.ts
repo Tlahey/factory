@@ -13,7 +13,11 @@ export type ExtractorConfigType = BaseBuildingConfig &
   ConfigOf<IPowered> &
   ConfigOf<IIOBuilding> &
   ConfigOf<IPowerConnectable> &
-  ConfigOf<IUpgradable>;
+  ConfigOf<IUpgradable> & {
+    id: "extractor";
+    type: "extractor";
+  };
+
 // import { Extractor } from "./Extractor";
 // import { BuildingEntity } from "../../entities/BuildingEntity";
 

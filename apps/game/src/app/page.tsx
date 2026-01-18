@@ -191,7 +191,7 @@ export default function Home() {
         <BuildingInfoPanel />
 
         {/* Level 1: Control Bar & World Tools (Behind Menu) */}
-        <div className="absolute inset-0 z-panel pointer-events-none p-6 text-white">
+        <div className="absolute inset-0 z-hud pointer-events-none p-6 text-white">
           <div className="absolute bottom-28 left-1/2 -translate-x-1/2">
             <ControlBar />
           </div>
@@ -210,8 +210,8 @@ export default function Home() {
         {/* Level 4: Building Menu (Modal - z-overlay: 150) */}
         <BuildingMenu />
 
-        {/* Level 5: Hotbar Sidebar (On Top for Interaction - z-dialog: 200) */}
-        <div className="absolute inset-0 z-dialog pointer-events-none p-6 text-white">
+        {/* Level 5: Hotbar Sidebar (On Top for Interaction - z-hud: 160) */}
+        <div className="absolute inset-0 z-hud pointer-events-none p-6 text-white">
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-end">
             <BuildingSidebar />
           </div>

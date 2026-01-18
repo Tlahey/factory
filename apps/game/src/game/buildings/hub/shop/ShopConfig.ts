@@ -5,7 +5,7 @@
  * Shop configuration is now defined directly in each building's config file.
  */
 
-import { BUILDINGS, BuildingConfig } from "../../BuildingConfig";
+import { BUILDINGS, BuildingConfig, BuildingId } from "../../BuildingConfig";
 
 /**
  * Get all buildings that are available in the shop
@@ -20,7 +20,7 @@ export function getShopItems(): BuildingConfig[] {
  * Calculate the cost of the next purchase for a building
  */
 export function getNextPurchaseCost(
-  buildingId: string,
+  buildingId: BuildingId,
   purchasedCount: number,
 ): Record<string, number> {
   const config = BUILDINGS[buildingId];
@@ -40,7 +40,7 @@ export function getNextPurchaseCost(
  * Get the total allowed count for a building
  */
 export function getAllowedCount(
-  buildingId: string,
+  buildingId: BuildingId,
   purchasedCount: number,
 ): number {
   const config = BUILDINGS[buildingId];

@@ -76,8 +76,11 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       typeof (targetBuilding as any).addItem === "function"
     ) {
+      // Pass coordinates to support round-robin in Mergers
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((targetBuilding as any).addItem(this.currentItem!)) {
+      if (
+        (targetBuilding as any).addItem(this.currentItem!, 1, this.x, this.y)
+      ) {
         this.currentItem = null;
         this.itemId = null;
         this.transportProgress = 0;
@@ -213,5 +216,21 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
     } else {
       this.visualType = "straight";
     }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public serialize(): any {
+    return {
+      currentItem: this.currentItem,
+      itemId: this.itemId,
+      transportProgress: this.transportProgress,
+    };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public deserialize(data: any): void {
+    this.currentItem = data.currentItem || null;
+    this.itemId = data.itemId || null;
+    this.transportProgress = data.transportProgress || 0;
   }
 }

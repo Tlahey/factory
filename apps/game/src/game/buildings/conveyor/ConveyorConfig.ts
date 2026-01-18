@@ -9,7 +9,10 @@ import {
 export type ConveyorConfigType = BaseBuildingConfig &
   ConfigOf<IIOBuilding> &
   ConfigOf<ITransportable> &
-  Partial<ConfigOf<IUpgradable>>;
+  Partial<ConfigOf<IUpgradable>> & {
+    id: "conveyor";
+    type: "conveyor";
+  };
 
 export const CONVEYOR_CONFIG: ConveyorConfigType = {
   id: "conveyor",

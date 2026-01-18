@@ -50,8 +50,16 @@ export class ElectricPole extends BuildingEntity implements IPowered {
   }
 
   public isValidPlacement(tile: Tile): boolean {
-    return !tile.isWater() && !tile.isStone();
+    return !tile.isWater();
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public serialize(): any {
+    return {};
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public deserialize(_data: any): void {}
 
   public getHeight(): number {
     return 2; // Taller

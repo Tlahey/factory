@@ -203,4 +203,18 @@ export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   public isValidPlacement(tile: Tile): boolean {
     return !tile.isStone() && !tile.isWater();
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public serialize(): any {
+    return {
+      slots: this.slots,
+      bonusSlots: this.bonusSlots,
+    };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public deserialize(data: any): void {
+    if (data.slots) this.slots = data.slots;
+    if (data.bonusSlots !== undefined) this.bonusSlots = data.bonusSlots;
+  }
 }

@@ -4,11 +4,12 @@ import {
   getBuildingConfig,
   BuildingConfig,
   PowerConfig,
+  BuildingId,
 } from "../buildings/BuildingConfig";
 import { Direction, IWorld } from "./types";
 
 export abstract class BuildingEntity extends Entity {
-  public buildingType: string;
+  public buildingType: BuildingId;
   public direction: Direction = "north";
 
   public width: number = 1;
@@ -37,7 +38,7 @@ export abstract class BuildingEntity extends Entity {
   constructor(
     x: number,
     y: number,
-    buildingType: string,
+    buildingType: BuildingId,
     direction: Direction = "north",
   ) {
     super(x, y, "building");
@@ -96,13 +97,13 @@ export abstract class BuildingEntity extends Entity {
 
   public isConnectedTo(
     world: IWorld,
-    targetType: string,
-    viaTypes: string[] = ["conveyor"],
+    targetType: BuildingId,
+    viaTypes: BuildingId[] = ["conveyor"],
   ): boolean {
     return world.hasPathTo(this.x, this.y, targetType, viaTypes);
   }
 
-  public getType(): string {
+  public getType(): BuildingId {
     return this.buildingType;
   }
 
@@ -119,6 +120,11 @@ export abstract class BuildingEntity extends Entity {
   public getHeight(): number {
     return 1;
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public abstract serialize(): any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public abstract deserialize(data: any): void;
 
   public abstract isValidPlacement(tile: Tile): boolean;
 }

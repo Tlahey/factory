@@ -257,7 +257,7 @@ export default function FurnaceDashboard({
   );
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-dialog flex items-center justify-center animate-in fade-in duration-200">
       <div className="relative w-[80vw] max-w-5xl h-[70vh] max-h-[700px] bg-gray-900/95 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col custom-scrollbar">
         {/* Header */}
         <div className="p-4 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-orange-500/10 to-transparent">

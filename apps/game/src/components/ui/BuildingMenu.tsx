@@ -3,7 +3,7 @@
 import { useGameStore } from "@/game/state/store";
 import { X, Hammer, Lock, Ban, TriangleAlert } from "lucide-react";
 import ModelPreview from "./ModelPreview";
-import { BUILDINGS } from "@/game/buildings/BuildingConfig";
+import { BUILDINGS, BuildingId } from "@/game/buildings/BuildingConfig";
 import { useEffect } from "react";
 import BuildingHoverCard from "./BuildingHoverCard";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -104,11 +104,12 @@ export default function BuildingMenu() {
               {hoveredBarBuilding ? t("common.building") : t("common.overview")}
             </h3>
 
-            {hoveredBarBuilding && BUILDINGS[hoveredBarBuilding] ? (
+            {hoveredBarBuilding &&
+            BUILDINGS[hoveredBarBuilding as BuildingId] ? (
               <div className="flex-1 space-y-3">
                 {/* Limit Reached Warning */}
                 {(() => {
-                  const b = BUILDINGS[hoveredBarBuilding];
+                  const b = BUILDINGS[hoveredBarBuilding as BuildingId];
                   const currentCount = buildingCounts[b.type] || 0;
                   const isLimitReached = b.maxCount
                     ? currentCount >= b.maxCount
@@ -127,7 +128,9 @@ export default function BuildingMenu() {
                 })()}
 
                 {/* Insufficient Resources Warning */}
-                {!hasResources(BUILDINGS[hoveredBarBuilding].cost) && (
+                {!hasResources(
+                  BUILDINGS[hoveredBarBuilding as BuildingId].cost,
+                ) && (
                   <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex items-center gap-3">
                     <TriangleAlert className="w-5 h-5 text-amber-400 shrink-0" />
                     <span className="text-xs font-medium text-amber-200/90">
@@ -137,7 +140,7 @@ export default function BuildingMenu() {
                 )}
 
                 <BuildingHoverCard
-                  config={BUILDINGS[hoveredBarBuilding]}
+                  config={BUILDINGS[hoveredBarBuilding as BuildingId]}
                   variant="full"
                   className="!static !w-full !mr-0 !bg-transparent !border-0 !shadow-none !p-0"
                 />
@@ -242,6 +245,7 @@ export default function BuildingMenu() {
                           id={b.type}
                           width={64}
                           height={64}
+                          static={true}
                         />
                       </div>
 
@@ -254,7 +258,7 @@ export default function BuildingMenu() {
                               : "text-gray-300 group-hover:text-blue-200",
                           )}
                         >
-                          {b.name}
+                          {t(`building.${b.id}.name`)}
                         </span>
 
                         <div className="h-4 flex items-center justify-center">

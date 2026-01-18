@@ -9,7 +9,10 @@ import {
 export type ElectricPoleConfigType = BaseBuildingConfig &
   ConfigOf<IPowered> &
   ConfigOf<IPowerConnectable> &
-  ConfigOf<IUpgradable>;
+  ConfigOf<IUpgradable> & {
+    id: "electric_pole";
+    type: "electric_pole";
+  };
 
 export const ELECTRIC_POLE_CONFIG: ElectricPoleConfigType = {
   id: "electric_pole",

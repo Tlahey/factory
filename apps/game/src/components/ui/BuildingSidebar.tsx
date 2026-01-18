@@ -3,7 +3,7 @@
 import { useGameStore } from "@/game/state/store";
 import clsx from "clsx";
 import ModelPreview from "./ModelPreview";
-import { getBuildingConfig } from "@/game/buildings/BuildingConfig";
+import { BuildingId, getBuildingConfig } from "@/game/buildings/BuildingConfig";
 import BuildingHoverCard from "./BuildingHoverCard";
 import { getAllowedCount } from "@/game/buildings/hub/shop/ShopConfig";
 
@@ -50,7 +50,7 @@ export default function BuildingSidebar() {
       // From Building Menu
       const buildingId = e.dataTransfer.getData("buildingId");
       if (buildingId) {
-        setHotbarSlot(index, buildingId);
+        setHotbarSlot(index, buildingId as BuildingId);
       }
     }
   };
@@ -75,7 +75,7 @@ export default function BuildingSidebar() {
             canAfford = hasResources(config.cost);
 
             const maxCount = getAllowedCount(
-              buildingId,
+              buildingId as BuildingId,
               purchasedCounts[buildingId] || 0,
             );
             const current = buildingCounts[buildingId] || 0;
@@ -160,6 +160,7 @@ export default function BuildingSidebar() {
                     id={buildingId}
                     width={48}
                     height={48}
+                    static={true}
                   />
                 </div>
               ) : (

@@ -21,6 +21,13 @@ describe("Furnace", () => {
   let world: IWorld;
 
   beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (skillTreeManager.getStatMultiplier as any)
+      .mockReset()
+      .mockReturnValue(1.0);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (skillTreeManager.getStatAdditive as any).mockReset().mockReturnValue(0);
+
     furnace = new Furnace(10, 10, "north");
     world = {
       getBuilding: vi.fn().mockReturnValue(null),
@@ -88,7 +95,7 @@ describe("Furnace", () => {
 
   it("should start processing when powered and has input", () => {
     furnace.selectedRecipeId = "iron_ingot";
-    furnace.addItem("iron_ore", 5); // Need 5 ore for iron_ingot recipe
+    furnace.addItem("iron_ore", 1); // Need 1 ore for iron_ingot recipe
     furnace.hasPowerSource = true;
     furnace.powerSatisfaction = 1.0;
 
@@ -102,7 +109,7 @@ describe("Furnace", () => {
 
   it("should complete processing and output", () => {
     furnace.selectedRecipeId = "iron_ingot"; // Duration 2s
-    furnace.addItem("iron_ore", 5); // Need 5 ore for iron_ingot recipe
+    furnace.addItem("iron_ore", 1); // Need 1 ore for iron_ingot recipe
     furnace.hasPowerSource = true;
     furnace.powerSatisfaction = 1.0;
 
@@ -141,7 +148,7 @@ describe("Furnace", () => {
 
   it("should process items faster with speed upgrade", () => {
     furnace.selectedRecipeId = "iron_ingot"; // Duration 2s usually
-    furnace.addItem("iron_ore", 5); // Need 5 ore for iron_ingot recipe
+    furnace.addItem("iron_ore", 1); // Need 1 ore for iron_ingot recipe
     furnace.hasPowerSource = true;
     furnace.powerSatisfaction = 1.0;
 
@@ -163,8 +170,9 @@ describe("Furnace", () => {
     // Progress = 0.5 * 2.0 / 2.0 = 0.5
     expect(furnace.activeJobs[0].progress).toBeCloseTo(0.5);
 
-    // Advance another 0.5s => Should finish
-    furnace.tick(0.5, world);
+    // Advance another 0.6s => Should finish (0.5 + 0.6 > 1.0 required)
+    furnace.tick(0.6, world);
+
     expect(furnace.activeJobs).toHaveLength(0);
     expect(furnace.outputSlot?.count).toBe(1);
   });

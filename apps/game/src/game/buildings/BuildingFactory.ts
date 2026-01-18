@@ -1,20 +1,27 @@
-import { Extractor } from "./extractor/Extractor";
-import { ExtractorVisual } from "./extractor/ExtractorVisual";
-import { Conveyor } from "./conveyor/Conveyor";
-import { ConveyorVisual } from "./conveyor/ConveyorVisual";
-import { Hub } from "./hub/Hub";
-import { HubVisual } from "./hub/HubVisual";
-import { ElectricPole } from "./electric-pole/ElectricPole";
-import { ElectricPoleVisual } from "./electric-pole/ElectricPoleVisual";
-import { Chest } from "./chest/Chest";
-import { ChestVisual } from "./chest/ChestVisual";
-import { Battery } from "./battery/Battery";
-import { BatteryVisual } from "./battery/BatteryVisual";
-import { Furnace } from "./furnace/Furnace";
-import { FurnaceVisual } from "./furnace/FurnaceVisual";
 import { BuildingEntity } from "../entities/BuildingEntity";
 import { ParticleSystem } from "../visuals/ParticleSystem";
 import { VisualEntity } from "../visuals/VisualEntity";
+import { BuildingRegistryEntry, BuildingId } from "./BuildingConfig";
+
+// Logic Imports
+import { Extractor } from "./extractor/Extractor";
+import { Conveyor } from "./conveyor/Conveyor";
+import { ConveyorMerger } from "./conveyor-merger/ConveyorMerger";
+import { Hub } from "./hub/Hub";
+import { ElectricPole } from "./electric-pole/ElectricPole";
+import { Chest } from "./chest/Chest";
+import { Battery } from "./battery/Battery";
+import { Furnace } from "./furnace/Furnace";
+
+// Visual Imports
+import { ExtractorVisual } from "./extractor/ExtractorVisual";
+import { ConveyorVisual } from "./conveyor/ConveyorVisual";
+import { ConveyorMergerVisual } from "./conveyor-merger/ConveyorMergerVisual";
+import { HubVisual } from "./hub/HubVisual";
+import { ElectricPoleVisual } from "./electric-pole/ElectricPoleVisual";
+import { ChestVisual } from "./chest/ChestVisual";
+import { BatteryVisual } from "./battery/BatteryVisual";
+import { FurnaceVisual } from "./furnace/FurnaceVisual";
 
 // Context for Visual Creation
 export interface VisualContext {
@@ -23,18 +30,11 @@ export interface VisualContext {
 
 type Direction = "north" | "south" | "east" | "west";
 
-// Definition of the Registry Entry
-interface BuildingEntry {
-  Logic: new (x: number, y: number, direction?: Direction) => BuildingEntity;
-  Visual: new (building: BuildingEntity, ...args: unknown[]) => VisualEntity;
-  createVisual?: (
-    building: BuildingEntity,
-    context: VisualContext,
-  ) => VisualEntity;
-}
-
-// Registry
-export const BuildingRegistry: Record<string, BuildingEntry> = {
+// Central Registry
+// exclude 'cable' as it doesn't have logic/visual classes in this factory
+export const BuildingRegistry: Partial<
+  Record<BuildingId, BuildingRegistryEntry>
+> = {
   extractor: {
     Logic: Extractor,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -46,31 +46,37 @@ export const BuildingRegistry: Record<string, BuildingEntry> = {
     Logic: Conveyor,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Visual: ConveyorVisual as any,
-    createVisual: (b, _ctx) => new ConveyorVisual(b as Conveyor),
+    createVisual: (b) => new ConveyorVisual(b as Conveyor),
+  },
+  conveyor_merger: {
+    Logic: ConveyorMerger,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Visual: ConveyorMergerVisual as any,
+    createVisual: (b) => new ConveyorMergerVisual(b as ConveyorMerger),
   },
   hub: {
     Logic: Hub,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Visual: HubVisual as any,
-    createVisual: (b, _ctx) => new HubVisual(b as Hub),
+    createVisual: (b) => new HubVisual(b as Hub),
   },
   electric_pole: {
     Logic: ElectricPole,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Visual: ElectricPoleVisual as any,
-    createVisual: (b, _ctx) => new ElectricPoleVisual(b as ElectricPole),
+    createVisual: (b) => new ElectricPoleVisual(b as ElectricPole),
   },
   chest: {
     Logic: Chest,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Visual: ChestVisual as any,
-    createVisual: (b, _ctx) => new ChestVisual(b as Chest),
+    createVisual: (b) => new ChestVisual(b as Chest),
   },
   battery: {
     Logic: Battery,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Visual: BatteryVisual as any,
-    createVisual: (b, _ctx) => new BatteryVisual(b as Battery),
+    createVisual: (b) => new BatteryVisual(b as Battery),
   },
   furnace: {
     Logic: Furnace,
@@ -82,7 +88,7 @@ export const BuildingRegistry: Record<string, BuildingEntry> = {
 };
 
 export function createBuildingLogic(
-  type: string,
+  type: BuildingId,
   x: number,
   y: number,
   direction: Direction = "north",
@@ -91,32 +97,22 @@ export function createBuildingLogic(
   if (entry && entry.Logic) {
     return new entry.Logic(x, y, direction);
   }
-  // Fallback? Or Error?
-  // console.warn(`Unknown building logic type: ${type}`);
   return null;
 }
 
 export function createBuildingVisual(
-  type: string,
+  type: BuildingId,
   building: BuildingEntity,
   context: VisualContext,
 ): VisualEntity {
-  const entry = BuildingRegistry[type];
+  const entry = BuildingRegistry[type as BuildingId];
   if (entry) {
     if (entry.createVisual) {
       return entry.createVisual(building, context);
     }
     if (entry.Visual) {
-      // Default constructor assuming (building) signature
       return new entry.Visual(building);
     }
   }
-  // Default fallback
-  // We might need a generic visual if none exists?
-  console.warn(`No visual factory for ${type}, using SimpleVisual fallback`);
-  // Pass a dummy object3d? This is risky.
-  // Better to throw or return a placeholder.
-  // Use SimpleVisual with empty group?
-  // return new SimpleVisual(new THREE.Group());
   throw new Error(`Could not create visual for ${type}`);
 }

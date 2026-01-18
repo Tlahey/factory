@@ -28,6 +28,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import {
   SKILL_TREE,
   SkillNode,
+  BuildingId,
   getSkillNode,
 } from "@/game/buildings/hub/skill-tree/SkillTreeConfig";
 import { skillTreeManager } from "@/game/buildings/hub/skill-tree/SkillTreeManager";
@@ -440,7 +441,7 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
   const powerGeneration = hub.getPowerGeneration();
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-dialog flex items-center justify-center animate-in fade-in duration-200">
       <div className="relative w-[90vw] max-w-6xl h-[80vh] max-h-[750px] bg-gray-900/95 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-green-500/10 to-indigo-500/10">
@@ -645,49 +646,51 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                   Active Upgrades
                 </h4>
                 <div className="space-y-2">
-                  {["extractor", "chest", "hub"].map((buildingId) => {
-                    const level =
-                      skillTreeManager.getBuildingUpgradeLevel(buildingId);
-                    const upgrade =
-                      skillTreeManager.getActiveUpgrade(buildingId);
-                    if (level === 0 || !upgrade) return null;
+                  {(["extractor", "chest", "hub"] as BuildingId[]).map(
+                    (buildingId) => {
+                      const level =
+                        skillTreeManager.getBuildingUpgradeLevel(buildingId);
+                      const upgrade =
+                        skillTreeManager.getActiveUpgrade(buildingId);
+                      if (level === 0 || !upgrade) return null;
 
-                    return (
-                      <div
-                        key={buildingId}
-                        className="p-2 bg-white/5 border border-white/10 rounded-lg"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-6 h-6 rounded overflow-hidden bg-black/30">
-                            <ModelPreview
-                              type="building"
-                              id={buildingId}
-                              width={24}
-                              height={24}
-                              static
-                            />
-                          </div>
-                          <span className="text-xs font-bold text-white">
-                            {t(`building.${buildingId}.name`)} Lv.{level}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {upgrade.effects.map((effect, i) => (
-                            <span
-                              key={i}
-                              className="px-1.5 py-0.5 text-[9px] font-mono rounded bg-indigo-500/20 text-indigo-300"
-                            >
-                              {effect.type === "multiplier"
-                                ? `${effect.stat} ×${effect.value}`
-                                : effect.type === "additive"
-                                  ? `${effect.stat} +${effect.value}`
-                                  : `Unlock: ${effect.stat}`}
+                      return (
+                        <div
+                          key={buildingId}
+                          className="p-2 bg-white/5 border border-white/10 rounded-lg"
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-6 h-6 rounded overflow-hidden bg-black/30">
+                              <ModelPreview
+                                type="building"
+                                id={buildingId}
+                                width={24}
+                                height={24}
+                                static
+                              />
+                            </div>
+                            <span className="text-xs font-bold text-white">
+                              {t(`building.${buildingId}.name`)} Lv.{level}
                             </span>
-                          ))}
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {upgrade.effects.map((effect, i) => (
+                              <span
+                                key={i}
+                                className="px-1.5 py-0.5 text-[9px] font-mono rounded bg-indigo-500/20 text-indigo-300"
+                              >
+                                {effect.type === "multiplier"
+                                  ? `${effect.stat} ×${effect.value}`
+                                  : effect.type === "additive"
+                                    ? `${effect.stat} +${effect.value}`
+                                    : `Unlock: ${effect.stat}`}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    },
+                  )}
                 </div>
               </div>
             )}

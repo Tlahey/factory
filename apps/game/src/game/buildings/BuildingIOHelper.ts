@@ -112,14 +112,18 @@ export function updateBuildingConnectivity(
 
   // Handle Input - check if the building at our input position outputs to us
   // getInputPosition() returns the external tile where feeders should be located
-  if (io.hasInput && "getInputPosition" in building) {
-    const inputPos = (
-      building as unknown as {
-        getInputPosition: () => { x: number; y: number } | null;
-      }
-    ).getInputPosition();
+  if (io.hasInput) {
+    const inputPositions: ({ x: number; y: number } | null)[] = [];
+    if ("getInputPositions" in building && building.getInputPositions) {
+      inputPositions.push(...building.getInputPositions());
+    } else if ("getInputPosition" in building) {
+      inputPositions.push(building.getInputPosition());
+    }
 
-    if (inputPos) {
+    let anyConnected = false;
+    for (const inputPos of inputPositions) {
+      if (!inputPos) continue;
+
       // Get the potential feeder at the input position
       const feeder = world.getBuilding(inputPos.x, inputPos.y);
 
@@ -132,21 +136,18 @@ export function updateBuildingConnectivity(
 
         if (feederOutput) {
           // Check if feeder outputs to any tile of our building
-          // (works for both single-tile and multi-tile buildings)
           const targetBuilding = world.getBuilding(
             feederOutput.x,
             feederOutput.y,
           );
-          building.isInputConnected = targetBuilding === building;
-        } else {
-          building.isInputConnected = false;
+          if (targetBuilding === building) {
+            anyConnected = true;
+            break;
+          }
         }
-      } else {
-        building.isInputConnected = false;
       }
-    } else {
-      building.isInputConnected = false;
     }
+    building.isInputConnected = anyConnected;
   } else {
     building.isInputConnected = false;
   }

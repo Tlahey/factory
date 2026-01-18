@@ -279,10 +279,18 @@ export function determineFlowInputDirection(
  * @returns True if the building's output port targets this position
  */
 export function hasOutputPortAt(
-  building: { getOutputPosition?: () => { x: number; y: number } | null },
+  building: {
+    getOutputPosition?: () => { x: number; y: number } | null;
+    getOutputPositions?: () => { x: number; y: number }[];
+  },
   targetX: number,
   targetY: number,
 ): boolean {
+  if (building.getOutputPositions) {
+    const ports = building.getOutputPositions();
+    return ports.some((p) => p.x === targetX && p.y === targetY);
+  }
+
   if (!building.getOutputPosition) return false;
 
   const outputPos = building.getOutputPosition();
@@ -301,10 +309,18 @@ export function hasOutputPortAt(
  * @returns True if the building's input port is at the source position
  */
 export function hasInputPortAt(
-  building: { getInputPosition?: () => { x: number; y: number } | null },
+  building: {
+    getInputPosition?: () => { x: number; y: number } | null;
+    getInputPositions?: () => { x: number; y: number }[];
+  },
   sourceX: number,
   sourceY: number,
 ): boolean {
+  if (building.getInputPositions) {
+    const ports = building.getInputPositions();
+    return ports.some((p) => p.x === sourceX && p.y === sourceY);
+  }
+
   if (!building.getInputPosition) return false;
 
   const inputPos = building.getInputPosition();

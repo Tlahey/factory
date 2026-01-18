@@ -120,7 +120,7 @@ export default function HUD() {
         ref={elementRef}
         style={isInventoryOpen ? { left: position.x, top: position.y } : {}}
         className={`
-                    fixed z-[110] pointer-events-auto
+                    fixed z-hud pointer-events-auto
                     bg-slate-900/95 backdrop-blur-xl border border-white/20 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.5)]
                     transition-opacity duration-300 ease-out origin-left
                     flex flex-col p-4 w-auto min-w-[200px]

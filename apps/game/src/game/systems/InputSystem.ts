@@ -13,7 +13,7 @@ import {
 } from "../buildings/conveyor/ConveyorPlacementHelper";
 import { Conveyor } from "../buildings/conveyor/Conveyor";
 import { Direction } from "../entities/types";
-import { getBuildingConfig } from "../buildings/BuildingConfig";
+import { getBuildingConfig, BuildingId } from "../buildings/BuildingConfig";
 import { getAllowedCount } from "../buildings/hub/shop/ShopConfig";
 import { ElectricPole } from "../buildings/electric-pole/ElectricPole";
 
@@ -30,7 +30,7 @@ export class InputSystem {
     x: number,
     y: number,
     isValid?: boolean,
-    ghostBuilding?: string | null,
+    ghostBuilding?: BuildingId | "delete" | null,
     rotation?: Direction,
     width?: number,
     height?: number,
@@ -78,7 +78,7 @@ export class InputSystem {
       x: number,
       y: number,
       isValid?: boolean,
-      ghostBuilding?: string | null,
+      ghostBuilding?: BuildingId | "delete" | null,
       rotation?: Direction,
       width?: number,
       height?: number,
@@ -188,7 +188,7 @@ export class InputSystem {
     x: number;
     y: number;
     isValid: boolean;
-    ghost: string | null;
+    ghost: BuildingId | "delete" | null;
   } | null = null;
 
   private setupInteractions() {
@@ -261,7 +261,10 @@ export class InputSystem {
   private triggerRefreshHover() {
     if (this.lastHoverPosition && this.onHover) {
       const { x, y, ghost } = this.lastHoverPosition;
-      const config = ghost ? getBuildingConfig(ghost) : null;
+      const ghostIsBuilding = ghost && ghost !== "delete";
+      const config = ghostIsBuilding
+        ? getBuildingConfig(ghost as BuildingId)
+        : null;
       const isRotated =
         this.currentRotation === "east" || this.currentRotation === "west";
       const width = config?.width ?? 1;
@@ -270,8 +273,13 @@ export class InputSystem {
       const finalHeight = isRotated ? width : height;
 
       // Re-validate validity based on new rotation
-      const isValid = ghost
-        ? this.world.canPlaceBuilding(x, y, ghost, this.currentRotation)
+      const isValid = ghostIsBuilding
+        ? this.world.canPlaceBuilding(
+            x,
+            y,
+            ghost as BuildingId,
+            this.currentRotation,
+          )
         : true;
 
       this.onHover(
@@ -624,13 +632,13 @@ export class InputSystem {
             isValid = this.world.canPlaceBuilding(
               intersection.x,
               intersection.y,
-              selectedBuilding,
+              selectedBuilding as BuildingId,
               this.currentRotation,
             );
 
             // Check Locked & Cost for red ghost
             const { hasResources, unlockedBuildings } = useGameStore.getState();
-            const config = getBuildingConfig(selectedBuilding);
+            const config = getBuildingConfig(selectedBuilding as BuildingId);
 
             if (
               config?.locked &&

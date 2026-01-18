@@ -147,12 +147,6 @@ Certain batiments mettent du temps pour être construit. Par exemple la foreuse 
 
 ---
 
-Quand on est en mode preview il faut voir au niveau de la souris combien de ressources ça va nous côuter et entre parenthèse le nombre de ressources qu'on a dans l'inventaire.
-
-- On affiche des ressources avec l'icone de la ressource dans un carré et à l'intérieur le nombre nécessaire et entre parenthèse le cout
-
----
-
 pour la furnace il faut ajouter certaines spécifications:
 
 - Le déblocage de ressources se fait via le HUB dans l'arbre de compétence.
@@ -255,3 +249,24 @@ Voir la faisabilité et le gain de passer sur React Three Fiber
 
 - Le gain que ça peut apporter
 - ???
+
+---
+
+Créer un nouveau builing qui sera un Conveyor Merger.
+
+- C'est un building qui aura 3 inputs et 1 output.
+- L'objectif de ce building est de merger les 3 inputs dans un seul output.
+- Il faudra faire attention à la chaine c'est à dire qu'on prendre 1 stack à la fois dans chaque input (il ne faut pas le prendre toujours dans la même input mais prendre dans la 1ère, puis la second, puis la troisième, revenir à la première etc ...)
+- Envoyer les ressources dans l'output en faisant bien attention toujours à la limite et vitesse du conveyor
+- Le conveyor merger n'a pas de limite de process, il ne va pas avoir d'amélioration.
+- Le builing sera déblocable dans le HUB dans l'arbre de compétence puis devra être acheté dans le HUB.
+
+---
+
+En mode preview il faudrait que les flèches d'IO ne changement pas de couleur (grise)
+
+- Elles doivent être de la couleur initial sans faire de changements
+
+---
+
+Optimiser les z-[xxx] pour utiliser le global.css

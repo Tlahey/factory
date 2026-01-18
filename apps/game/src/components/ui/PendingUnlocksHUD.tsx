@@ -107,7 +107,7 @@ export default function PendingUnlocksHUD() {
   if (pendingUnlocks.length === 0) return null;
 
   return (
-    <div className="fixed top-20 left-4 z-40 flex flex-col gap-2 animate-in slide-in-from-left-4 duration-300">
+    <div className="fixed top-20 left-4 z-hud flex flex-col gap-2 animate-in slide-in-from-left-4 duration-300">
       {pendingUnlocks.map((pending) => (
         <PendingUnlockItem
           key={pending.skillId}

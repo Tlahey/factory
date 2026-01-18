@@ -100,6 +100,10 @@
       "recipe": "Recette",
       "select_recipe": "Choisir Recette"
     },
+    "conveyor_merger": {
+      "name": "Groupeur de Convoyeurs",
+      "description": "Fusionne trois convoyeurs d'entrée en un seul convoyeur de sortie selon une logique circulaire (round-robin)."
+    },
     "conveyor": {
       "name": "Convoyeur",
       "description": "Transporte les objets entre les bâtiments."

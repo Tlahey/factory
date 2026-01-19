@@ -127,7 +127,7 @@ export default function DialogueOverlay() {
     <>
       {/* Blocker Layer (Transparent) - Blocks all game interactions if blocking is true */}
       {isBlocking && (
-        <div className="fixed inset-0 z-[190] cursor-default bg-transparent"></div>
+        <div className="fixed inset-0 z-dialog-blocker cursor-default bg-transparent"></div>
       )}
 
       <div className="fixed bottom-6 left-6 w-[500px] z-dialog pointer-events-auto">
@@ -148,7 +148,7 @@ export default function DialogueOverlay() {
 
           {/* Avatar */}
           <div className="w-24 h-24 shrink-0 rounded-xl border-2 border-amber-400/30 overflow-hidden bg-black/50 shadow-[0_0_15px_rgba(251,191,36,0.2)] relative group">
-            <div className="absolute inset-0 bg-amber-400/10 animate-pulse z-10 hidden group-hover:block"></div>
+            <div className="absolute inset-0 bg-amber-400/10 animate-pulse z-sub-content hidden group-hover:block"></div>
             {/* Using standard img tag for external or public assets not optimized by Next Image loader if needed, but Image is better */}
             <Image
               src={config.image || "/assets/robot_avatar.png"}

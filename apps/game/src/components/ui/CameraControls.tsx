@@ -62,7 +62,7 @@ export default function CameraControls() {
             onChange={handleElevationChange}
             className="
                             appearance-none w-12 h-4 bg-transparent outline-none cursor-pointer 
-                            transform -rotate-90 origin-center z-10 opacity-0 absolute
+                            transform -rotate-90 origin-center z-sub-content opacity-0 absolute
                         "
             title="Adjust Camera Angle"
           />

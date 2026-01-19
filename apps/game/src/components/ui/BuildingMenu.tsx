@@ -229,7 +229,7 @@ export default function BuildingMenu() {
                       {b.maxCount && (
                         <div
                           className={clsx(
-                            "absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md border shadow-sm z-10",
+                            "absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md border shadow-sm z-sub-content",
                             isLimitReached
                               ? "bg-red-900/90 text-red-200 border-red-500/50"
                               : "bg-gray-800/90 text-gray-300 border-white/10",

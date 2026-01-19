@@ -37,7 +37,7 @@ export default function BuildingHoverCard({
     return (
       <div
         className={clsx(
-          "absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 bg-gray-900/95 backdrop-blur-md border border-white/10 rounded-lg shadow-xl overflow-hidden z-[80] pointer-events-none",
+          "absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 bg-gray-900/95 backdrop-blur-md border border-white/10 rounded-lg shadow-xl overflow-hidden z-hover-card pointer-events-none",
           className,
         )}
       >
@@ -58,7 +58,7 @@ export default function BuildingHoverCard({
   return (
     <div
       className={clsx(
-        "absolute top-0 right-full mr-4 w-64 bg-gray-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[80] pointer-events-none",
+        "absolute top-0 right-full mr-4 w-64 bg-gray-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-hover-card pointer-events-none",
         className,
       )}
     >

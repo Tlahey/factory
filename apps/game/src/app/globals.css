@@ -21,6 +21,16 @@
   /* Pause Menu, Main Menu */
   --z-index-tooltip: 1000;
   /* Tooltips, Context Menus */
+
+  /* Sub-component Layering (Inside Panels/HUD) */
+  --z-index-base: 0;
+  --z-index-sub-content: 10;
+  --z-index-sub-header: 20;
+  --z-index-sub-dropdown: 50;
+  --z-index-toast: 60;
+  --z-index-hover-card: 80;
+  --z-index-debug: 90;
+  --z-index-dialog-blocker: 190;
 }
 
 body {

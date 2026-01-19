@@ -28,7 +28,7 @@ export default function DebugMenu() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={clsx(
-          "fixed bottom-4 left-4 z-[90] w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110 active:scale-95 border border-white/10",
+          "fixed bottom-4 left-4 z-debug w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110 active:scale-95 border border-white/10",
           isOpen
             ? "bg-purple-600 text-white"
             : "bg-gray-900/80 text-gray-400 hover:text-white hover:bg-gray-800",
@@ -40,7 +40,7 @@ export default function DebugMenu() {
 
       {/* Menu Panel */}
       {isOpen && (
-        <div className="fixed bottom-16 left-4 z-[90] w-72 bg-gray-900/95 border border-purple-500/30 rounded-xl shadow-2xl overflow-hidden backdrop-blur-md animate-in slide-in-from-bottom-4 fade-in duration-200">
+        <div className="fixed bottom-16 left-4 z-debug w-72 bg-gray-900/95 border border-purple-500/30 rounded-xl shadow-2xl overflow-hidden backdrop-blur-md animate-in slide-in-from-bottom-4 fade-in duration-200">
           <div className="p-3 bg-purple-900/20 border-b border-purple-500/20 flex items-center gap-2">
             <Bug className="w-4 h-4 text-purple-400" />
             <h3 className="text-xs font-bold text-purple-200 uppercase tracking-wide">

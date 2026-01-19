@@ -160,12 +160,12 @@ export default function Home() {
       onDragOver={(e) => e.preventDefault()}
       onDrop={handleGlobalDrop}
     >
-      <div className="absolute inset-0 z-0 text-white">
+      <div className="absolute inset-0 z-base text-white">
         <GameCanvas />
       </div>
 
       {toast && (
-        <div className="fixed top-12 left-1/2 -translate-x-1/2 z-[60] bg-green-500 text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl animate-fade-in-up whitespace-nowrap border border-white/20">
+        <div className="fixed top-12 left-1/2 -translate-x-1/2 z-toast bg-green-500 text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl animate-fade-in-up whitespace-nowrap border border-white/20">
           {toast}
         </div>
       )}

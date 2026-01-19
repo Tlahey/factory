@@ -429,7 +429,7 @@ export default function FurnaceDashboard({
           {/* RIGHT COLUMN: Configuration & I/O */}
           <div className="flex-1 p-6 overflow-y-auto bg-gradient-to-br from-gray-900 to-black relative custom-scrollbar">
             {/* Recipe Selector Dropdown */}
-            <div className="mb-8 relative z-20">
+            <div className="mb-8 relative z-sub-header">
               <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                 <Settings size={14} />
                 Configuration
@@ -440,7 +440,7 @@ export default function FurnaceDashboard({
                 {selectedRecipe ? (
                   <div className="relative">
                     {/* Overlay Chevron */}
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-black/60 backdrop-blur rounded-full p-2 border border-white/20 text-white hover:bg-white/10 transition-colors">
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-sub-content bg-black/60 backdrop-blur rounded-full p-2 border border-white/20 text-white hover:bg-white/10 transition-colors">
                       {isDropdownOpen ? (
                         <ChevronUp size={20} />
                       ) : (
@@ -478,7 +478,7 @@ export default function FurnaceDashboard({
 
               {/* Dropdown Content */}
               {isDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-3 bg-gray-900 border border-white/20 rounded-xl shadow-2xl p-2 max-h-[500px] overflow-y-auto z-50 animate-in fade-in slide-in-from-top-4 duration-200 custom-scrollbar">
+                <div className="absolute top-full left-0 right-0 mt-3 bg-gray-900 border border-white/20 rounded-xl shadow-2xl p-2 max-h-[500px] overflow-y-auto z-sub-dropdown animate-in fade-in slide-in-from-top-4 duration-200 custom-scrollbar">
                   <div className="grid grid-cols-1 gap-2">
                     {availableRecipes.length === 0 ? (
                       <div className="text-center text-gray-500 py-4">
@@ -499,7 +499,7 @@ export default function FurnaceDashboard({
             </div>
 
             {/* I/O Buffers Grid */}
-            <div className="grid grid-cols-2 gap-6 relative z-10">
+            <div className="grid grid-cols-2 gap-6 relative z-sub-content">
               {/* Input Queue */}
               <div className="bg-white/5 rounded-xl p-4 border border-white/5">
                 <ItemBufferPanel

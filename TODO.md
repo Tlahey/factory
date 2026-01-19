@@ -270,7 +270,3 @@ Créer un nouveau builing qui sera un Conveyor Merger.
 En mode preview il faudrait que les flèches d'IO ne changement pas de couleur (grise)
 
 - Elles doivent être de la couleur initial sans faire de changements
-
----
-
-Optimiser les z-[xxx] pour utiliser le global.css

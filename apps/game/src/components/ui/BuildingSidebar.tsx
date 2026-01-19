@@ -86,7 +86,7 @@ export default function BuildingSidebar() {
               countDisplay = (
                 <div
                   className={clsx(
-                    "absolute -top-2 -right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md border shadow-sm z-20",
+                    "absolute -top-2 -right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md border shadow-sm z-sub-header",
                     isLimitReached
                       ? "bg-red-900/90 text-red-200 border-red-500/50"
                       : "bg-gray-800/90 text-gray-300 border-white/20",
@@ -107,7 +107,7 @@ export default function BuildingSidebar() {
             onDrop={(e) => handleDrop(e, index)}
           >
             {/* Slot Number */}
-            <span className="absolute left-1 top-1 text-[10px] text-gray-500 font-mono z-10">
+            <span className="absolute left-1 top-1 text-[10px] text-gray-500 font-mono z-sub-content">
               {index + 1}
             </span>
 

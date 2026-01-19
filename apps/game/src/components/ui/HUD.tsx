@@ -225,7 +225,7 @@ export default function HUD() {
 
               {/* Count Badge */}
               {slot.type && (
-                <div className="absolute -bottom-2 -right-2 bg-slate-900 text-xs font-mono font-bold text-amber-400 px-1.5 py-0.5 rounded-md border border-white/20 shadow-md min-w-[20px] text-center z-10">
+                <div className="absolute -bottom-2 -right-2 bg-slate-900 text-xs font-mono font-bold text-amber-400 px-1.5 py-0.5 rounded-md border border-white/20 shadow-md min-w-[20px] text-center z-sub-content">
                   {formatCount(slot.count)}
                 </div>
               )}

@@ -52,11 +52,11 @@ export function PlacementCostHUD() {
             <div className="absolute inset-2 bg-white/5 rounded-full blur-xl opacity-100" />
 
             {/* Tooltip */}
-            <div className="absolute bottom-full mb-2 px-2 py-1 bg-black/90 text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10 z-10 capitalize">
+            <div className="absolute bottom-full mb-2 px-2 py-1 bg-black/90 text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10 z-sub-content capitalize">
               {resource.replace(/_/g, " ")}
             </div>
 
-            <div className="w-12 h-12 flex items-center justify-center relative z-0">
+            <div className="w-12 h-12 flex items-center justify-center relative z-base">
               <ModelPreview
                 type="item"
                 id={resource}
@@ -69,7 +69,7 @@ export function PlacementCostHUD() {
             {/* Cost Badge */}
             <div
               className={clsx(
-                "absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold border shadow-sm z-10",
+                "absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold border shadow-sm z-sub-content",
                 canAfford
                   ? "bg-slate-900 text-amber-400 border-white/20"
                   : "bg-red-900 text-red-100 border-red-500/50",

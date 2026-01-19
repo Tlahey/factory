@@ -262,7 +262,7 @@ const SkillTreeNode = ({ data }: NodeProps) => {
 
         {/* Status Icon - Hide if unknown */}
         {isReachable && (
-          <div className="absolute -top-1.5 -right-1.5 z-10">
+          <div className="absolute -top-1.5 -right-1.5 z-sub-content">
             {isRoot || isUnlocked ? (
               <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
                 <Unlock className="w-2.5 h-2.5 text-white" />
@@ -289,7 +289,7 @@ const SkillTreeNode = ({ data }: NodeProps) => {
 
         {/* Building Type Icon - Hide if unknown */}
         {!isRoot && isReachable && (
-          <div className="absolute top-4 -right-1.5 z-10">
+          <div className="absolute top-4 -right-1.5 z-sub-content">
             <div
               className={`w-5 h-5 rounded-full ${colors.bg} ${colors.border} border flex items-center justify-center shadow-lg`}
             >
@@ -300,7 +300,7 @@ const SkillTreeNode = ({ data }: NodeProps) => {
 
         {/* "NEW" Badge for Unlocks (Top Left) */}
         {!isRoot && isUnlockNode && !isUnlocked && isReachable && (
-          <div className="absolute -left-2 -top-2 z-20">
+          <div className="absolute -left-2 -top-2 z-sub-header">
             <div
               className={`
                   w-5 h-5 bg-amber-400 rounded-full 
@@ -475,7 +475,7 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
           {/* Left Panel - Overview */}
           <div
             id="hub-overview-panel"
-            className="w-80 border-r border-white/10 p-4 overflow-y-auto flex-shrink-0 z-10 bg-gray-900/95 custom-scrollbar"
+            className="w-80 border-r border-white/10 p-4 overflow-y-auto flex-shrink-0 z-sub-content bg-gray-900/95 custom-scrollbar"
           >
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4">
               {t("common.overview")}
@@ -796,7 +796,7 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                   id="hub-skill-tree-panel"
                   className="w-full h-full relative"
                 >
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4 absolute top-4 left-4 z-40 bg-gray-900/50 backdrop-blur px-2 py-1 rounded">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4 absolute top-4 left-4 z-sub-dropdown bg-gray-900/50 backdrop-blur px-2 py-1 rounded">
                     Arbre d&apos;upgrade
                   </h3>
 
@@ -820,7 +820,7 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
 
                   {/* Tooltip (kept from previous version) */}
                   {hoveredNode && hoveredNode.id !== "root" && (
-                    <div className="absolute bottom-4 left-4 right-4 p-3 bg-gray-800/95 border border-white/10 rounded-xl shadow-xl animate-in fade-in duration-100 z-50 w-auto max-w-md mx-auto">
+                    <div className="absolute bottom-4 left-4 right-4 p-3 bg-gray-800/95 border border-white/10 rounded-xl shadow-xl animate-in fade-in duration-100 z-sub-dropdown w-auto max-w-md mx-auto">
                       <div className="flex gap-3">
                         <div className="w-12 h-12 rounded-lg overflow-hidden bg-black/30 flex-shrink-0">
                           <ModelPreview

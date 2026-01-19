@@ -87,12 +87,12 @@ export function ChestPanel({
                       seed={i * 100}
                     />
                   </div>
-                  <div className="absolute -bottom-2 -right-2 bg-slate-900 text-xs font-mono font-bold text-amber-400 px-1.5 py-0.5 rounded-md border border-white/20 shadow-md min-w-[20px] text-center z-10">
+                  <div className="absolute -bottom-2 -right-2 bg-slate-900 text-xs font-mono font-bold text-amber-400 px-1.5 py-0.5 rounded-md border border-white/20 shadow-md min-w-[20px] text-center z-sub-content">
                     {slot.count}
                   </div>
 
                   {/* Tooltip on Hover */}
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg shadow-xl border border-white/20 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-2 group-hover:translate-y-0 whitespace-nowrap z-50 pointer-events-none">
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-lg shadow-xl border border-white/20 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-2 group-hover:translate-y-0 whitespace-nowrap z-sub-dropdown pointer-events-none">
                     <div className="font-bold capitalize mb-0.5 text-amber-300">
                       {slot.type}
                     </div>

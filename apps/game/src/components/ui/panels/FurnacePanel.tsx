@@ -147,7 +147,7 @@ export function FurnacePanel({
   return (
     <div className="space-y-6">
       {/* Visual Recipe Selector Dropdown */}
-      <div className="space-y-2 relative z-20">
+      <div className="space-y-2 relative z-sub-header">
         <label className="text-xs uppercase text-gray-400 font-bold tracking-wider flex items-center gap-2">
           <Flame
             size={12}
@@ -165,7 +165,7 @@ export function FurnacePanel({
           {selectedRecipe ? (
             <div className="relative">
               {/* Overlay Chevron */}
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-black/60 backdrop-blur rounded-full p-1.5 border border-white/20 text-white hover:bg-white/10 transition-colors">
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 z-sub-content bg-black/60 backdrop-blur rounded-full p-1.5 border border-white/20 text-white hover:bg-white/10 transition-colors">
                 {isDropdownOpen ? (
                   <ChevronUp size={20} />
                 ) : (
@@ -203,7 +203,7 @@ export function FurnacePanel({
 
         {/* Dropdown List (Open State) */}
         {isDropdownOpen && (
-          <div className="absolute top-full left-0 right-0 mt-3 bg-slate-900/95 backdrop-blur-2xl border border-white/20 rounded-xl shadow-2xl p-2 max-h-[400px] overflow-y-auto space-y-2 z-50 animate-in fade-in slide-in-from-top-4 duration-200">
+          <div className="absolute top-full left-0 right-0 mt-3 bg-slate-900/95 backdrop-blur-2xl border border-white/20 rounded-xl shadow-2xl p-2 max-h-[400px] overflow-y-auto space-y-2 z-sub-dropdown animate-in fade-in slide-in-from-top-4 duration-200">
             {FURNACE_CONFIG.recipes.map((recipe) =>
               renderRecipeCard(
                 recipe,
@@ -288,7 +288,7 @@ export function FurnacePanel({
                 height={56}
                 static
               />
-              <div className="absolute -bottom-2 -right-2 bg-orange-600 text-white text-xs font-bold px-2 py-0.5 rounded-md border border-orange-400 shadow-lg min-w-[24px] text-center z-10">
+              <div className="absolute -bottom-2 -right-2 bg-orange-600 text-white text-xs font-bold px-2 py-0.5 rounded-md border border-orange-400 shadow-lg min-w-[24px] text-center z-sub-content">
                 {building.outputSlot.count}
               </div>
             </>

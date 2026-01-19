@@ -1,7 +1,7 @@
 "use client";
 
 import { useGameStore } from "@/game/state/store";
-import { Bug, Check, Unlock, Zap, X, Trash2 } from "lucide-react";
+import { Bug, Check, Unlock, Zap, X, Trash2, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import clsx from "clsx";
 import { RESOURCES } from "@/game/data/Items";
@@ -19,6 +19,11 @@ export default function DebugMenu() {
   const unlockAllSkills = useGameStore((state) => state.unlockAllSkills);
   const resetGame = useGameStore((state) => state.reset);
   const addItem = useGameStore((state) => state.addItem);
+  const isDebugOverlayVisible = useGameStore(
+    (state) => state.isDebugOverlayVisible,
+  );
+  const toggleDebugOverlay = useGameStore((state) => state.toggleDebugOverlay);
+  const currentFPS = useGameStore((state) => state.currentFPS);
 
   if (!isDev) return null;
 
@@ -49,6 +54,55 @@ export default function DebugMenu() {
           </div>
 
           <div className="p-4 space-y-3">
+            {/* Debug Info Section */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-gray-500 uppercase">
+                Debug Info
+              </label>
+
+              {/* FPS Display */}
+              <div className="flex items-center justify-between p-2 rounded-lg bg-gray-800 border border-gray-700">
+                <span className="text-xs text-gray-400">Current FPS:</span>
+                <span
+                  className={clsx(
+                    "text-sm font-bold",
+                    currentFPS >= 55
+                      ? "text-green-400"
+                      : currentFPS >= 30
+                        ? "text-yellow-400"
+                        : "text-red-400",
+                  )}
+                >
+                  {currentFPS}
+                </span>
+              </div>
+
+              {/* Toggle Debug Overlay */}
+              <button
+                onClick={toggleDebugOverlay}
+                className={clsx(
+                  "w-full flex items-center justify-between p-2 rounded-lg border transition-all",
+                  isDebugOverlayVisible
+                    ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-300"
+                    : "bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700",
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  {isDebugOverlayVisible ? (
+                    <Eye size={14} />
+                  ) : (
+                    <EyeOff size={14} />
+                  )}
+                  <span className="text-xs font-medium">
+                    Debug Overlay (F3)
+                  </span>
+                </div>
+                {isDebugOverlayVisible && <Check size={14} />}
+              </button>
+            </div>
+
+            <div className="h-px bg-white/10" />
+
             {/* Cheats Section */}
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-gray-500 uppercase">

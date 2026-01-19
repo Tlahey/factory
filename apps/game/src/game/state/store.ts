@@ -81,6 +81,12 @@ interface GameState {
   toggleUnlimitedResources: () => void;
   unlockAllSkills: () => void;
 
+  // Debug Overlay (F3 style)
+  isDebugOverlayVisible: boolean;
+  toggleDebugOverlay: () => void;
+  currentFPS: number;
+  setCurrentFPS: (fps: number) => void;
+
   // Dialogue / Tutorial
   activeDialogueId: string | null;
   seenDialogues: string[];
@@ -431,6 +437,15 @@ export const useGameStore = create<GameState>()(
             pendingUnlocks: [], // Clear any pending
           };
         }),
+
+      // Debug Overlay (F3 style)
+      isDebugOverlayVisible: false,
+      toggleDebugOverlay: () =>
+        set((state) => ({
+          isDebugOverlayVisible: !state.isDebugOverlayVisible,
+        })),
+      currentFPS: 0,
+      setCurrentFPS: (fps) => set({ currentFPS: fps }),
 
       // Dialogue
       activeDialogueId: null,

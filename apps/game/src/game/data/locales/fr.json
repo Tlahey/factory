@@ -296,5 +296,22 @@
     "limit_reached_alert": "Limite de construction atteinte. Achetez plus de licences dans la Boutique du HUB.",
     "insufficient_resources_alert": "Ressources insuffisantes pour construire ceci.",
     "intro_hub": "Commencez par placer le Hub. Vous avez 1 unité disponible pour établir votre base principale."
+  },
+  "debug": {
+    "title": "Infos Debug",
+    "fps": "FPS",
+    "target": "Cible",
+    "view": "Vue",
+    "buildings": "Bâtiments",
+    "memory": "Mémoire",
+    "toggle_hint": "Appuyez sur F3 pour basculer",
+    "developer_tools": "Outils Développeur",
+    "cheats": "Triches",
+    "unlimited_resources": "Ressources Illimitées",
+    "unlock_all_skills": "Débloquer Toutes les Compétences",
+    "add_resources": "Ajouter Ressources (100x)",
+    "debug_overlay": "Overlay Debug (F3)",
+    "danger_zone": "Zone Dangereuse",
+    "hard_reset": "Réinitialisation Totale"
   }
 }

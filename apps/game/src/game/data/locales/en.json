@@ -308,5 +308,22 @@
     "limit_reached_alert": "Building limit reached. Purchase more licenses in the HUB Shop.",
     "insufficient_resources_alert": "Insufficient resources to build this.",
     "intro_hub": "Start by placing the Hub. You have 1 unit available to establish your main base."
+  },
+  "debug": {
+    "title": "Debug Info",
+    "fps": "FPS",
+    "target": "Target",
+    "view": "View",
+    "buildings": "Buildings",
+    "memory": "Memory",
+    "toggle_hint": "Press F3 to toggle",
+    "developer_tools": "Developer Tools",
+    "cheats": "Cheats",
+    "unlimited_resources": "Unlimited Resources",
+    "unlock_all_skills": "Unlock All Skills",
+    "add_resources": "Add Resources (100x)",
+    "debug_overlay": "Debug Overlay (F3)",
+    "danger_zone": "Danger Zone",
+    "hard_reset": "Hard Reset Game"
   }
 }

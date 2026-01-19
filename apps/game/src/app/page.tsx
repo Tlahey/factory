@@ -12,6 +12,7 @@ import HUD from "@/components/ui/HUD";
 import PendingUnlocksHUD from "@/components/ui/PendingUnlocksHUD";
 import { useGameStore } from "@/game/state/store";
 import DebugMenu from "@/components/ui/DebugMenu";
+import DebugOverlay from "@/components/ui/DebugOverlay";
 import DialogueOverlay from "@/components/ui/DialogueOverlay";
 import HighlightOverlay from "@/components/ui/HighlightOverlay";
 import WorldTooltip from "@/components/ui/WorldTooltip";
@@ -108,6 +109,10 @@ export default function Home() {
         e.preventDefault();
         handleSave();
       }
+      if (e.key === "F3") {
+        e.preventDefault();
+        useGameStore.getState().toggleDebugOverlay();
+      }
     };
 
     const handleResetInv = () => {
@@ -179,6 +184,7 @@ export default function Home() {
       />
 
       <DebugMenu />
+      <DebugOverlay />
 
       <div
         className={`transition-opacity duration-300 ${isPaused ? "opacity-0 pointer-events-none" : "opacity-100"}`}

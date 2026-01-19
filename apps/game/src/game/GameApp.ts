@@ -58,6 +58,14 @@ export class GameApp {
 
   private clock!: THREE.Clock;
 
+  // FPS Limiting & Tracking
+  private readonly TARGET_FPS = 60;
+  private readonly FRAME_INTERVAL = 1000 / 60; // ~16.67ms
+  private lastFrameTime = 0;
+  private frameCount = 0;
+  private fpsAccumulator = 0;
+  private lastFpsUpdate = 0;
+
   // ... imports
 
   constructor(container: HTMLElement) {
@@ -969,6 +977,29 @@ export class GameApp {
 
   private animate() {
     if (this.isDestroyed) return;
+
+    // FPS Limiting - Skip frame if called too soon
+    const currentTime = performance.now();
+    const elapsed = currentTime - this.lastFrameTime;
+
+    if (elapsed < this.FRAME_INTERVAL) {
+      return; // Skip this frame, wait for next animation loop call
+    }
+
+    this.lastFrameTime = currentTime - (elapsed % this.FRAME_INTERVAL);
+
+    // FPS Tracking
+    this.frameCount++;
+    this.fpsAccumulator += elapsed;
+    if (currentTime - this.lastFpsUpdate >= 1000) {
+      const currentFPS = Math.round(
+        (this.frameCount * 1000) / this.fpsAccumulator,
+      );
+      useGameStore.getState().setCurrentFPS(currentFPS);
+      this.frameCount = 0;
+      this.fpsAccumulator = 0;
+      this.lastFpsUpdate = currentTime;
+    }
 
     // Pause Check
     if (this._isPaused) {

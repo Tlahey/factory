@@ -104,6 +104,10 @@
       "name": "Groupeur de Convoyeurs",
       "description": "Fusionne trois convoyeurs d'entrée en un seul convoyeur de sortie selon une logique circulaire (round-robin)."
     },
+    "conveyor_splitter": {
+      "name": "Répartiteur de Convoyeurs",
+      "description": "Divise un convoyeur d'entrée en trois convoyeurs de sortie selon une logique circulaire (round-robin)."
+    },
     "conveyor": {
       "name": "Convoyeur",
       "description": "Transporte les objets entre les bâtiments."

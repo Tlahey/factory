@@ -15,6 +15,7 @@ import { createHubModel } from "@/game/buildings/hub/HubModel";
 import { createBatteryModel } from "@/game/buildings/battery/BatteryModel";
 import { createFurnaceModel } from "@/game/buildings/furnace/FurnaceModel";
 import { createConveyorMergerModel } from "@/game/buildings/conveyor-merger/ConveyorMergerModel";
+import { createConveyorSplitterModel } from "@/game/buildings/conveyor-splitter/ConveyorSplitterModel";
 
 // Singleton Renderer to prevent Context Loss (Limit ~16 contexts involved)
 import { getBuildingConfig, BuildingId } from "@/game/buildings/BuildingConfig";
@@ -202,6 +203,10 @@ export default function ModelPreview({
           model.position.y = -0.5;
         } else if (id === "conveyor_merger") {
           model = createConveyorMergerModel();
+          model.scale.set(1.2, 1.2, 1.2);
+          model.position.y = -0.3;
+        } else if (id === "conveyor_splitter") {
+          model = createConveyorSplitterModel();
           model.scale.set(1.2, 1.2, 1.2);
           model.position.y = -0.3;
         }

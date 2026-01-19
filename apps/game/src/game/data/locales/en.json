@@ -133,6 +133,10 @@
     "conveyor_merger": {
       "name": "Conveyor Merger",
       "description": "Merges three input conveyor belts into one output belt using round-robin logic."
+    },
+    "conveyor_splitter": {
+      "name": "Conveyor Splitter",
+      "description": "Splits one input conveyor belt into three output belts using round-robin logic."
     }
   },
   "skill_tree": {

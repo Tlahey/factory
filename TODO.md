@@ -256,17 +256,10 @@ Voir la faisabilité et le gain de passer sur React Three Fiber
 
 ---
 
-Créer un nouveau builing qui sera un Conveyor Merger.
-
-- C'est un building qui aura 3 inputs et 1 output.
-- L'objectif de ce building est de merger les 3 inputs dans un seul output.
-- Il faudra faire attention à la chaine c'est à dire qu'on prendre 1 stack à la fois dans chaque input (il ne faut pas le prendre toujours dans la même input mais prendre dans la 1ère, puis la second, puis la troisième, revenir à la première etc ...)
-- Envoyer les ressources dans l'output en faisant bien attention toujours à la limite et vitesse du conveyor
-- Le conveyor merger n'a pas de limite de process, il ne va pas avoir d'amélioration.
-- Le builing sera déblocable dans le HUB dans l'arbre de compétence puis devra être acheté dans le HUB.
-
----
-
 En mode preview il faudrait que les flèches d'IO ne changement pas de couleur (grise)
 
 - Elles doivent être de la couleur initial sans faire de changements
+
+---
+
+Il faudrait fixer le nombre de FPS à 60

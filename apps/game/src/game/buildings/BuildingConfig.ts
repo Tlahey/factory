@@ -15,6 +15,10 @@ import {
   CONVEYOR_MERGER_CONFIG,
   ConveyorMergerConfigType,
 } from "./conveyor-merger/ConveyorMergerConfig";
+import {
+  CONVEYOR_SPLITTER_CONFIG,
+  ConveyorSplitterConfigType,
+} from "./conveyor-splitter/ConveyorSplitterConfig";
 import { IWorld, Direction } from "../entities/types";
 
 // --- CORE TYPES & ENUMS ---
@@ -67,6 +71,7 @@ export type BuildingId =
   | "battery"
   | "furnace"
   | "conveyor_merger"
+  | "conveyor_splitter"
   | "cable";
 
 export interface PowerConfig {
@@ -287,6 +292,7 @@ export type BuildingConfig =
   | BatteryConfigType
   | FurnaceConfigType
   | ConveyorMergerConfigType
+  | ConveyorSplitterConfigType
   | BaseBuildingConfig; // For simple buildings like 'cable'
 
 export const BUILDINGS: Record<BuildingId, BuildingConfig> = {
@@ -310,6 +316,7 @@ export const BUILDINGS: Record<BuildingId, BuildingConfig> = {
   battery: BATTERY_CONFIG,
   furnace: FURNACE_CONFIG,
   conveyor_merger: CONVEYOR_MERGER_CONFIG,
+  conveyor_splitter: CONVEYOR_SPLITTER_CONFIG,
 };
 
 export const getBuildingConfig = (

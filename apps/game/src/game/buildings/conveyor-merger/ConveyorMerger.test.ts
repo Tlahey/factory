@@ -91,42 +91,79 @@ describe("ConveyorMerger", () => {
     rightConv.transportProgress = 1.0;
     world.setBuilding(3, 2, rightConv);
 
-    // Update merger to see the world
+    // 2. First tick: Should pull from BACK (Priority 1)
     merger.tick(0.1, world as unknown as IWorld);
+    expect(merger.currentItem).toBe("iron");
+    expect(backConv.currentItem).toBeNull();
 
-    // 2. Initial state: any can go. Let's take from LEFT.
-    expect(merger.addItem("copper", 1, 1, 2)).toBe(true);
-    expect(merger.currentItem).toBe("copper");
-
-    // 3. Last taken was LEFT. Next priority should be RIGHT, then BACK.
-    merger.currentItem = null; // Simulate outputting
-
-    // If RIGHT tries, it should succeed.
-    expect(merger.canInput(3, 2)).toBe(true);
-
-    // If BACK tries, it should FAIL because RIGHT is also ready and has higher priority.
-    expect(merger.canInput(2, 3)).toBe(false);
-
-    // 4. Take from RIGHT.
-    expect(merger.addItem("gold", 1, 3, 2)).toBe(true);
+    // Simulate output
     merger.currentItem = null;
 
-    // 5. Last taken was RIGHT. Next priority is BACK.
-    expect(merger.canInput(2, 3)).toBe(true);
-    // LEFT should FAIL because BACK is ready.
-    expect(merger.canInput(1, 2)).toBe(false);
+    // 3. Second tick: Should pull from LEFT (Priority 2)
+    merger.tick(0.1, world as unknown as IWorld);
+    expect(merger.currentItem).toBe("copper");
+    expect(leftConv.currentItem).toBeNull();
+
+    // Simulate output
+    merger.currentItem = null;
+
+    // 4. Third tick: Should pull from RIGHT (Priority 3)
+    merger.tick(0.1, world as unknown as IWorld);
+    expect(merger.currentItem).toBe("gold");
+    expect(rightConv.currentItem).toBeNull();
+
+    // Simulate output
+    merger.currentItem = null;
+
+    // 5. Replenish BACK and tick again -> Back to BACK
+    backConv.currentItem = "iron2";
+    backConv.transportProgress = 1.0;
+
+    merger.tick(0.1, world as unknown as IWorld);
+    expect(merger.currentItem).toBe("iron2");
   });
 
-  test("should output items to a conveyor in front", () => {
+  test("should output items to a conveyor in front instantly on addItem", () => {
     const outputConv = new Conveyor(2, 1, "north");
     world.setBuilding(2, 1, outputConv);
 
-    merger.addItem("iron", 1, 2, 3);
-    merger.transportProgress = 1.0;
+    // Initial tick to set lastWorld
+    merger.tick(0.1, world as unknown as IWorld);
 
-    const moved = merger.tryOutput(world as unknown as IWorld);
-    expect(moved).toBe(true);
-    expect(merger.currentItem).toBeNull();
+    // Add item - should output immediately
+    merger.addItem("iron", 1, 2, 3);
+
+    expect(merger.currentItem).toBeNull(); // Should be empty
+    expect(outputConv.currentItem).toBe("iron"); // Should have moved
+  });
+
+  test("should proactively pull items from input conveyors", () => {
+    // Setup input conveyor with item
+    const backConv = new Conveyor(2, 3, "north");
+    backConv.currentItem = "iron";
+    backConv.transportProgress = 1.0; // Ready to output
+    world.setBuilding(2, 3, backConv);
+
+    // Setup output conveyor
+    const outputConv = new Conveyor(2, 1, "north");
+    world.setBuilding(2, 1, outputConv);
+
+    // Tick merger - should pull from backConv AND push to outputConv in same tick
+    merger.tick(0.1, world as unknown as IWorld);
+
+    expect(backConv.currentItem).toBeNull(); // Pulled
+    expect(merger.currentItem).toBeNull(); // Pushed
+    expect(outputConv.currentItem).toBe("iron"); // Received
+  });
+
+  test("should output item with 0 transport progress (zero latency)", () => {
+    const outputConv = new Conveyor(2, 1, "north");
+    world.setBuilding(2, 1, outputConv);
+
+    merger.tick(0.1, world as unknown as IWorld);
+    merger.addItem("iron", 1, 2, 3);
+
     expect(outputConv.currentItem).toBe("iron");
+    expect(outputConv.transportProgress).toBe(0); // Zero latency start
   });
 });

@@ -7,6 +7,7 @@ import { BuildingRegistryEntry, BuildingId } from "./BuildingConfig";
 import { Extractor } from "./extractor/Extractor";
 import { Conveyor } from "./conveyor/Conveyor";
 import { ConveyorMerger } from "./conveyor-merger/ConveyorMerger";
+import { ConveyorSplitter } from "./conveyor-splitter/ConveyorSplitter";
 import { Hub } from "./hub/Hub";
 import { ElectricPole } from "./electric-pole/ElectricPole";
 import { Chest } from "./chest/Chest";
@@ -17,6 +18,7 @@ import { Furnace } from "./furnace/Furnace";
 import { ExtractorVisual } from "./extractor/ExtractorVisual";
 import { ConveyorVisual } from "./conveyor/ConveyorVisual";
 import { ConveyorMergerVisual } from "./conveyor-merger/ConveyorMergerVisual";
+import { ConveyorSplitterVisual } from "./conveyor-splitter/ConveyorSplitterVisual";
 import { HubVisual } from "./hub/HubVisual";
 import { ElectricPoleVisual } from "./electric-pole/ElectricPoleVisual";
 import { ChestVisual } from "./chest/ChestVisual";
@@ -53,6 +55,12 @@ export const BuildingRegistry: Partial<
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Visual: ConveyorMergerVisual as any,
     createVisual: (b) => new ConveyorMergerVisual(b as ConveyorMerger),
+  },
+  conveyor_splitter: {
+    Logic: ConveyorSplitter,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Visual: ConveyorSplitterVisual as any,
+    createVisual: (b) => new ConveyorSplitterVisual(b as ConveyorSplitter),
   },
   hub: {
     Logic: Hub,

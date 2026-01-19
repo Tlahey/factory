@@ -125,6 +125,15 @@ export const SKILL_TREE: SkillNode[] = [
     position: { x: 0, y: 3 },
     unlockDuration: 40,
   },
+  {
+    id: "conveyor_splitter_unlock",
+    type: "unlock",
+    buildingId: "conveyor_splitter",
+    level: 0,
+    requires: ["conveyor_unlock"],
+    position: { x: -1, y: 3 },
+    unlockDuration: 40,
+  },
 
   // === TIER 2.5: Furnace (Requires Stone/Ore processing logic?) ===
   // Requires Conveyor/Chest to handle input/output efficiently

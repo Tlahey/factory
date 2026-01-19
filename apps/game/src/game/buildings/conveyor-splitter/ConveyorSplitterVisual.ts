@@ -1,22 +1,21 @@
 import * as THREE from "three";
 import { VisualEntity } from "../../visuals/VisualEntity";
-import { ConveyorMerger } from "./ConveyorMerger";
+import { ConveyorSplitter } from "./ConveyorSplitter";
 import { createItemRockModel } from "../../environment/rock/RockModel";
-// import { Direction } from "../../entities/types";
 import { createIOArrows, updateIOArrows } from "../../visuals/IOArrowHelper";
-import { createConveyorMergerModel } from "./ConveyorMergerModel";
+import { createConveyorSplitterModel } from "./ConveyorSplitterModel";
 
-export class ConveyorMergerVisual implements VisualEntity {
+export class ConveyorSplitterVisual implements VisualEntity {
   public mesh: THREE.Group;
   private itemMesh: THREE.Group;
   private ioArrows: THREE.Group;
 
-  constructor(merger: ConveyorMerger) {
-    this.mesh = createConveyorMergerModel();
-    this.mesh.name = "conveyor_merger";
+  constructor(splitter: ConveyorSplitter) {
+    this.mesh = createConveyorSplitterModel();
+    this.mesh.name = "conveyor_splitter";
 
     // --- IO Arrows ---
-    this.ioArrows = createIOArrows(merger);
+    this.ioArrows = createIOArrows(splitter);
     this.mesh.add(this.ioArrows);
 
     // --- Item Representation ---
@@ -26,11 +25,11 @@ export class ConveyorMergerVisual implements VisualEntity {
     this.mesh.add(this.itemMesh);
   }
 
-  public update(_delta: number, merger: ConveyorMerger): void {
+  public update(_delta: number, splitter: ConveyorSplitter): void {
     // Update IO arrows
-    updateIOArrows(this.ioArrows, merger);
+    updateIOArrows(this.ioArrows, splitter);
 
-    // Item Representation is removed as items are processed instantly inside the merger
+    // Item Representation is removed as items are processed instantly inside the splitter
     // (User Request: "tout doit se passer à l'intérieur")
   }
 
@@ -43,7 +42,7 @@ export class ConveyorMergerVisual implements VisualEntity {
             if (!child.userData.originalEmissive) {
               child.userData.originalEmissive = mat.emissive.clone();
             }
-            mat.emissive.setHex(0xff0000);
+            mat.emissive.setHex(0x00aaff);
             mat.emissiveIntensity = 0.5;
           } else {
             if (child.userData.originalEmissive) {

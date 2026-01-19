@@ -38,21 +38,22 @@ export class ConveyorMerger extends BuildingEntity implements IIOBuilding {
     this.lastWorld = world;
     updateBuildingConnectivity(this, world);
 
+    // 1. Try to output existing item
     if (this.currentItem) {
-      this.transportProgress += this.transportSpeed * delta;
-      if (this.transportProgress >= 1) {
-        if (this.tryOutput(world)) {
-          // Item cleared in tryOutput
-        } else {
-          this.transportProgress = 1; // Blocked at end
-        }
+      this.tryOutputInternal(world);
+    }
+
+    // 2. If empty, try to pull
+    if (!this.currentItem) {
+      if (this.tryPull(world)) {
+        // 3. If we just pulled an item, try to output it IMMEDIATELY (Zero-latency)
+        this.tryOutputInternal(world);
       }
     }
   }
 
-  // ... (keep moveItem)
-
-  public tryOutput(world: IWorld): boolean {
+  // Extracted output logic for reuse
+  private tryOutputInternal(world: IWorld): boolean {
     if (this.moveItem(world)) {
       this.currentItem = null;
       this.itemId = null;
@@ -60,6 +61,45 @@ export class ConveyorMerger extends BuildingEntity implements IIOBuilding {
       return true;
     }
     return false;
+  }
+
+  private tryPull(world: IWorld): boolean {
+    const ports = this.getPortPositions();
+    const sidesOrder: MergerInputSide[] = ["back", "left", "right"];
+
+    let startIndex = 0;
+    if (this.lastInputSide !== "none") {
+      startIndex =
+        (sidesOrder.indexOf(this.lastInputSide as MergerInputSide) + 1) % 3;
+    }
+
+    for (let i = 0; i < 3; i++) {
+      const idx = (startIndex + i) % 3;
+      const side = sidesOrder[idx];
+      const pos = ports[side];
+      const neighbor = world.getBuilding(pos.x, pos.y);
+
+      if (neighbor && this.isNeighborReadyToOutput(neighbor)) {
+        if (neighbor instanceof Conveyor) {
+          // Pull from Conveyor
+          this.currentItem = neighbor.currentItem;
+          this.itemId = neighbor.itemId;
+          this.transportProgress = 0;
+          this.lastInputSide = side;
+
+          // Clear Conveyor
+          neighbor.currentItem = null;
+          neighbor.itemId = null;
+          neighbor.transportProgress = 0;
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  public tryOutput(world: IWorld): boolean {
+    return this.tryOutputInternal(world);
   }
 
   private moveItem(world: IWorld): boolean {
@@ -73,7 +113,8 @@ export class ConveyorMerger extends BuildingEntity implements IIOBuilding {
       if (!target.currentItem) {
         target.currentItem = this.currentItem;
         target.itemId = this.itemId;
-        target.transportProgress = this.transportProgress - 1;
+        // Optimization: Start exactly at 0 to avoid "double distance" delay (was starting at -1)
+        target.transportProgress = 0;
         return true;
       }
     } else if (
@@ -223,6 +264,11 @@ export class ConveyorMerger extends BuildingEntity implements IIOBuilding {
         this.itemId = Math.floor(Math.random() * 1000000);
         this.transportProgress = 0;
         this.lastInputSide = mySide;
+
+        // Immediate pass-through if possible
+        if (this.lastWorld) {
+          this.tryOutputInternal(this.lastWorld);
+        }
         return true;
       }
     }
@@ -230,12 +276,18 @@ export class ConveyorMerger extends BuildingEntity implements IIOBuilding {
     // Fallback if no coordinates
     this.currentItem = type;
     this.itemId = Math.floor(Math.random() * 1000000);
-    this.transportProgress = 0;
+    this.transportProgress = 0; // Not used but good to reset
+
+    // Immediate pass-through
+    if (this.lastWorld) {
+      this.tryOutputInternal(this.lastWorld);
+    }
     return true;
   }
 
   public canOutput(): boolean {
-    return this.currentItem !== null && this.transportProgress >= 1;
+    // Ready immediately if we have an item
+    return this.currentItem !== null;
   }
 
   public getColor(): number {

@@ -13,6 +13,7 @@ import { createBatteryModel } from "../buildings/battery/BatteryModel";
 import { createElectricPoleModel } from "../buildings/electric-pole/ElectricPoleModel";
 import { createFurnaceModel } from "../buildings/furnace/FurnaceModel";
 import { createConveyorMergerModel } from "../buildings/conveyor-merger/ConveyorMergerModel";
+import { createConveyorSplitterModel } from "../buildings/conveyor-splitter/ConveyorSplitterModel";
 import {
   getBuildingConfig,
   IOConfig,
@@ -221,6 +222,8 @@ export class PlacementVisuals {
           mesh = createFurnaceModel();
         } else if (ghostType === "conveyor_merger") {
           mesh = createConveyorMergerModel();
+        } else if (ghostType === "conveyor_splitter") {
+          mesh = createConveyorSplitterModel();
         }
 
         if (mesh) {

@@ -9,6 +9,7 @@ import {
 } from "@/game/environment/ResourceRegistryHelper";
 import { createIOArrows, updateIOArrows } from "../../visuals/IOArrowHelper";
 import type { IIOBuilding } from "../../buildings/BuildingConfig";
+import { disposeObject3D } from "../../visuals/DisposeUtils";
 
 export class ConveyorVisual implements VisualEntity {
   public mesh: THREE.Object3D;
@@ -138,7 +139,8 @@ export class ConveyorVisual implements VisualEntity {
       if (this.lastItemType !== conveyor.currentItem) {
         if (this.itemMesh) {
           this.itemContainer.remove(this.itemMesh);
-          // Optional: Dispose old mesh if needed, but they are simple
+          // MEMORY LEAK FIX: Dispose old mesh geometry and materials
+          disposeObject3D(this.itemMesh);
         }
         this.itemMesh = createItemModel(conveyor.currentItem);
         if (this.itemMesh) {
@@ -220,6 +222,9 @@ export class ConveyorVisual implements VisualEntity {
       parent.remove(this.mesh);
     }
 
+    // MEMORY LEAK FIX: Dispose old mesh before creating new one
+    disposeObject3D(this.mesh);
+
     // Create new mesh with new type
     const texture = createConveyorTexture();
     this.mesh = createConveyorModel(newType, texture);
@@ -285,9 +290,17 @@ export class ConveyorVisual implements VisualEntity {
   }
 
   public dispose(): void {
-    // Dispose textures/materials
-    if (this.beltMaterial && this.beltMaterial.map) {
-      this.beltMaterial.map.dispose();
+    // Dispose main mesh and all children
+    disposeObject3D(this.mesh);
+
+    // Dispose item mesh if exists
+    if (this.itemMesh) {
+      disposeObject3D(this.itemMesh);
+    }
+
+    // Dispose IO arrows
+    if (this.ioArrows) {
+      disposeObject3D(this.ioArrows);
     }
   }
 }

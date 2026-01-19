@@ -69,10 +69,14 @@ export class CableVisual {
   }
 
   public update(world: IWorld) {
-    // Clear old meshes
+    // Clear old meshes - MEMORY LEAK FIX: Also dispose materials and textures
     while (this.group.children.length > 0) {
       const child = this.group.children[0] as THREE.Mesh;
-      child.geometry.dispose(); // Dispose geometry
+      child.geometry.dispose();
+      // Dispose cloned material and its cloned texture
+      const mat = child.material as THREE.MeshLambertMaterial;
+      if (mat.map) mat.map.dispose();
+      mat.dispose();
       this.group.remove(child);
     }
 
@@ -159,6 +163,10 @@ export class CableVisual {
     while (this.group.children.length > 0) {
       const child = this.group.children[0] as THREE.Mesh;
       child.geometry.dispose();
+      // MEMORY LEAK FIX: Dispose cloned material and texture
+      const mat = child.material as THREE.MeshLambertMaterial;
+      if (mat.map) mat.map.dispose();
+      mat.dispose();
       this.group.remove(child);
     }
   }

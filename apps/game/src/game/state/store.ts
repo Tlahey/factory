@@ -86,6 +86,18 @@ interface GameState {
   toggleDebugOverlay: () => void;
   currentFPS: number;
   setCurrentFPS: (fps: number) => void;
+  renderStats: {
+    drawCalls: number;
+    triangles: number;
+    textures: number;
+    geometries: number;
+  };
+  setRenderStats: (stats: {
+    drawCalls: number;
+    triangles: number;
+    textures: number;
+    geometries: number;
+  }) => void;
 
   // Dialogue / Tutorial
   activeDialogueId: string | null;
@@ -446,6 +458,8 @@ export const useGameStore = create<GameState>()(
         })),
       currentFPS: 0,
       setCurrentFPS: (fps) => set({ currentFPS: fps }),
+      renderStats: { drawCalls: 0, triangles: 0, textures: 0, geometries: 0 },
+      setRenderStats: (stats) => set({ renderStats: stats }),
 
       // Dialogue
       activeDialogueId: null,

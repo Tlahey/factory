@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { createRockModel } from "./environment/rock/RockModel";
+import { createBatchedTerrain } from "./visuals/TerrainBatcher"; // Terrain batcher import
 // import { ResourceTile } from './core/ResourceTile';
 import { useGameStore } from "./state/store";
 import { World } from "./core/World";
@@ -9,15 +10,12 @@ import { PowerSystem } from "./systems/PowerSystem";
 import { GuidanceSystem } from "./systems/GuidanceSystem";
 import { InputSystem } from "./systems/InputSystem";
 import { CableVisual } from "./buildings/electric-pole/CableVisual";
-import { getGrassGeometry } from "./environment/grass/GrassGeometry";
-import { createGrassMaterial } from "./environment/grass/GrassMaterial";
-import { createGrassTexture } from "./environment/grass/GrassTexture";
 import {
   createWaterfallTexture,
   createWaterCurrentTexture,
 } from "./environment/water/WaterfallTexture";
+import { createGrassShaderMaterial } from "./visuals/GrassShader";
 import { createSandTexture } from "./environment/sand/SandTexture";
-import { createBeachTexture } from "./environment/sand/BeachTexture";
 import { InventorySlot } from "./state/store";
 
 import { VisualEntity } from "./visuals/VisualEntity";
@@ -47,14 +45,8 @@ export class GameApp {
   private selectionIndicator: SelectionIndicator;
   private cableVisuals: CableVisual;
 
-  private grassUniforms: { [uniform: string]: THREE.IUniform } | null = null;
   private waterfallTexture: THREE.CanvasTexture | null = null;
   private currentTextures: { [key: string]: THREE.CanvasTexture } = {};
-
-  // Grass
-  private instancedGrass!: THREE.InstancedMesh;
-  private initialGrassMatrices: THREE.Matrix4[] = [];
-  private readonly BLADES_PER_TILE = 12;
 
   private clock!: THREE.Clock;
 
@@ -65,6 +57,12 @@ export class GameApp {
   private frameCount = 0;
   private fpsAccumulator = 0;
   private lastFpsUpdate = 0;
+
+  // Performance: Cached rock meshes for O(1) updates
+  private rockMeshes: Map<string, THREE.Object3D> = new Map();
+
+  // Performance: Dirty flag for cable updates
+  private cablesDirty = true;
 
   // ... imports
 
@@ -130,6 +128,7 @@ export class GameApp {
       () => {
         this.syncBuildings();
         this.powerSystem.rebuildNetworks();
+        this.cablesDirty = true; // Mark cables for visual update
       },
       (x, y, isValid, ghostBuilding, rotation, width, height) => {
         this.placementVisuals.update(
@@ -248,6 +247,9 @@ export class GameApp {
             state.showDialogue("hub_placed");
           }
         }
+
+        // Mark cables dirty for visual update
+        this.cablesDirty = true;
       }
       return res;
     };
@@ -258,6 +260,8 @@ export class GameApp {
       if (res) {
         this.syncBuildings();
         this.powerSystem.rebuildNetworks();
+        // Mark cables dirty for visual update
+        this.cablesDirty = true;
       }
       return res;
     };
@@ -456,20 +460,12 @@ export class GameApp {
       this.environmentGroup = null;
     }
 
-    // 3. Clear instanced grass
-    if (this.instancedGrass) {
-      console.log("App: Disposing old grass...");
-      this.scene.remove(this.instancedGrass);
-      this.instancedGrass.geometry.dispose();
-      (this.instancedGrass.material as THREE.Material).dispose();
-      this.initialGrassMatrices = [];
-    }
-
-    const tileGeometry = new THREE.BoxGeometry(1, 1, 1);
+    // 3. Clear rock meshes cache (Performance optimization)
+    this.rockMeshes.clear();
 
     // Materials
-    const grassTexture = createGrassTexture();
-    const grassMat = new THREE.MeshLambertMaterial({ map: grassTexture });
+    // const grassTexture = createGrassTexture(); // Removed in favor of procedural shader
+    const grassMat = createGrassShaderMaterial();
 
     const waterMat = new THREE.MeshLambertMaterial({
       color: 0x0077ff,
@@ -479,11 +475,6 @@ export class GameApp {
 
     const sandTexture = createSandTexture();
     const sandMat = new THREE.MeshLambertMaterial({ map: sandTexture });
-
-    const beachTexture = createBeachTexture();
-    const beachMat = new THREE.MeshLambertMaterial({ map: beachTexture });
-
-    const hiddenMat = new THREE.MeshBasicMaterial({ visible: false });
 
     // Current materials
     const currentT = createWaterCurrentTexture();
@@ -503,228 +494,36 @@ export class GameApp {
 
     this.terrainGroup = new THREE.Group();
 
-    // Setup Instanced Grass
+    this.terrainGroup = new THREE.Group();
 
-    const totalBlades = WORLD_WIDTH * WORLD_HEIGHT * this.BLADES_PER_TILE;
-    const grassGeo = getGrassGeometry();
-    const { material: grassMaterial, uniforms: grassUniforms } =
-      createGrassMaterial();
-    this.grassUniforms = grassUniforms;
+    // --- BATCHED TERRAIN IMPLEMENTATION ---
+    // Generate merged meshes for Grass, Sand, and Water to reduce draw calls from ~2500 to ~5
+    const { grassMesh, sandMesh, waterMesh, rockPositions } =
+      createBatchedTerrain(this.world.grid, grassMat, sandMat, waterMat);
 
-    this.instancedGrass = new THREE.InstancedMesh(
-      grassGeo,
-      grassMaterial,
-      totalBlades,
-    );
-    this.instancedGrass.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    // Grass should NOT cast shadows for performance
-    this.instancedGrass.receiveShadow = true;
+    if (grassMesh) this.terrainGroup.add(grassMesh);
+    if (sandMesh) this.terrainGroup.add(sandMesh);
+    if (waterMesh) this.terrainGroup.add(waterMesh);
 
-    const dummy = new THREE.Object3D();
-    let bladeIdx = 0;
+    // Add rocks (Not batched yet as they are complex models, but cached)
+    rockPositions.forEach((pos) => {
+      const rocks = createRockModel();
+      rocks.position.set(pos.x, 0, pos.y);
+      rocks.name = `rock_${pos.x}_${pos.y}`;
+      rocks.userData = { x: pos.x, y: pos.y };
 
-    // Helper to get height based on distance from edge
-    const getHeightAt = (x: number, z: number) => {
-      const dx = Math.min(x, WORLD_WIDTH - 1 - x);
-      const dz = Math.min(z, WORLD_HEIGHT - 1 - z);
-      const d = Math.min(dx, dz);
-      // Slope between 4.5 and 6.5
-      return Math.min(0, Math.max(-0.6, (d - 6.5) * 0.3));
-    };
-
-    const getSlopedGeometry = (tx: number, tz: number) => {
-      const geo = new THREE.BoxGeometry(1, 1, 1);
-      const pos = geo.attributes.position;
-      // TOP face vertices
-      for (let i = 8; i <= 11; i++) {
-        const vx = tx + pos.getX(i);
-        const vz = tz + pos.getZ(i);
-        const h = getHeightAt(vx, vz);
-        pos.setY(i, 0.5 + h);
-      }
-      pos.needsUpdate = true;
-      geo.computeVertexNormals();
-      return geo;
-    };
-
-    for (let y = 0; y < WORLD_HEIGHT; y++) {
-      for (let x = 0; x < WORLD_WIDTH; x++) {
-        const tile = this.world.getTile(x, y);
-        let mesh: THREE.Mesh;
-
-        const dx = Math.min(x, WORLD_WIDTH - 1 - x);
-        const dy = Math.min(y, WORLD_HEIGHT - 1 - y);
-        const d = Math.min(dx, dy);
-
-        // Determine face materials with neighbor culling
-        const topMat = tile.isSand()
-          ? beachMat
-          : tile.isWater()
-            ? waterMat
-            : grassMat;
-        const sideMat = tile.isSand()
-          ? sandMat
-          : tile.isWater()
-            ? waterMat
-            : grassMat;
-
-        // Face check helper
-        const getFaceMat = (
-          nx: number,
-          ny: number,
-          defaultMat: THREE.Material,
-        ) => {
-          const neighbor = this.world.getTile(nx, ny);
-          if (neighbor.isEmpty()) return defaultMat;
-          // Hide face if neighbor is not EMPTY (stuck to another element)
-          return hiddenMat;
-        };
-
-        const materials = [
-          getFaceMat(x + 1, y, sideMat), // +X
-          getFaceMat(x - 1, y, sideMat), // -X
-          topMat, // +Y (Top)
-          sideMat, // -Y (Bottom)
-          getFaceMat(x, y + 1, sideMat), // +Z
-          getFaceMat(x, y - 1, sideMat), // -Z
-        ];
-
-        if (tile.isWater()) {
-          // 1. Add sand base (seabed)
-          const seabedMaterials = [
-            getFaceMat(x + 1, y, sandMat), // +X
-            getFaceMat(x - 1, y, sandMat), // -X
-            sandMat, // +Y (MUST BE VISIBLE THROUGH WATER)
-            hiddenMat, // -Y (Bottom)
-            getFaceMat(x, y + 1, sandMat), // +Z
-            getFaceMat(x, y - 1, sandMat), // -Z
-          ];
-          const sandMesh = new THREE.Mesh(tileGeometry, seabedMaterials);
-          sandMesh.position.set(x, -1.6, y); // Top at -1.1
-          sandMesh.receiveShadow = true;
-          this.terrainGroup.add(sandMesh);
-
-          // 2. Add water mesh
-          const isAtEdge = d < 5;
-
-          if (isAtEdge) {
-            const isLeft = x === 0;
-            const isRight = x === WORLD_WIDTH - 1;
-            const isTop = y === 0;
-            const isBottom = y === WORLD_HEIGHT - 1;
-
-            let waterTopMat = waterMat;
-            if (isLeft)
-              waterTopMat = new THREE.MeshLambertMaterial({
-                map: this.currentTextures.west,
-                transparent: true,
-                opacity: 0.8,
-              });
-            if (isRight)
-              waterTopMat = new THREE.MeshLambertMaterial({
-                map: this.currentTextures.east,
-                transparent: true,
-                opacity: 0.8,
-              });
-            if (isTop)
-              waterTopMat = new THREE.MeshLambertMaterial({
-                map: this.currentTextures.north,
-                transparent: true,
-                opacity: 0.8,
-              });
-            if (isBottom)
-              waterTopMat = new THREE.MeshLambertMaterial({
-                map: this.currentTextures.south,
-                transparent: true,
-                opacity: 0.8,
-              });
-
-            const waterMaterials = [
-              getFaceMat(x + 1, y, waterMat),
-              getFaceMat(x - 1, y, waterMat),
-              waterTopMat,
-              hiddenMat, // Water bottom is collé to sand
-              getFaceMat(x, y + 1, waterMat),
-              getFaceMat(x, y - 1, waterMat),
-            ];
-            mesh = new THREE.Mesh(tileGeometry, waterMaterials);
-          } else {
-            const waterMaterials = [
-              getFaceMat(x + 1, y, waterMat),
-              getFaceMat(x - 1, y, waterMat),
-              waterMat,
-              hiddenMat, // Water bottom is collé to sand
-              getFaceMat(x, y + 1, waterMat),
-              getFaceMat(x, y - 1, waterMat),
-            ];
-            mesh = new THREE.Mesh(tileGeometry, waterMaterials);
-          }
-          mesh.position.set(x, -0.85, y); // Top at -0.6, Bottom at -1.1
-          mesh.scale.set(1, 0.5, 1);
-        } else if (tile.isSand()) {
-          const geo = getSlopedGeometry(x, y);
-          // For sloped geometry, material is applied to the geometry faces.
-          // getFaceMat already returns hiddenMat if stuck.
-          // Bottom face of land should be hidden
-          const landMaterials = [...materials];
-          landMaterials[3] = hiddenMat; // -Y
-          mesh = new THREE.Mesh(geo, landMaterials);
-          mesh.position.set(x, -0.5, y);
-        } else {
-          const landMaterials = [...materials];
-          landMaterials[3] = hiddenMat; // -Y
-          mesh = new THREE.Mesh(tileGeometry, landMaterials);
-          mesh.position.set(x, -0.5, y);
+      // Enable shadows
+      rocks.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          // Optimize materials on rocks too if needed
         }
+      });
 
-        mesh.receiveShadow = true;
-        mesh.userData = { type: "tile", x, y };
-        this.terrainGroup.add(mesh);
-
-        // Populate Grass Instances (only on grass)
-        if (tile.isGrass() || tile.isStone()) {
-          for (let i = 0; i < this.BLADES_PER_TILE; i++) {
-            const gx = x + (Math.random() - 0.5) * 0.8;
-            const gz = y + (Math.random() - 0.5) * 0.8;
-            const h = 0.1 + Math.random() * 0.15;
-
-            dummy.position.set(gx, 0, gz);
-            dummy.rotation.y = Math.random() * Math.PI;
-            dummy.scale.set(1, h / 0.2, 1);
-            dummy.updateMatrix();
-
-            this.instancedGrass.setMatrixAt(bladeIdx, dummy.matrix);
-            this.initialGrassMatrices.push(dummy.matrix.clone());
-            bladeIdx++;
-          }
-        } else {
-          // If water/empty, set matrices 0 but track them
-          for (let i = 0; i < this.BLADES_PER_TILE; i++) {
-            dummy.scale.set(0, 0, 0);
-            dummy.updateMatrix();
-            this.instancedGrass.setMatrixAt(bladeIdx, dummy.matrix);
-            this.initialGrassMatrices.push(dummy.matrix.clone());
-            bladeIdx++;
-          }
-        }
-
-        // If stone, add the rock model on top (Rocks still cast shadows for depth)
-        if (tile.isStone()) {
-          const rocks = createRockModel();
-          rocks.position.set(x, 0, y);
-          rocks.name = `rock_${x}_${y}`;
-          rocks.userData = { x, y };
-          rocks.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-              child.castShadow = true;
-              child.receiveShadow = true;
-            }
-          });
-          this.terrainGroup.add(rocks);
-        }
-      }
-    }
-    this.scene.add(this.instancedGrass);
+      this.terrainGroup?.add(rocks);
+      this.rockMeshes.set(`${pos.x},${pos.y}`, rocks);
+    });
 
     // Waterfall Effect
     this.waterfallTexture = createWaterfallTexture();
@@ -841,42 +640,6 @@ export class GameApp {
     });
 
     this.cableVisuals.update(this.world); // Update cables after buildings are synced
-    this.updateGrassOcclusion();
-  }
-
-  private updateGrassOcclusion() {
-    const dummy = new THREE.Object3D();
-    let idx = 0;
-
-    for (let y = 0; y < WORLD_HEIGHT; y++) {
-      for (let x = 0; x < WORLD_WIDTH; x++) {
-        const building = this.world.getBuilding(x, y);
-        const shouldHide = !!building;
-
-        for (let i = 0; i < this.BLADES_PER_TILE; i++) {
-          if (idx < this.initialGrassMatrices.length) {
-            if (shouldHide) {
-              dummy.matrix.copy(this.initialGrassMatrices[idx]);
-              dummy.matrix.decompose(
-                dummy.position,
-                dummy.quaternion,
-                dummy.scale,
-              );
-              dummy.scale.set(0, 0, 0);
-              dummy.updateMatrix();
-              this.instancedGrass.setMatrixAt(idx, dummy.matrix);
-            } else {
-              this.instancedGrass.setMatrixAt(
-                idx,
-                this.initialGrassMatrices[idx],
-              );
-            }
-          }
-          idx++;
-        }
-      }
-    }
-    this.instancedGrass.instanceMatrix.needsUpdate = true;
   }
 
   private setupResize() {
@@ -1033,10 +796,6 @@ export class GameApp {
       this.selectionIndicator.update(null, null);
     }
 
-    if (this.grassUniforms) {
-      this.grassUniforms.uTime.value = performance.now() / 1000;
-    }
-
     if (this.waterfallTexture) {
       this.waterfallTexture.offset.y += delta * 2;
     }
@@ -1045,9 +804,10 @@ export class GameApp {
       tex.offset.x += delta * 1.5;
     });
 
-    // Sync Cables
-    if (this.cableVisuals) {
+    // Performance: Only sync cables when buildings change
+    if (this.cablesDirty && this.cableVisuals) {
       this.cableVisuals.update(this.world);
+      this.cablesDirty = false;
     }
 
     // Update Building Visuals
@@ -1058,24 +818,44 @@ export class GameApp {
       }
     });
 
-    // Update Particles
-    this.guidanceSystem.update(delta);
+    // Update Particles (Note: guidanceSystem was called twice before - fixed!)
     this.particleSystem.update(delta);
 
-    this.scene.traverse((obj) => {
-      if (obj.name && obj.name.startsWith("rock_")) {
-        const { x, y } = obj.userData;
-        const tile = this.world.getTile(x, y);
-        if (tile) {
-          const targetScale = tile.getVisualScale();
-          obj.scale.set(targetScale, targetScale, targetScale);
-          obj.visible = tile.isVisualVisible();
-        } else {
-          obj.visible = false;
-        }
+    // Performance: Use cached rockMeshes Map instead of expensive scene.traverse()
+    this.rockMeshes.forEach((rockMesh, key) => {
+      const [x, y] = key.split(",").map(Number);
+      const tile = this.world.getTile(x, y);
+      if (tile) {
+        const targetScale = tile.getVisualScale();
+        rockMesh.scale.set(targetScale, targetScale, targetScale);
+        rockMesh.visible = tile.isVisualVisible();
+      } else {
+        rockMesh.visible = false;
       }
     });
 
+    // Update shader uniforms
+    if (this.terrainGroup) {
+      this.terrainGroup.traverse((child) => {
+        if (
+          child instanceof THREE.Mesh &&
+          child.material instanceof THREE.ShaderMaterial &&
+          child.material.uniforms.uTime
+        ) {
+          child.material.uniforms.uTime.value = this.clock.getElapsedTime();
+        }
+      });
+    }
+
     this.renderer.render(this.scene, this.camera);
+
+    // Collect render stats for debug overlay
+    const info = this.renderer.info;
+    useGameStore.getState().setRenderStats({
+      drawCalls: info.render.calls,
+      triangles: info.render.triangles,
+      textures: info.memory.textures,
+      geometries: info.memory.geometries,
+    });
   }
 }

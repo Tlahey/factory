@@ -40,6 +40,9 @@ export class World implements IWorld {
   }
 
   public tick(_delta: number): void {
+    // Iterate tiles to process onTick (e.g., Rock -> Grass transformation)
+    // Note: Most tiles return 'this', so this is mostly no-op iterations
+    // Future optimization: maintain a Set of "active" tiles that need updates
     for (let y = 0; y < WORLD_HEIGHT; y++) {
       for (let x = 0; x < WORLD_WIDTH; x++) {
         const currentTile = this.grid[y][x];

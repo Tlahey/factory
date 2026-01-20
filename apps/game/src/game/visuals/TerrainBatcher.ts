@@ -28,7 +28,7 @@ export function createBatchedTerrain(
     const dx = Math.min(x, WORLD_WIDTH - 1 - x);
     const dz = Math.min(z, WORLD_HEIGHT - 1 - z);
     const d = Math.min(dx, dz);
-    return Math.min(0, Math.max(-0.6, (d - 6.5) * 0.3));
+    return Math.min(0, Math.max(-1.0, (d - 6.5) * 0.3));
   };
 
   // Base geometry for a flat tile (Plane facing UP)
@@ -83,13 +83,15 @@ export function createBatchedTerrain(
       const tile = grid[y][x];
 
       if (tile.isWater()) {
-        // Water lower than grass (-0.6)
-        addFlatTile(x, y, -0.6, waterGeometries);
+        // Water at constant level
+        addFlatTile(x, y, -0.4, waterGeometries);
       } else if (tile.isSand()) {
-        // Sand starts at 0 and slopes down to water depth
+        // Sand slopes 0 -> -1.0, piercing the water at -0.4
         addSlopedSand(x, y);
+        // Add water UNDER the sand to create seamless shoreline intersection
+        addFlatTile(x, y, -0.4, waterGeometries);
       } else {
-        // Grass at 0 (Ground Level)
+        // Grass at 0
         addFlatTile(x, y, 0, grassGeometries);
         if (tile.isStone()) {
           rockPositions.push({ x, y });

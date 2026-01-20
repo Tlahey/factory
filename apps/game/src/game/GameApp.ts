@@ -26,6 +26,7 @@ import {
   createBuildingVisual,
   VisualContext,
 } from "./buildings/BuildingFactory";
+import { ToonWaterController } from "./visuals/ToonWaterShader";
 
 export class GameApp {
   private renderer: THREE.WebGLRenderer;
@@ -47,6 +48,8 @@ export class GameApp {
 
   private waterfallTexture: THREE.CanvasTexture | null = null;
   private currentTextures: { [key: string]: THREE.CanvasTexture } = {};
+
+  private toonWaterController: ToonWaterController | null = null;
 
   private clock!: THREE.Clock;
 
@@ -96,6 +99,19 @@ export class GameApp {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(this.renderer.domElement);
+
+    // Setup Depth Target
+    this.depthTarget = new THREE.WebGLRenderTarget(
+      window.innerWidth,
+      window.innerHeight,
+    );
+    this.depthTarget.texture.minFilter = THREE.NearestFilter;
+    this.depthTarget.texture.magFilter = THREE.NearestFilter;
+    this.depthTarget.depthTexture = new THREE.DepthTexture(
+      window.innerWidth,
+      window.innerHeight,
+    );
+    this.depthTarget.depthTexture.type = THREE.UnsignedShortType;
 
     // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -407,6 +423,7 @@ export class GameApp {
 
     // Dispose global assets
     if (this.waterfallTexture) this.waterfallTexture.dispose();
+    if (this.toonWaterController) this.toonWaterController.dispose();
     Object.values(this.currentTextures).forEach((t) => t.dispose());
 
     // Remove Listeners
@@ -424,6 +441,8 @@ export class GameApp {
 
   private terrainGroup: THREE.Group | null = null;
   private environmentGroup: THREE.Group | null = null; // Track waterfalls, etc.
+  private waterMesh: THREE.Mesh | null = null; // Track for depth pass toggle
+  private depthTarget: THREE.WebGLRenderTarget | null = null;
 
   private initTerrain() {
     console.log("App: Initializing terrain...");
@@ -467,11 +486,14 @@ export class GameApp {
     // const grassTexture = createGrassTexture(); // Removed in favor of procedural shader
     const grassMat = createGrassShaderMaterial();
 
-    const waterMat = new THREE.MeshLambertMaterial({
-      color: 0x0077ff,
-      transparent: true,
-      opacity: 0.8,
-    });
+    // Toon Water
+    // Initialize controller if not exists (or recreate if needed)
+    if (!this.toonWaterController) {
+      this.toonWaterController = new ToonWaterController({
+        // Optional overrides if needed, defaults are good now
+      });
+    }
+    const waterMat = this.toonWaterController.material;
 
     const sandTexture = createSandTexture();
     const sandMat = new THREE.MeshLambertMaterial({ map: sandTexture });
@@ -503,7 +525,19 @@ export class GameApp {
 
     if (grassMesh) this.terrainGroup.add(grassMesh);
     if (sandMesh) this.terrainGroup.add(sandMesh);
-    if (waterMesh) this.terrainGroup.add(waterMesh);
+    if (waterMesh) {
+      this.terrainGroup.add(waterMesh);
+      this.waterMesh = waterMesh; // Save reference
+      // Assign depth texture to controller initially
+      if (this.toonWaterController && this.depthTarget) {
+        this.toonWaterController.setDepthTexture(this.depthTarget.depthTexture);
+        this.toonWaterController.updateCamera(this.camera);
+        this.toonWaterController.setResolution(
+          window.innerWidth,
+          window.innerHeight,
+        );
+      }
+    }
 
     // Add rocks (Not batched yet as they are complex models, but cached)
     rockPositions.forEach((pos) => {
@@ -651,6 +685,12 @@ export class GameApp {
         this.container.clientWidth,
         this.container.clientHeight,
       );
+      if (this.depthTarget) {
+        this.depthTarget.setSize(
+          this.container.clientWidth,
+          this.container.clientHeight,
+        );
+      }
     });
   }
 
@@ -773,12 +813,35 @@ export class GameApp {
 
     const delta = this.clock.getDelta();
     this.world.tick(delta);
+
+    // Update Water
+    if (this.toonWaterController) {
+      this.toonWaterController.update(delta);
+    }
+
     this.factorySystem.update(delta);
     this.powerSystem.update(delta);
     this.guidanceSystem.update(delta);
 
     if (this.inputSystem) {
       this.inputSystem.update(delta);
+    }
+
+    // Update Selection Indicator
+    // ... (Selection Logic omitted from replacement as it follows) ...
+
+    // --- DEPTH PASS FOR WATER FOAM ---
+    if (this.depthTarget && this.waterMesh) {
+      // 1. Hide water
+      this.waterMesh.visible = false;
+
+      // 2. Render to depth target
+      this.renderer.setRenderTarget(this.depthTarget);
+      this.renderer.render(this.scene, this.camera);
+
+      // 3. Restore
+      this.renderer.setRenderTarget(null);
+      this.waterMesh.visible = true;
     }
 
     // Update Selection Indicator

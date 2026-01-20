@@ -15,7 +15,7 @@ import {
   createWaterCurrentTexture,
 } from "./environment/water/WaterfallTexture";
 import { createGrassShaderMaterial } from "./visuals/GrassShader";
-import { createSandTexture } from "./environment/sand/SandTexture";
+import { SandShaderController } from "./visuals/SandShader";
 import { InventorySlot } from "./state/store";
 
 import { VisualEntity } from "./visuals/VisualEntity";
@@ -50,6 +50,7 @@ export class GameApp {
   private currentTextures: { [key: string]: THREE.CanvasTexture } = {};
 
   private toonWaterController: ToonWaterController | null = null;
+  private sandShaderController: SandShaderController | null = null;
 
   private clock!: THREE.Clock;
 
@@ -424,6 +425,7 @@ export class GameApp {
     // Dispose global assets
     if (this.waterfallTexture) this.waterfallTexture.dispose();
     if (this.toonWaterController) this.toonWaterController.dispose();
+    if (this.sandShaderController) this.sandShaderController.dispose();
     Object.values(this.currentTextures).forEach((t) => t.dispose());
 
     // Remove Listeners
@@ -495,8 +497,14 @@ export class GameApp {
     }
     const waterMat = this.toonWaterController.material;
 
-    const sandTexture = createSandTexture();
-    const sandMat = new THREE.MeshLambertMaterial({ map: sandTexture });
+    // Sand Shader
+    if (!this.sandShaderController) {
+      this.sandShaderController = new SandShaderController({
+        worldWidth: WORLD_WIDTH,
+        worldHeight: WORLD_HEIGHT,
+      });
+    }
+    const sandMat = this.sandShaderController.material;
 
     // Current materials
     const currentT = createWaterCurrentTexture();
@@ -817,6 +825,11 @@ export class GameApp {
     // Update Water
     if (this.toonWaterController) {
       this.toonWaterController.update(delta);
+    }
+
+    // Update Sand
+    if (this.sandShaderController) {
+      this.sandShaderController.update(delta);
     }
 
     this.factorySystem.update(delta);

@@ -17,12 +17,12 @@ export const ToonWaterShader = {
     // --- PALETTE (Eau Claire "Caraïbes") ---
     uColorBase: { value: new THREE.Color("#4dade1") }, // Base : Bleu clair vibrant
     uColorDarkSpots: { value: new THREE.Color("#2a87bf") }, // Taches sombres : Bleu moyen
-    uColorHighlights: { value: new THREE.Color("#a2e6ff") }, // Taches claires : Blanc bleuté
+    uColorHighlights: { value: new THREE.Color("#ffffff") }, // Taches claires : Blanc bleuté
     uColorFoam: { value: new THREE.Color("#ffffff") }, // Écume : Blanc pur
 
     // --- VORONOI SETTINGS ---
-    uScaleDark: { value: 2.0 }, // Taille des taches sombres
-    uScaleLight: { value: 2.2 }, // Taille des taches claires (souvent un peu plus petites)
+    uScaleDark: { value: 1.0 }, // Taille des taches sombres
+    uScaleLight: { value: 0.8 }, // Taille des taches claires (plus grandes pour éviter les cellules remplies)
     uFlowSpeed: { value: 0.2 }, // Vitesse de défilement de base (augmentée pour voir l'effet)
     uFlowDirection: { value: new THREE.Vector2(0.5, 0.2) }, // Direction du courant
 
@@ -175,8 +175,8 @@ export const ToonWaterShader = {
       // -- Couche Claire (Caustiques / Filet - Rapide) --
       vec2 vLightData = voronoi(uvLight * uScaleLight + vec2(42.5, 12.0));
       float distToEdgeLight = vLightData.y - vLightData.x;
-      // Lignes claires plus épaisses (0.05 -> 0.1)
-      float maskLight = 1.0 - smoothstep(0.0, 0.1, distToEdgeLight);
+      // Lignes claires nettes et fines (sans dégradé) - seuil réduit pour éviter les remplissages
+      float maskLight = 1.0 - step(0.05, distToEdgeLight);
 
 
       // 3. MÉLANGE DES COULEURS

@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { CloudParsGLSL, CloudUniforms, SimplexNoiseGLSL } from "./ShaderUtils";
 
 export const GrassShader = {
   uniforms: {
@@ -8,12 +9,11 @@ export const GrassShader = {
     // Note : Base est maintenant la couleur dominante (claire), Dark est l'ombre (nuage)
     uColorBase: { value: new THREE.Color("#7baa5e") }, // Vert moyen lumineux (Sol par défaut)
     uColorLight: { value: new THREE.Color("#a6c875") }, // Vert très clair (Touches de lumière)
-    uColorDark: { value: new THREE.Color("#5e8c45") }, // Vert foncé (Ombres des nuages)
+    uColorDark: { value: new THREE.Color("#6ea056") }, // Vert foncé (Ombres des nuages - Plus doux)
     uColorEarth: { value: new THREE.Color("#c7b0a4") }, // Terre
 
     // --- Settings ---
-    uWindSpeed: { value: 0.15 }, // Vitesse des nuages
-    uWindDirection: { value: new THREE.Vector2(1.0, 0.2).normalize() },
+    ...CloudUniforms,
   },
 
   vertexShader: `
@@ -45,9 +45,9 @@ export const GrassShader = {
     uniform vec3 uColorLight;
     uniform vec3 uColorDark;
     uniform vec3 uColorEarth;
-    uniform float uWindSpeed;
-    uniform vec2 uWindDirection;
-
+    
+    // Cloud uniforms (uWindSpeed, etc) are in CloudParsGLSL
+    
     varying vec2 vUv;
     varying vec3 vWorldPosition;
 
@@ -57,31 +57,9 @@ export const GrassShader = {
     #include <shadowmap_pars_fragment>
     #include <fog_pars_fragment>
 
-    // --- Simplex 2D Noise ---
-    vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
-    float snoise(vec2 v){
-      const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
-      vec2 i  = floor(v + dot(v, C.yy) );
-      vec2 x0 = v - i + dot(i, C.xx);
-      vec2 i1;
-      i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-      vec4 x12 = x0.xyxy + C.xxzz;
-      x12.xy -= i1;
-      i = mod(i, 289.0);
-      vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
-      vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-      m = m*m ;
-      m = m*m ;
-      vec3 x = 2.0 * fract(p * C.www) - 1.0;
-      vec3 h = abs(x) - 0.5;
-      vec3 ox = floor(x + 0.5);
-      vec3 a0 = x - ox;
-      m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
-      vec3 g;
-      g.x  = a0.x  * x0.x  + h.x  * x0.y;
-      g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-      return 130.0 * dot(m, g);
-    }
+    // --- SHARED UTILS ---
+    ${SimplexNoiseGLSL}
+    ${CloudParsGLSL}
 
     // --- LECTURE MANUELLE DE L'OMBRE ---
     float getCustomShadow() {
@@ -106,7 +84,6 @@ export const GrassShader = {
 
     void main() {
       // --- ECHELLES ---
-      float scaleCloud = 0.05;   // Taille des nuages (Zones sombres)
       float scaleLight = 0.08;   // Taille des zones claires (fixes)
       float scaleEarth = 0.25;   // Taille de la terre
       float scaleGrain = 20.0;   // Grain GROS et VISIBLE (Fausse herbe)
@@ -124,10 +101,9 @@ export const GrassShader = {
       finalColor = grainColor;
 
       // 3. Nuages (Zone Dark qui bouge)
-      vec2 cloudOffset = uTime * uWindSpeed * uWindDirection;
-      float noiseCloud = snoise(vWorldPosition.xz * scaleCloud + cloudOffset);
-      // On mixe vers le vert foncé là où le bruit est haut
-      finalColor = mix(finalColor, uColorDark, smoothstep(0.0, 0.6, noiseCloud));
+      // Utilisation de la logique partagée
+      float cloudFactor = getCloudFactor(vWorldPosition.xz, uTime);
+      finalColor = mix(finalColor, uColorDark, cloudFactor);
 
       // 4. Zones de Lumière (Fixes ou très lentes)
       // Pour ajouter de la richesse et ne pas avoir juste 2 couleurs

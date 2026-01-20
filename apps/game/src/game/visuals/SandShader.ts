@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { CloudParsGLSL, CloudUniforms, SimplexNoiseGLSL } from "./ShaderUtils";
 
 /**
  * Sand Shader - Version Dégradé Fixé
@@ -18,6 +19,16 @@ export const SandShader = {
     uGrainScale: { value: 3.0 },
     uReliefStrength: { value: 0.15 },
     uSparkleIntensity: { value: 0.5 },
+
+    // --- NUAGES (intégrés) ---
+    ...CloudUniforms,
+    // NOTE: uColorCloud is defined in CloudUniforms?
+    // Actually my shared CloudUniforms (Step 218) ONLY has uWindSpeed/Direction.
+    // So I need to keep uColorCloud here if it's specific to Sand.
+    // Wait, I didn't add uCloudColor to CloudUniforms in Step 218.
+    // I specifically commented: "We might need separate colors per shader"
+    // So I should keep uColorCloud here.
+    uColorCloud: { value: new THREE.Color("#dbbb80") }, // Sable ombragé (Plus doux)
 
     // --- REGLAGES TRANSITION ---
     // uEdgeSize : À quelle distance du bord commence le sable ?
@@ -68,6 +79,10 @@ export const SandShader = {
     uniform float uTransitionRange;
     uniform vec2 uWorldSize;
 
+    // Cloud uniforms
+    // uWindSpeed/Direction come from CloudParsGLSL
+    uniform vec3 uColorCloud;
+
     varying vec2 vUv;
     varying vec3 vWorldPosition;
     varying vec3 vViewPosition;
@@ -78,40 +93,21 @@ export const SandShader = {
     #include <lights_pars_begin>
     #include <shadowmap_pars_fragment>
     #include <fog_pars_fragment>
+    
+    // --- SHARED UTILS ---
+    ${SimplexNoiseGLSL}
+    ${CloudParsGLSL}
 
-    // --- BRUIT ---
+    // --- BRUIT (LOCAL) ---
     float hash(vec2 p) {
         p = fract(p * vec2(123.34, 456.21));
         p += dot(p, p + 45.32);
         return fract(p.x * p.y);
     }
-    vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-    vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-    vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
-    float snoise(vec2 v) {
-        const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
-        vec2 i  = floor(v + dot(v, C.yy) );
-        vec2 x0 = v - i + dot(i, C.xx);
-        vec2 i1;
-        i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-        vec4 x12 = x0.xyxy + C.xxzz;
-        x12.xy -= i1;
-        i = mod289(i);
-        vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
-        vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-        m = m*m ;
-        m = m*m ;
-        vec3 x = 2.0 * fract(p * C.www) - 1.0;
-        vec3 h = abs(x) - 0.5;
-        vec3 ox = floor(x + 0.5);
-        vec3 a0 = x - ox;
-        m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
-        vec3 g;
-        g.x  = a0.x  * x0.x  + h.x  * x0.y;
-        g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-        return 130.0 * dot(m, g);
-    }
-
+    // REMOVED: texture/permute functions (now in SimplexNoiseGLSL)
+    
+    // Helper local wrapper if needed or just use snoise directly
+    
     float getSandHeight(vec2 pos) {
         float dunes = snoise(pos * 0.08) * 0.5;
         float grain = hash(pos * uGrainScale * 10.0) * 0.05;
@@ -162,17 +158,6 @@ export const SandShader = {
       // 3. TRANSITION SABLE -> HERBE (DÉGRADÉ DOUX)
       // ==========================================================
       
-      // ==========================================================
-      // 3. TRANSITION SABLE -> HERBE (BASÉE SUR LA HAUTEUR / PENTE)
-      // ==========================================================
-      // L'utilisateur indique que le sable est en pente.
-      // C'est beaucoup plus fiable d'utiliser la hauteur (Y) pour la transition
-      // que d'essayer de deviner la position X/Z de la bordure.
-      
-      // Hypothèse : 
-      // - Haut de la plage (bord herbe) : Y proche de 0.0 (ou max height)
-      // - Bas de la plage (bord eau) : Y plus bas (négatif)
-      
       float worldY = vWorldPosition.y;
 
       // On définit une plage de hauteur pour la transition (Resserrée pour moins de vert)
@@ -180,8 +165,6 @@ export const SandShader = {
       float heightBottom = -0.3;  // Le sable apparait très vite dès que ça descend
 
       // Facteur Sable : 0.0 en haut (Top), 1.0 en bas (Bottom)
-      // smoothstep(min, max, val) -> renvoie 0 si val < min.
-      // Ici on veut 1 si val < bottom.
       float sandFactor = 1.0 - smoothstep(heightBottom, heightTop, worldY);
       
       // Ajout de bruit sur la transition pour "casser" la ligne
@@ -189,7 +172,6 @@ export const SandShader = {
       sandFactor = clamp(sandFactor + noiseSlope, 0.0, 1.0);
 
       // --- AMÉLIORATION DE L'HERBE (TEXTURE) ---
-      // Pour éviter l'aspect "plat", on ajoute du bruit à la couleur de l'herbe
       vec3 grassColorTextured = uColorGrass;
       
       // Bruit basse fréquence pour les variations de teinte (comme le shader d'herbe)
@@ -202,6 +184,15 @@ export const SandShader = {
       grassColorTextured -= vec3(grassGrain);
 
       vec3 finalColor = mix(grassColorTextured, surfaceColor, sandFactor);
+
+      // --- NUAGES (Ombres intégrées - Shared Logic) ---
+      float cloudMixFactor = getCloudFactor(vWorldPosition.xz, uTime);
+
+      // Ombre cloud sur le sable utilise uColorCloud, sur l'herbe utilise uColorGrass assombrie
+      // Note: uColorGrass * 0.77 approxime uColorDark de GrassShader (#5e8c45 vs #7baa5e)
+      vec3 cloudShadowColor = mix(uColorGrass * 0.77, uColorCloud, sandFactor);
+      
+      finalColor = mix(finalColor, cloudShadowColor, cloudMixFactor);
 
       #include <fog_fragment>
 
@@ -218,6 +209,10 @@ export interface SandShaderOptions {
   grainScale?: number;
   reliefStrength?: number;
   sparkleIntensity?: number;
+
+  windSpeed?: number;
+  windDirection?: THREE.Vector2;
+  colorCloud?: THREE.Color;
 
   edgeSize?: number; // Distance du bord où le sable est pur
   transitionRange?: number; // Largeur du dégradé (flou)
@@ -244,6 +239,12 @@ export function createSandShaderMaterial(
     mergedUniforms.uReliefStrength.value = options.reliefStrength;
   if (options.sparkleIntensity !== undefined)
     mergedUniforms.uSparkleIntensity.value = options.sparkleIntensity;
+
+  if (options.windSpeed !== undefined)
+    mergedUniforms.uWindSpeed.value = options.windSpeed;
+  if (options.windDirection)
+    mergedUniforms.uWindDirection.value = options.windDirection;
+  if (options.colorCloud) mergedUniforms.uColorCloud.value = options.colorCloud;
 
   if (options.edgeSize !== undefined)
     mergedUniforms.uEdgeSize.value = options.edgeSize;

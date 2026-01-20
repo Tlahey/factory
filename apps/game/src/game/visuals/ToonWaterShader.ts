@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { CloudParsGLSL, CloudUniforms, SimplexNoiseGLSL } from "./ShaderUtils";
 
 /**
  * Toon Water Shader - Version Opaque & Stylisée
@@ -25,6 +26,11 @@ export const ToonWaterShader = {
     uScaleLight: { value: 0.8 }, // Taille des taches claires (plus grandes pour éviter les cellules remplies)
     uFlowSpeed: { value: 0.2 }, // Vitesse de défilement de base (augmentée pour voir l'effet)
     uFlowDirection: { value: new THREE.Vector2(0.5, 0.2) }, // Direction du courant
+
+    // --- NUAGES (Shared) ---
+    ...CloudUniforms,
+    // Couleur d'ombre spécifique à l'eau (Bleu très foncé/Grisé - Plus doux)
+    uColorCloud: { value: new THREE.Color("#3d7aa3") },
 
     // --- DEPTH FOAM SETTINGS ---
     tDepth: { value: null as THREE.Texture | null },
@@ -93,6 +99,9 @@ export const ToonWaterShader = {
     uniform vec2 resolution;
     uniform float uFoamDistance;
     uniform float uFoamCutoff;
+    
+    // Cloud Uniforms (Partial from shared)
+    uniform vec3 uColorCloud;
 
     varying vec2 vUv;
     varying vec3 vWorldPosition;
@@ -101,6 +110,10 @@ export const ToonWaterShader = {
     #include <common>
     #include <packing>
     #include <fog_pars_fragment>
+    
+    // --- SHARED UTILS ---
+    ${SimplexNoiseGLSL}
+    ${CloudParsGLSL}
     
     precision highp float;
 
@@ -215,6 +228,13 @@ export const ToonWaterShader = {
       // Appliquer l'écume
       finalColor = mix(finalColor, uColorFoam, clamp(foamFactor, 0.0, 1.0));
 
+      // 5. NUAGES (Ombres intégrées - Shared Logic)
+      // On applique l'ombre PAR DESSUS tout (même l'écume, car les nuages cachent le soleil pour tout le monde)
+      float cloudMixFactor = getCloudFactor(vWorldPosition.xz, uTime);
+      
+      // On mixe avec la couleur d'ombre définie
+      finalColor = mix(finalColor, uColorCloud, cloudMixFactor * 0.8);
+
       #include <fog_fragment>
 
       gl_FragColor = vec4(finalColor, 1.0);
@@ -240,6 +260,10 @@ export interface ToonWaterOptions {
   cameraFar?: number;
   resolution?: THREE.Vector2;
   foamDistance?: number;
+
+  windSpeed?: number;
+  windDirection?: THREE.Vector2;
+  colorCloud?: THREE.Color;
 }
 
 export function createToonWaterMaterial(
@@ -275,6 +299,12 @@ export function createToonWaterMaterial(
   if (options.resolution) uniforms.resolution.value = options.resolution;
   if (options.foamDistance !== undefined)
     uniforms.uFoamDistance.value = options.foamDistance;
+
+  if (options.windSpeed !== undefined)
+    uniforms.uWindSpeed.value = options.windSpeed;
+  if (options.windDirection)
+    uniforms.uWindDirection.value = options.windDirection;
+  if (options.colorCloud) uniforms.uColorCloud.value = options.colorCloud;
 
   const defines: Record<string, boolean> = {};
   if (options.depthTexture) {

@@ -41,6 +41,8 @@ export const ToonWaterShader = {
     },
     uFoamDistance: { value: 0.4 }, // Distance RÉDUITE pour une ligne fine
     uFoamCutoff: { value: 0.8 }, // Netteté de la coupure
+
+    uWorldSize: { value: new THREE.Vector2(50, 50) },
   },
 
   vertexShader: /* glsl */ `
@@ -48,6 +50,7 @@ export const ToonWaterShader = {
     #include <fog_pars_vertex>
 
     uniform float uTime;
+    uniform vec2 uWorldSize; // Pour limiter les vagues aux bords
     
     // Paramètres de vagues simples pour le vertex
     const float WAVE_AMP = 0.15;
@@ -70,7 +73,22 @@ export const ToonWaterShader = {
       wave += cos(worldPos.z * WAVE_FREQ * 0.7 + uTime * WAVE_SPEED * 0.6) * WAVE_AMP * 0.5;
       
       vec3 displaced = position;
-      displaced.y += wave;
+      
+      // --- FIX GAP : DAMPING AT EDGES ---
+      // On annule la vague si on est proche du bord du monde (0,0) ou (worldSize)
+      // edgeDist = 2.0 ensures water tiles at the very edge (within 2 units) are completely flat
+      float edgeDamp = 1.0;
+      float edgeDist = 2.0; // Distance from edge where waves start to reduce (was 1.0)
+      
+      // Bord Ouest/Est (X = 0 ou X = Width)
+      float distX = min(worldPos.x, uWorldSize.x - worldPos.x);
+      // Bord Nord/Sud (Z = 0 ou Z = Height)
+      float distZ = min(worldPos.z, uWorldSize.y - worldPos.z);
+      
+      float minDist = min(distX, distZ);
+      edgeDamp = smoothstep(0.0, edgeDist, minDist);
+      
+      displaced.y += wave * edgeDamp;
 
       vec4 mvPosition = modelViewMatrix * vec4(displaced, 1.0);
       gl_Position = projectionMatrix * mvPosition;
@@ -260,6 +278,8 @@ export interface ToonWaterOptions {
   cameraFar?: number;
   resolution?: THREE.Vector2;
   foamDistance?: number;
+  worldWidth?: number;
+  worldHeight?: number;
 
   windSpeed?: number;
   windDirection?: THREE.Vector2;
@@ -299,6 +319,12 @@ export function createToonWaterMaterial(
   if (options.resolution) uniforms.resolution.value = options.resolution;
   if (options.foamDistance !== undefined)
     uniforms.uFoamDistance.value = options.foamDistance;
+
+  if (options.worldWidth !== undefined || options.worldHeight !== undefined) {
+    const w = options.worldWidth || 50;
+    const h = options.worldHeight || 50;
+    uniforms.uWorldSize.value.set(w, h);
+  }
 
   if (options.windSpeed !== undefined)
     uniforms.uWindSpeed.value = options.windSpeed;

@@ -10,10 +10,7 @@ import { PowerSystem } from "./systems/PowerSystem";
 import { GuidanceSystem } from "./systems/GuidanceSystem";
 import { InputSystem } from "./systems/InputSystem";
 import { CableVisual } from "./buildings/electric-pole/CableVisual";
-import {
-  createWaterfallTexture,
-  createWaterCurrentTexture,
-} from "./environment/water/WaterfallTexture";
+import { WaterfallController } from "./visuals/WaterfallShader";
 import { createGrassShaderMaterial } from "./visuals/GrassShader";
 import { SandShaderController } from "./visuals/SandShader";
 import { InventorySlot } from "./state/store";
@@ -46,11 +43,9 @@ export class GameApp {
   private selectionIndicator: SelectionIndicator;
   private cableVisuals: CableVisual;
 
-  private waterfallTexture: THREE.CanvasTexture | null = null;
-  private currentTextures: { [key: string]: THREE.CanvasTexture } = {};
-
   private toonWaterController: ToonWaterController | null = null;
   private sandShaderController: SandShaderController | null = null;
+  private waterfallController: WaterfallController | null = null;
 
   private clock!: THREE.Clock;
 
@@ -423,10 +418,9 @@ export class GameApp {
     this.visuals.clear();
 
     // Dispose global assets
-    if (this.waterfallTexture) this.waterfallTexture.dispose();
     if (this.toonWaterController) this.toonWaterController.dispose();
     if (this.sandShaderController) this.sandShaderController.dispose();
-    Object.values(this.currentTextures).forEach((t) => t.dispose());
+    if (this.waterfallController) this.waterfallController.dispose();
 
     // Remove Listeners
     window.removeEventListener("GAME_TOGGLE_PAUSE", this.boundTogglePause);
@@ -506,24 +500,6 @@ export class GameApp {
     }
     const sandMat = this.sandShaderController.material;
 
-    // Current materials
-    const currentT = createWaterCurrentTexture();
-    this.currentTextures.east = currentT;
-
-    const currentW = currentT.clone();
-    currentW.rotation = Math.PI;
-    this.currentTextures.west = currentW;
-
-    const currentN = currentT.clone();
-    currentN.rotation = -Math.PI / 2;
-    this.currentTextures.north = currentN;
-
-    const currentS = currentT.clone();
-    currentS.rotation = Math.PI / 2;
-    this.currentTextures.south = currentS;
-
-    this.terrainGroup = new THREE.Group();
-
     this.terrainGroup = new THREE.Group();
 
     // --- BATCHED TERRAIN IMPLEMENTATION ---
@@ -568,15 +544,184 @@ export class GameApp {
     });
 
     // Waterfall Effect
-    this.waterfallTexture = createWaterfallTexture();
-    const waterfallMat = new THREE.MeshLambertMaterial({
-      map: this.waterfallTexture,
-      transparent: true,
-      opacity: 0.7,
-      side: THREE.DoubleSide,
-    });
-    const waterfallGeom = new THREE.PlaneGeometry(1, 5); // 5 tiles deep
+    if (!this.waterfallController) {
+      this.waterfallController = new WaterfallController();
+    }
+    const waterfallMat = this.waterfallController.material;
+
+    // Create curved waterfall geometry
+    // The curve starts horizontal at the top and curves down over ~1 unit, then goes straight down
+    const createCurvedWaterfallGeometry = (
+      width: number,
+      totalHeight: number,
+      curveDepth: number,
+      segments: number = 12,
+    ) => {
+      const vertices: number[] = [];
+      const uvs: number[] = [];
+      const indices: number[] = [];
+
+      const curveSegments = Math.floor(segments / 2); // Half for curve
+      const straightSegments = segments - curveSegments; // Half for straight part
+      const straightHeight = totalHeight - curveDepth;
+
+      // Generate vertices along the curve and straight section
+      const points: { y: number; z: number }[] = [];
+
+      // Curved section (using sine curve for smooth transition)
+      // Starts HORIZONTAL at top, then curves down to VERTICAL
+      for (let i = 0; i <= curveSegments; i++) {
+        const t = i / curveSegments; // 0 to 1
+        const angle = t * (Math.PI / 2); // 0 to 90 degrees
+        // sin(angle) goes 0->1: offset increases as we go down
+        const z = Math.sin(angle) * curveDepth * 0.5;
+        // (1-cos(angle)) goes 0->1: smooth vertical drop, starts horizontal
+        const y = -(1 - Math.cos(angle)) * curveDepth;
+        points.push({ y, z });
+      }
+
+      // Straight section (continues from where curve ended)
+      const curveEndY = points[points.length - 1].y;
+      const curveEndZ = points[points.length - 1].z;
+      for (let i = 1; i <= straightSegments; i++) {
+        const t = i / straightSegments;
+        const y = curveEndY - t * straightHeight;
+        points.push({ y, z: curveEndZ });
+      }
+
+      // Create mesh vertices (2 vertices per point - left and right edge)
+      const halfWidth = width / 2;
+      for (let i = 0; i < points.length; i++) {
+        const point = points[i];
+        const v = i / (points.length - 1); // UV v coordinate (0 at top, 1 at bottom)
+
+        // Left vertex
+        vertices.push(-halfWidth, point.y, point.z);
+        uvs.push(0, 1 - v);
+
+        // Right vertex
+        vertices.push(halfWidth, point.y, point.z);
+        uvs.push(1, 1 - v);
+      }
+
+      // Create triangles
+      for (let i = 0; i < points.length - 1; i++) {
+        const topLeft = i * 2;
+        const topRight = i * 2 + 1;
+        const bottomLeft = (i + 1) * 2;
+        const bottomRight = (i + 1) * 2 + 1;
+
+        // Two triangles per quad
+        indices.push(topLeft, bottomLeft, topRight);
+        indices.push(topRight, bottomLeft, bottomRight);
+      }
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(vertices, 3),
+      );
+      geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+      geometry.setIndex(indices);
+      geometry.computeVertexNormals();
+
+      return geometry;
+    };
+
+    // Create corner geometry to fill gaps at corners
+    const createCornerWaterfallGeometry = (
+      totalHeight: number,
+      curveDepth: number,
+      segments: number = 8,
+    ) => {
+      const vertices: number[] = [];
+      const uvs: number[] = [];
+      const indices: number[] = [];
+
+      const curveSegments = Math.floor(segments / 2);
+      const straightSegments = segments - curveSegments;
+      const straightHeight = totalHeight - curveDepth;
+
+      // Generate the curve profile (SAME formula as main waterfall)
+      const profile: { y: number; offset: number }[] = [];
+
+      for (let i = 0; i <= curveSegments; i++) {
+        const t = i / curveSegments;
+        const angle = t * (Math.PI / 2);
+        // Match main waterfall: sin for offset, (1-cos) for y
+        const offset = Math.sin(angle) * curveDepth * 0.5;
+        const y = -(1 - Math.cos(angle)) * curveDepth;
+        profile.push({ y, offset });
+      }
+
+      const curveEndY = profile[profile.length - 1].y;
+      const curveEndOffset = profile[profile.length - 1].offset;
+      for (let i = 1; i <= straightSegments; i++) {
+        const t = i / straightSegments;
+        const y = curveEndY - t * straightHeight;
+        profile.push({ y, offset: curveEndOffset });
+      }
+
+      // Create a 90-degree corner fan
+      const cornerSegments = 4;
+      for (let p = 0; p < profile.length; p++) {
+        const { y, offset } = profile[p];
+        const v = p / (profile.length - 1);
+
+        for (let c = 0; c <= cornerSegments; c++) {
+          const angle = (c / cornerSegments) * (Math.PI / 2); // 0 to 90 degrees
+          const x = -Math.cos(angle) * offset;
+          const z = -Math.sin(angle) * offset;
+
+          vertices.push(x, y, z);
+          uvs.push(c / cornerSegments, 1 - v);
+        }
+      }
+
+      // Create triangles
+      const vertsPerRow = cornerSegments + 1;
+      for (let p = 0; p < profile.length - 1; p++) {
+        for (let c = 0; c < cornerSegments; c++) {
+          const topLeft = p * vertsPerRow + c;
+          const topRight = p * vertsPerRow + c + 1;
+          const bottomLeft = (p + 1) * vertsPerRow + c;
+          const bottomRight = (p + 1) * vertsPerRow + c + 1;
+
+          indices.push(topLeft, bottomLeft, topRight);
+          indices.push(topRight, bottomLeft, bottomRight);
+        }
+      }
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(vertices, 3),
+      );
+      geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+      geometry.setIndex(indices);
+      geometry.computeVertexNormals();
+
+      return geometry;
+    };
+
+    const waterfallHeight = 3;
+    const curveDepth = 1; // How deep the curve extends (1 unit)
+    const waterfallGeom = createCurvedWaterfallGeometry(
+      1,
+      waterfallHeight,
+      curveDepth,
+      16,
+    );
+    const cornerGeom = createCornerWaterfallGeometry(
+      waterfallHeight,
+      curveDepth,
+      12,
+    );
+    const waterfallY = -0.39; // Adjusted to align top with water surface
     this.environmentGroup = new THREE.Group();
+
+    // Track corners to add corner pieces
+    const corners: { x: number; y: number; type: string }[] = [];
 
     for (let y = 0; y < WORLD_HEIGHT; y++) {
       for (let x = 0; x < WORLD_WIDTH; x++) {
@@ -593,29 +738,63 @@ export class GameApp {
           if (isLeft) {
             const wf = new THREE.Mesh(waterfallGeom, waterfallMat);
             wf.rotation.y = -Math.PI / 2;
-            wf.position.set(x - 0.51, -3.1, y); // Offset to prevent clipping
+            wf.position.set(x - 0.51, waterfallY, y);
             this.environmentGroup.add(wf);
           }
           if (isRight) {
             const wf = new THREE.Mesh(waterfallGeom, waterfallMat);
             wf.rotation.y = Math.PI / 2;
-            wf.position.set(x + 0.51, -3.1, y); // Offset to prevent clipping
+            wf.position.set(x + 0.51, waterfallY, y);
             this.environmentGroup.add(wf);
           }
           if (isTop) {
             const wf = new THREE.Mesh(waterfallGeom, waterfallMat);
             wf.rotation.y = Math.PI;
-            wf.position.set(x, -3.1, y - 0.51); // Offset to prevent clipping
+            wf.position.set(x, waterfallY, y - 0.51);
             this.environmentGroup.add(wf);
           }
           if (isBottom) {
             const wf = new THREE.Mesh(waterfallGeom, waterfallMat);
-            wf.position.set(x, -3.1, y + 0.51); // Offset to prevent clipping
+            wf.position.set(x, waterfallY, y + 0.51);
             this.environmentGroup.add(wf);
           }
+
+          // Detect corners
+          if (isLeft && isTop) corners.push({ x, y, type: "topLeft" });
+          if (isRight && isTop) corners.push({ x, y, type: "topRight" });
+          if (isLeft && isBottom) corners.push({ x, y, type: "bottomLeft" });
+          if (isRight && isBottom) corners.push({ x, y, type: "bottomRight" });
         }
       }
     }
+
+    // Add corner pieces
+    for (const corner of corners) {
+      const cf = new THREE.Mesh(cornerGeom, waterfallMat);
+      cf.position.set(corner.x, waterfallY, corner.y);
+
+      // Rotate based on corner type (+180° to face outward)
+      if (corner.type === "topLeft") {
+        cf.rotation.y = Math.PI + Math.PI; // 0° effectively (PI + PI = 2PI = 0)
+        cf.position.x -= 0.51;
+        cf.position.z -= 0.51;
+      } else if (corner.type === "topRight") {
+        cf.rotation.y = Math.PI / 2 + Math.PI; // 270° = -90°
+        cf.position.x += 0.51;
+        cf.position.z -= 0.51;
+      } else if (corner.type === "bottomLeft") {
+        cf.rotation.y = -Math.PI / 2 + Math.PI; // 90°
+        cf.position.x -= 0.51;
+        cf.position.z += 0.51;
+      } else if (corner.type === "bottomRight") {
+        cf.rotation.y = 0 + Math.PI; // 180°
+        cf.position.x += 0.51;
+        cf.position.z += 0.51;
+      }
+
+      this.environmentGroup.add(cf);
+    }
+
     this.scene.add(this.environmentGroup);
     this.scene.add(this.terrainGroup);
   }
@@ -832,6 +1011,11 @@ export class GameApp {
       this.sandShaderController.update(delta);
     }
 
+    // Update Waterfall
+    if (this.waterfallController) {
+      this.waterfallController.update(delta);
+    }
+
     this.factorySystem.update(delta);
     this.powerSystem.update(delta);
     this.guidanceSystem.update(delta);
@@ -871,14 +1055,6 @@ export class GameApp {
     } else {
       this.selectionIndicator.update(null, null);
     }
-
-    if (this.waterfallTexture) {
-      this.waterfallTexture.offset.y += delta * 2;
-    }
-
-    Object.values(this.currentTextures).forEach((tex: THREE.CanvasTexture) => {
-      tex.offset.x += delta * 1.5;
-    });
 
     // Performance: Only sync cables when buildings change
     if (this.cablesDirty && this.cableVisuals) {

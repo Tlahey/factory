@@ -13,6 +13,7 @@ import { ElectricPole } from "./electric-pole/ElectricPole";
 import { Chest } from "./chest/Chest";
 import { Battery } from "./battery/Battery";
 import { Furnace } from "./furnace/Furnace";
+import { Sawmill } from "./sawmill/Sawmill";
 
 // Visual Imports
 import { ExtractorVisual } from "./extractor/ExtractorVisual";
@@ -24,6 +25,7 @@ import { ElectricPoleVisual } from "./electric-pole/ElectricPoleVisual";
 import { ChestVisual } from "./chest/ChestVisual";
 import { BatteryVisual } from "./battery/BatteryVisual";
 import { FurnaceVisual } from "./furnace/FurnaceVisual";
+import { SawmillVisual } from "./sawmill/SawmillVisual";
 
 // Context for Visual Creation
 export interface VisualContext {
@@ -92,6 +94,13 @@ export const BuildingRegistry: Partial<
     Visual: FurnaceVisual as any,
     createVisual: (b, ctx) =>
       new FurnaceVisual(b as Furnace, ctx.particleSystem),
+  },
+  sawmill: {
+    Logic: Sawmill,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Visual: SawmillVisual as any,
+    createVisual: (b, ctx) =>
+      new SawmillVisual(b as Sawmill, ctx.particleSystem),
   },
 };
 

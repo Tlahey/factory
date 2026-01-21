@@ -137,6 +137,10 @@
     "battery": {
       "name": "Batterie",
       "description": "Stocke l'énergie excédentaire et la restitue au besoin. Nécessite une connexion au réseau."
+    },
+    "sawmill": {
+      "name": "Scierie",
+      "description": "Récolte du bois des arbres. Placer directement sur un arbre. Nécessite de l'énergie."
     }
   },
   "skill_tree": {
@@ -227,6 +231,20 @@
       "capacity_2": {
         "name": "Cellules Haute Densité II",
         "description": "Augmente capacité/taux de 100% (total)"
+      }
+    },
+    "sawmill": {
+      "blade_1": {
+        "name": "Lame Aiguisée I",
+        "description": "Augmente le taux d'extraction de 20%"
+      },
+      "blade_2": {
+        "name": "Lame Aiguisée II",
+        "description": "Augmente le taux d'extraction de 40%"
+      },
+      "blade_3": {
+        "name": "Lame Aiguisée III",
+        "description": "Augmente le taux d'extraction de 60%"
       }
     }
   },

@@ -6,7 +6,7 @@ import { createConveyorModel } from "./ConveyorGeometry";
 import {
   createItemModel,
   updateItemVisuals,
-} from "@/game/environment/ResourceRegistryHelper";
+} from "../../environment/ResourceRegistryHelper";
 import { createIOArrows, updateIOArrows } from "../../visuals/IOArrowHelper";
 import type { IIOBuilding } from "../../buildings/BuildingConfig";
 import { disposeObject3D } from "../../visuals/DisposeUtils";

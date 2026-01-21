@@ -78,8 +78,14 @@ Generate unit tests (`[BuildingName].test.ts`) covering:
 - Upgrades applying correctly.
 - Save/Load state persistence.
 
-### 8. UI Integration
-Ensure the building is visually represented in the user interface:
-- **`ModelPreview.tsx`**: Add the building ID to the `setupScene` logic to generate the 3D icons used in the `BuildingSidebar` and `BuildingMenu`.
-- **`PlacementVisuals.ts`**: Register the building model in the `ghostType` logic so that a visual "ghost" is displayed when the player attempts to place it.
-- **`BuildingMenu.tsx` / `BuildingSidebar.tsx`**: Verify that the building appears in the correct category and its cost/status are correctly displayed.
+### 8. UI Integration (CRITICAL)
+Ensure the building is visually represented in the user interface. **If you skip this, the building will be invisible in the menu or ghost placement.**
+
+- **`ModelPreview.tsx`** (`apps/game/src/components/ui/ModelPreview.tsx`):
+    - Import your new model creator.
+    - Add a `else if (id === "my-building")` block in `setupScene`.
+    - **Verify** that the scale and position are correct for the preview window.
+- **`PlacementVisuals.ts`** (`apps/game/src/game/visuals/PlacementVisuals.ts`):
+    - Import your new model creator.
+    - Add a `else if (ghostType === "my-building")` block to instantiate the ghost model.
+- **`BuildingMenu.tsx` / `BuildingSidebar.tsx`**: Verify that the building appears in the correct category.

@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
       "**/next-env.d.ts",
       "src_backup/**",
       "**/package-lock.json",
+      "**/.agent/**",
+      "**/.gemini/**",
     ],
   },
 

@@ -158,6 +158,17 @@ export const SKILL_TREE: SkillNode[] = [
     unlockDuration: 60,
   },
 
+  // === TIER 2: Sawmill (Requires Extractor - alternative resource extraction) ===
+  {
+    id: "sawmill_unlock",
+    type: "unlock",
+    buildingId: "sawmill",
+    level: 0,
+    requires: ["extractor_unlock"],
+    position: { x: 0, y: 2 },
+    unlockDuration: 25,
+  },
+
   // === UPGRADES ===
 
   // Hub Upgrades - Moved down deeply
@@ -190,6 +201,27 @@ export const SKILL_TREE: SkillNode[] = [
     position: { x: 0, y: 5 },
     unlockDuration: 120,
   },
+
+  // Sawmill Upgrades
+  {
+    id: "sawmill_1",
+    type: "upgrade",
+    buildingId: "sawmill",
+    level: 1,
+    requires: ["sawmill_unlock"],
+    position: { x: -1, y: 2 },
+    unlockDuration: 45,
+  },
+  {
+    id: "sawmill_2",
+    type: "upgrade",
+    buildingId: "sawmill",
+    level: 2,
+    requires: ["sawmill_1"],
+    position: { x: -1, y: 3 },
+    unlockDuration: 90,
+  },
+
   // Conveyor Upgrades
   {
     id: "conveyor_1",

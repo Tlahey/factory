@@ -14,6 +14,7 @@ import { createElectricPoleModel } from "../buildings/electric-pole/ElectricPole
 import { createFurnaceModel } from "../buildings/furnace/FurnaceModel";
 import { createConveyorMergerModel } from "../buildings/conveyor-merger/ConveyorMergerModel";
 import { createConveyorSplitterModel } from "../buildings/conveyor-splitter/ConveyorSplitterModel";
+import { createSawmillModel } from "../buildings/sawmill/SawmillModel";
 import {
   getBuildingConfig,
   IOConfig,
@@ -224,6 +225,8 @@ export class PlacementVisuals {
           mesh = createConveyorMergerModel();
         } else if (ghostType === "conveyor_splitter") {
           mesh = createConveyorSplitterModel();
+        } else if (ghostType === "sawmill") {
+          mesh = createSawmillModel();
         }
 
         if (mesh) {

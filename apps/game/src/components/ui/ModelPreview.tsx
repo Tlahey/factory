@@ -16,6 +16,7 @@ import { createBatteryModel } from "@/game/buildings/battery/BatteryModel";
 import { createFurnaceModel } from "@/game/buildings/furnace/FurnaceModel";
 import { createConveyorMergerModel } from "@/game/buildings/conveyor-merger/ConveyorMergerModel";
 import { createConveyorSplitterModel } from "@/game/buildings/conveyor-splitter/ConveyorSplitterModel";
+import { createSawmillModel } from "@/game/buildings/sawmill/SawmillModel";
 
 // Singleton Renderer to prevent Context Loss (Limit ~16 contexts involved)
 import { getBuildingConfig, BuildingId } from "@/game/buildings/BuildingConfig";
@@ -209,6 +210,10 @@ export default function ModelPreview({
           model = createConveyorSplitterModel();
           model.scale.set(1.2, 1.2, 1.2);
           model.position.y = -0.3;
+        } else if (id === "sawmill") {
+          model = createSawmillModel();
+          model.scale.set(1.1, 1.1, 1.1);
+          model.position.y = -0.3;
         }
       } else if (type === "item") {
         const itemModel = createItemModel(id);
@@ -219,6 +224,8 @@ export default function ModelPreview({
           // Scaling adjustment based on resource
           if (id === "stone") {
             model.scale.set(4, 4, 4);
+          } else if (id === "wood") {
+            model.scale.set(3.5, 3.5, 3.5);
           } else if (id.includes("ore")) {
             model.scale.set(1, 1, 1);
           } else if (id.includes("ingot")) {

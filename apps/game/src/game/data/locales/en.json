@@ -137,6 +137,10 @@
     "conveyor_splitter": {
       "name": "Conveyor Splitter",
       "description": "Splits one input conveyor belt into three output belts using round-robin logic."
+    },
+    "sawmill": {
+      "name": "Sawmill",
+      "description": "Harvests wood from trees. Place directly on a tree. Requires power."
     }
   },
   "skill_tree": {
@@ -227,6 +231,20 @@
       "capacity_2": {
         "name": "High Density Cells II",
         "description": "Increases capacity/rate by 100% (total)"
+      }
+    },
+    "sawmill": {
+      "blade_1": {
+        "name": "Sharpened Blade I",
+        "description": "Increases wood extraction rate by 20%"
+      },
+      "blade_2": {
+        "name": "Sharpened Blade II",
+        "description": "Increases wood extraction rate by 40%"
+      },
+      "blade_3": {
+        "name": "Sharpened Blade III",
+        "description": "Increases wood extraction rate by 60%"
       }
     }
   },

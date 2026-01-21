@@ -15,6 +15,10 @@
 
 - La battegy ne garde pas dans la sauvegarde la quantité d'énergie qu'elle a.
 
+---
+
+- le Sawmill on ne voit pas sa consommation etc dans le HUD, il faut qu'il doit ISO a celui de l'extracteur
+
 # Features
 
 - Il faudrait trouver un moyen de récupérer de la roche au départ du jeu sans forcément avoir d'équipement.
@@ -219,18 +223,6 @@ On va essayer une nouvelle méthode pour le drag and drop des convoyeurs.
 
 - L'objectif n'est plus de faire un drag and drop pour placer un ensemble d'un coup mais sur les placer dès lors qu'on reste appuyé sur la souris.
 - Exemple, je positionne la souris sur un point, ça crée le convoyeur, je la glisse dans un sens, il me créer les autre convoyeurs directement à la position de la souris et ça en continue.
-
----
-
-Ajouter le bois en ressource
-
-- Il faut créer un modèle qui ressemble à un arbre (il faudra le faire à la taille par rapport aux reste)
-- Un arbre doit être une ressource commune.
-- On définira une notion de rareté par rapport aux ressources pour éviter qu'on ait des ressources trop facilement disponibles.
-- Les arbres seront récupérable via une scierie (qui n'est pas encore développé)
-- Les arbres seront en groupe entre 1 et 3 arbres. On les placera aléatoirement sur la map.
-- Le bois est une ressource qui s'épuise progressivement mais la ressource contiendra beaucoup de bois (paramétrable et aléatoire)
-- Au fur et à mesure que le bois est récupéré, le modèle de la ressource sera modifié en réduisant sa taille par le haut (gérer via le % restant)
 
 ---
 

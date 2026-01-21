@@ -182,6 +182,7 @@ export class PowerSystem {
             satisfaction,
             hasSource,
             grid.id,
+            grid.nodes.length,
           );
         } else {
           // Fallback for non-IPowered buildings if needed

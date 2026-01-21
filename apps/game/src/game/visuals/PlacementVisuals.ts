@@ -15,6 +15,7 @@ import { createFurnaceModel } from "../buildings/furnace/FurnaceModel";
 import { createConveyorMergerModel } from "../buildings/conveyor-merger/ConveyorMergerModel";
 import { createConveyorSplitterModel } from "../buildings/conveyor-splitter/ConveyorSplitterModel";
 import { createSawmillModel } from "../buildings/sawmill/SawmillModel";
+import { createBiomassPlantModel } from "../buildings/biomass-plant/BiomassPlantModel";
 import {
   getBuildingConfig,
   IOConfig,
@@ -227,6 +228,8 @@ export class PlacementVisuals {
           mesh = createConveyorSplitterModel();
         } else if (ghostType === "sawmill") {
           mesh = createSawmillModel();
+        } else if (ghostType === "biomass_plant") {
+          mesh = createBiomassPlantModel();
         }
 
         if (mesh) {

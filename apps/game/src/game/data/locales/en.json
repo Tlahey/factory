@@ -141,6 +141,10 @@
     "sawmill": {
       "name": "Sawmill",
       "description": "Harvests wood from trees. Place directly on a tree. Requires power."
+    },
+    "biomass_plant": {
+      "name": "Biomass Power Plant",
+      "description": "Generates electricity by burning wood. Feed it biomass to produce sustainable power."
     }
   },
   "skill_tree": {
@@ -245,6 +249,20 @@
       "blade_3": {
         "name": "Sharpened Blade III",
         "description": "Increases wood extraction rate by 60%"
+      }
+    },
+    "biomass_plant": {
+      "efficiency_1": {
+        "name": "Improved Combustion I",
+        "description": "Increases power generation by 25%"
+      },
+      "capacity_1": {
+        "name": "Fuel Storage I",
+        "description": "Increases fuel storage capacity by 10 wood"
+      },
+      "speed_1": {
+        "name": "Fast Burn I",
+        "description": "Reduces fuel consumption time by 20%"
       }
     }
   },

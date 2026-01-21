@@ -169,6 +169,17 @@ export const SKILL_TREE: SkillNode[] = [
     unlockDuration: 25,
   },
 
+  // === TIER 2.5: Biomass Plant (Requires Sawmill - wood to power) ===
+  {
+    id: "biomass_plant_unlock",
+    type: "unlock",
+    buildingId: "biomass_plant",
+    level: 0,
+    requires: ["sawmill_unlock"],
+    position: { x: -1, y: 4 },
+    unlockDuration: 35,
+  },
+
   // === UPGRADES ===
 
   // Hub Upgrades - Moved down deeply
@@ -281,6 +292,26 @@ export const SKILL_TREE: SkillNode[] = [
     requires: ["electric_pole_unlock"],
     position: { x: 2, y: 5 },
     unlockDuration: 45,
+  },
+
+  // Biomass Plant Upgrades
+  {
+    id: "biomass_plant_efficiency_1",
+    type: "upgrade",
+    buildingId: "biomass_plant",
+    level: 1,
+    requires: ["biomass_plant_unlock"],
+    position: { x: -2, y: 4 },
+    unlockDuration: 50,
+  },
+  {
+    id: "biomass_plant_capacity_1",
+    type: "upgrade",
+    buildingId: "biomass_plant",
+    level: 2,
+    requires: ["biomass_plant_efficiency_1"],
+    position: { x: -2, y: 5 },
+    unlockDuration: 75,
   },
 ];
 

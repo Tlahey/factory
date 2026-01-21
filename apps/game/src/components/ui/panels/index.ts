@@ -6,3 +6,7 @@ export * from "./UpgradeReminder";
 export * from "./FurnacePanel";
 export * from "./ItemBufferPanel";
 export * from "./ConveyorPanel";
+export * from "./BiomassPlantPanel";
+export * from "./BreakerSwitch";
+export * from "./SawmillPanel";
+export * from "./ResourceProducerPanel";

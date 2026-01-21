@@ -17,6 +17,7 @@ import { createFurnaceModel } from "@/game/buildings/furnace/FurnaceModel";
 import { createConveyorMergerModel } from "@/game/buildings/conveyor-merger/ConveyorMergerModel";
 import { createConveyorSplitterModel } from "@/game/buildings/conveyor-splitter/ConveyorSplitterModel";
 import { createSawmillModel } from "@/game/buildings/sawmill/SawmillModel";
+import { createBiomassPlantModel } from "@/game/buildings/biomass-plant/BiomassPlantModel";
 
 // Singleton Renderer to prevent Context Loss (Limit ~16 contexts involved)
 import { getBuildingConfig, BuildingId } from "@/game/buildings/BuildingConfig";
@@ -214,6 +215,10 @@ export default function ModelPreview({
           model = createSawmillModel();
           model.scale.set(1.1, 1.1, 1.1);
           model.position.y = -0.3;
+        } else if (id === "biomass_plant") {
+          model = createBiomassPlantModel();
+          model.scale.set(1.2, 1.2, 1.2);
+          model.position.y = -0.4;
         }
       } else if (type === "item") {
         const itemModel = createItemModel(id);

@@ -9,6 +9,8 @@ import { Hub } from "@/game/buildings/hub/Hub";
 import { Battery } from "@/game/buildings/battery/Battery";
 import { Furnace } from "@/game/buildings/furnace/Furnace";
 import { Conveyor } from "@/game/buildings/conveyor/Conveyor";
+import { BiomassPlant } from "@/game/buildings/biomass-plant/BiomassPlant";
+import { Sawmill } from "@/game/buildings/sawmill/Sawmill";
 import { BuildingEntity } from "@/game/entities/BuildingEntity";
 import { IWorld } from "@/game/entities/types";
 import ModelPreview from "./ModelPreview";
@@ -23,6 +25,8 @@ import {
   ElectricPolePanel,
   FurnacePanel,
   ConveyorPanel,
+  BiomassPlantPanel,
+  SawmillPanel,
 } from "./panels";
 import FurnaceDashboard from "./FurnaceDashboard";
 
@@ -117,6 +121,8 @@ export default function BuildingInfoPanel() {
   const isExtractor = building instanceof Extractor;
   const isFurnace = building instanceof Furnace;
   const isConveyor = building instanceof Conveyor;
+  const isBiomassPlant = building instanceof BiomassPlant;
+  const isSawmill = building instanceof Sawmill;
 
   // Get current upgrade level for buildings
   const buildingType = building.getType();
@@ -332,11 +338,29 @@ export default function BuildingInfoPanel() {
             />
           )}
 
+          {isBiomassPlant && (
+            <BiomassPlantPanel
+              building={building}
+              forceUpdate={() => forceUpdate((n) => n + 1)}
+            />
+          )}
+
+          {isSawmill && (
+            <SawmillPanel
+              building={building}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              onDragOver={handleDragOver}
+            />
+          )}
+
           {!isChest &&
             !isExtractor &&
             !isBattery &&
             !isFurnace &&
             !isConveyor &&
+            !isBiomassPlant &&
+            !isSawmill &&
             building.getType() !== "electric_pole" && (
               <div className="flex items-center justify-center h-full text-gray-500 text-sm italic py-8 text-center uppercase tracking-widest opacity-50">
                 No statistics available

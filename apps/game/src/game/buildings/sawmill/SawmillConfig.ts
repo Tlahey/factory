@@ -38,6 +38,10 @@ export const SAWMILL_CONFIG: SawmillConfigType = {
     type: "consumer",
     rate: 15, // Less power than extractor
   },
+  placement: {
+    requiredResourceIds: ["wood"],
+    canPlaceOnResources: true,
+  },
   maxConnections: 1,
   shop: {
     baseCost: { iron: 40, stone: 20 },

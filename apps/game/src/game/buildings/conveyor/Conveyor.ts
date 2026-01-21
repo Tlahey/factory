@@ -1,4 +1,3 @@
-import { Tile } from "../../core/Tile";
 import { BuildingEntity } from "../../entities/BuildingEntity";
 import {
   getDirectionOffset,
@@ -198,10 +197,6 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
 
   public getColor(): number {
     return 0xaaaaaa; // Light Gray
-  }
-
-  public isValidPlacement(tile: Tile): boolean {
-    return !tile.isStone() && !tile.isWater();
   }
 
   /**

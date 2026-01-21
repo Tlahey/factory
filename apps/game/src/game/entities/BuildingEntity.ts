@@ -1,5 +1,6 @@
 import { Entity } from "./Entity";
 import { Tile } from "../core/Tile";
+import { ResourceTile } from "../core/ResourceTile";
 import {
   getBuildingConfig,
   BuildingConfig,
@@ -132,5 +133,47 @@ export abstract class BuildingEntity extends Entity {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public abstract deserialize(data: any): void;
 
-  public abstract isValidPlacement(tile: Tile): boolean;
+  /**
+   * Validates if the building can be placed on the given tile.
+   * Uses 'placement' property from BuildingConfig.
+   */
+  public isValidPlacement(tile: Tile): boolean {
+    const config = this.getConfig()?.placement;
+
+    // 1. Water Check: Default rule, buildings cannot be on water unless overridden (e.g. pumps, bridges)
+    // For now, hard disable.
+    if (tile.isWater()) return false;
+
+    // 2. Resource Check
+    if (tile.isResource()) {
+      // If tile is a resource, we MUST have permission to place there
+      if (!config) return false; // Default: No resources allowed
+
+      if (config.canPlaceOnResources) {
+        // If specific IDs are required, check them
+        if (
+          config.requiredResourceIds &&
+          config.requiredResourceIds.length > 0
+        ) {
+          if (tile instanceof ResourceTile) {
+            return config.requiredResourceIds.includes(tile.getResourceType());
+          }
+          // Should be unreachable if isResource() implies ResourceTile
+          return false;
+        }
+        // If no specific IDs required, but allowed on resources -> OK
+        return true;
+      }
+      return false; // Not allowed on resources
+    }
+
+    // 3. Non-Resource Tile (Grass, Sand, etc)
+    // If we REQUIRE a resource, then this is invalid
+    if (config?.requiredResourceIds && config.requiredResourceIds.length > 0) {
+      return false;
+    }
+
+    // Default: Allowed
+    return true;
+  }
 }

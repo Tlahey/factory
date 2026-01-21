@@ -1,4 +1,3 @@
-import { Tile } from "../../core/Tile";
 import { BuildingEntity } from "../../entities/BuildingEntity";
 import { Direction, IWorld } from "../../entities/types";
 import { IIOBuilding, PowerConfig } from "../BuildingConfig";
@@ -188,10 +187,6 @@ export class ConveyorSplitter extends BuildingEntity implements IIOBuilding {
 
   public getColor(): number {
     return 0x555555; // Dark Gray
-  }
-
-  public isValidPlacement(tile: Tile): boolean {
-    return !tile.isStone() && !tile.isWater();
   }
 
   public get powerConfig(): PowerConfig | undefined {

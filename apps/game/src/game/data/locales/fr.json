@@ -141,6 +141,10 @@
     "sawmill": {
       "name": "Scierie",
       "description": "Récolte du bois des arbres. Placer directement sur un arbre. Nécessite de l'énergie."
+    },
+    "biomass_plant": {
+      "name": "Centrale à Biomasse",
+      "description": "Génère de l'électricité en brûlant du bois. Alimentez-le en biomasse pour produire de l'énergie verte."
     }
   },
   "skill_tree": {

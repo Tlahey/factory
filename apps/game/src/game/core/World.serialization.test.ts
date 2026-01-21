@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { World } from "./World";
+import { TileFactory } from "../TileFactory";
+import { TileType } from "../constants";
 import { useGameStore } from "../state/store";
 
 describe("World Serialization & Building Counts", () => {
@@ -7,11 +9,18 @@ describe("World Serialization & Building Counts", () => {
 
   beforeEach(() => {
     useGameStore.getState().reset();
+    useGameStore.getState().buyBuilding("hub"); // Ensure we have one
     world = new World();
   });
 
   it("should correctly count buildings after deserialization", () => {
     // 1. Place a building (Hub is safe to place anywhere)
+    // Force specific tile to avoid random world gen issues
+    world.setTile(10, 10, TileFactory.createTile(TileType.GRASS));
+    world.setTile(11, 10, TileFactory.createTile(TileType.GRASS));
+    world.setTile(10, 11, TileFactory.createTile(TileType.GRASS));
+    world.setTile(11, 11, TileFactory.createTile(TileType.GRASS));
+
     world.placeBuilding(10, 10, "hub");
 
     // START: Check count is 1

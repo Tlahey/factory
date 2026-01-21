@@ -6,7 +6,6 @@ import { updateBuildingConnectivity, getIOOffset } from "../BuildingIOHelper";
 import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
 import { Conveyor } from "../conveyor/Conveyor";
 import { Chest } from "../chest/Chest";
-import { Tile } from "../../core/Tile";
 
 type ProcessingJob = {
   recipeId: string;
@@ -400,10 +399,6 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
       return target.addItem(itemType, 1);
     }
     return false;
-  }
-
-  public isValidPlacement(tile: Tile): boolean {
-    return !tile.isStone() && !tile.isWater();
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

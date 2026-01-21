@@ -1,4 +1,3 @@
-import { Tile } from "../../core/Tile";
 import { BuildingEntity } from "../../entities/BuildingEntity";
 import { IWorld, Direction } from "../../entities/types";
 import { Conveyor } from "../conveyor/Conveyor";
@@ -328,10 +327,6 @@ export class Sawmill
 
   public getColor(): number {
     return 0x8b4513; // Saddle Brown
-  }
-
-  public isValidPlacement(tile: Tile): boolean {
-    return tile.isTree();
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -1,4 +1,3 @@
-import { Tile } from "../../core/Tile";
 import { BuildingEntity } from "../../entities/BuildingEntity";
 import { Direction } from "../../entities/types";
 import { STACK_SIZE } from "../../constants";
@@ -196,10 +195,6 @@ export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
 
   public getColor(): number {
     return 0x8b4513; // Brown
-  }
-
-  public isValidPlacement(tile: Tile): boolean {
-    return !tile.isStone() && !tile.isWater();
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -2,11 +2,17 @@ import { describe, test, expect, beforeEach } from "vitest";
 import { World } from "./World";
 import { TileFactory } from "../TileFactory";
 import { TileType } from "../constants";
+import { useGameStore } from "../state/store";
 
 describe("Cable Deletion on Building Removal", () => {
   let world: World;
 
   beforeEach(() => {
+    // Reset store and unlock Hub to ensure placement is allowed
+    const store = useGameStore.getState();
+    store.reset();
+    store.buyBuilding("hub");
+
     world = new World();
   });
 
@@ -39,6 +45,12 @@ describe("Cable Deletion on Building Removal", () => {
     // Hub is 2x2. Tiles: (10,10), (11,10), (10,11), (11,11)
     const hx = 10,
       hy = 10;
+
+    world.setTile(hx, hy, TileFactory.createTile(TileType.GRASS));
+    world.setTile(hx + 1, hy, TileFactory.createTile(TileType.GRASS));
+    world.setTile(hx, hy + 1, TileFactory.createTile(TileType.GRASS));
+    world.setTile(hx + 1, hy + 1, TileFactory.createTile(TileType.GRASS));
+
     world.placeBuilding(hx, hy, "hub");
 
     // Place a pole nearby

@@ -1,5 +1,4 @@
 import { BuildingEntity } from "../../entities/BuildingEntity";
-import { Tile } from "../../core/Tile";
 import { IWorld, Direction } from "../../entities/types";
 import { BATTERY_CONFIG, BatteryConfigType, IBattery } from "./BatteryConfig";
 import { IPowered, IIOBuilding } from "../BuildingConfig";
@@ -152,10 +151,6 @@ export class Battery
   // --- Abstract Methods ---
   public getColor(): number {
     return 0x00ff00; // Greenish
-  }
-
-  public isValidPlacement(tile: Tile): boolean {
-    return !tile.isWater() && !tile.isStone();
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

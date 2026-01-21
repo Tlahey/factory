@@ -1,5 +1,4 @@
 import { BuildingEntity } from "../../entities/BuildingEntity";
-import { Tile } from "../../core/Tile";
 import { IPowered, IIOBuilding, PowerConfig } from "../BuildingConfig";
 import { HubConfigType } from "./HubConfig";
 import { skillTreeManager } from "./skill-tree/SkillTreeManager";
@@ -118,10 +117,6 @@ export class Hub extends BuildingEntity implements IPowered, IIOBuilding {
 
   public getColor(): number {
     return 0xffaa00; // Orange/Gold
-  }
-
-  public isValidPlacement(tile: Tile): boolean {
-    return !tile.isWater();
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

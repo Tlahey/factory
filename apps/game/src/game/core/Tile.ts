@@ -43,4 +43,8 @@ export abstract class Tile {
   public isTree(): boolean {
     return this.getType() === TileType.TREE;
   }
+
+  public isResource(): boolean {
+    return false;
+  }
 }

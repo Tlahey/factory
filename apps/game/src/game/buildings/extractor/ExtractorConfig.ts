@@ -41,6 +41,16 @@ export const EXTRACTOR_CONFIG: ExtractorConfigType = {
     type: "consumer",
     rate: 20,
   },
+  placement: {
+    requiredResourceIds: [
+      "stone",
+      "iron_ore",
+      "copper_ore",
+      "gold_ore",
+      "coal",
+    ], // Future proofing
+    canPlaceOnResources: true,
+  },
   maxConnections: 1,
   shop: {
     baseCost: { iron: 50 },

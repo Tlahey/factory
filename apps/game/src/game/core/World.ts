@@ -626,6 +626,11 @@ export class World implements IWorld {
     this.buildings.clear();
 
     // START FIX: Reset building counts in store to avoid double counting
+    // We use set inside World.ts usually, but here we need to sync with Store.
+    // The Store's reset() might clear inventory too, which we might not want if we are just loading a save.
+    // But typically loading a save REPLACES current state.
+    // Ideally we should use a dedicated action `resetCounts` or simply rely on `reset` being called BEFORE deserialize is called by the UI.
+    // However, the test calls deserialize directly.
     useGameStore.getState().resetBuildingCounts();
     // END FIX
 

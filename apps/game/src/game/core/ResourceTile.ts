@@ -14,4 +14,8 @@ export abstract class ResourceTile extends Tile {
     this.resourceAmount = Math.max(0, this.resourceAmount - amount);
     return this.resourceAmount <= 0;
   }
+
+  public isResource(): boolean {
+    return true;
+  }
 }

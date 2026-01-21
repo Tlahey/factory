@@ -169,6 +169,26 @@ export interface BaseBuildingConfig {
   /** Optional static image for preview (replaces 3D model) */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   previewImage?: any; // StaticImageData or string
+
+  /** Placement rules for validation */
+  placement?: BuildingPlacementConfig;
+}
+
+export interface BuildingPlacementConfig {
+  /**
+   * Whether this building can be placed on resource tiles (like Trees, Rocks).
+   * Default: false.
+   */
+  canPlaceOnResources?: boolean;
+
+  /**
+   * If strictly required, specific resource IDs this building MUST be placed on.
+   * If set, canPlaceOnResources is implied true for these resources.
+   * e.g. ['iron_ore', 'copper_ore'] for Extractor.
+   *
+   * If empty or undefined, and canPlaceOnResources is true, it can be placed on ANY resource.
+   */
+  requiredResourceIds?: string[];
 }
 
 // --- SOLID TRAIT INTERFACES ---

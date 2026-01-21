@@ -4,7 +4,6 @@ import { IIOBuilding, IPowered, PowerConfig } from "../BuildingConfig";
 import { BiomassPlantConfigType } from "./BiomassPlantConfig";
 import { updateBuildingConnectivity, getIOOffset } from "../BuildingIOHelper";
 import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
-import { Tile } from "../../core/Tile";
 import { ResourceType } from "../../data/Items";
 
 /**
@@ -258,10 +257,6 @@ export class BiomassPlant
 
   public getColor(): number {
     return 0x8b4513; // SaddleBrown for biomass/wood theme
-  }
-
-  public isValidPlacement(tile: Tile): boolean {
-    return !tile.isWater() && !tile.isStone();
   }
 
   // --- Serialization ---

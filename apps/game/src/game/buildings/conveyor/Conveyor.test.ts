@@ -45,7 +45,11 @@ class MockWorld {
 
   getTile(_x: number, _y: number): unknown {
     // Mock Tile
-    return { isStone: () => false, isWater: () => false };
+    return {
+      isStone: () => false,
+      isWater: () => false,
+      isResource: () => false,
+    };
   }
 
   hasPathTo(
@@ -220,8 +224,12 @@ describe("Conveyor Orientation & Flow", () => {
 
   test("Placement: Can't be placed on Stone", () => {
     const c = new Conveyor(0, 0);
-    // Mock tile as Stone
-    const tile = { isStone: () => true, isWater: () => false };
+    // Mock tile as Stone (Resource)
+    const tile = {
+      isStone: () => true,
+      isWater: () => false,
+      isResource: () => true,
+    };
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     expect(c.isValidPlacement(tile)).toBe(false);
@@ -230,7 +238,11 @@ describe("Conveyor Orientation & Flow", () => {
   test("Placement: Can't be placed on Water", () => {
     const c = new Conveyor(0, 0);
     // Mock tile as Water
-    const tile = { isStone: () => false, isWater: () => true };
+    const tile = {
+      isStone: () => false,
+      isWater: () => true,
+      isResource: () => false,
+    };
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     expect(c.isValidPlacement(tile)).toBe(false);

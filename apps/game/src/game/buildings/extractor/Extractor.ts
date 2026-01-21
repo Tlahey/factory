@@ -1,4 +1,3 @@
-import { Tile } from "../../core/Tile";
 import { BuildingEntity } from "../../entities/BuildingEntity";
 import { IWorld, Direction } from "../../entities/types";
 import { Conveyor } from "../conveyor/Conveyor";
@@ -345,10 +344,6 @@ export class Extractor
 
   public getColor(): number {
     return 0xff0000; // Red
-  }
-
-  public isValidPlacement(tile: Tile): boolean {
-    return tile.isStone();
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

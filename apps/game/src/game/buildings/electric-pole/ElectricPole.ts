@@ -1,5 +1,4 @@
 import { BuildingEntity } from "../../entities/BuildingEntity";
-import { Tile } from "../../core/Tile";
 import { IPowered, PowerConfig } from "../BuildingConfig";
 import { ElectricPoleConfigType } from "./ElectricPoleConfig";
 import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
@@ -47,10 +46,6 @@ export class ElectricPole extends BuildingEntity implements IPowered {
 
   public getColor(): number {
     return 0x888888; // Grey
-  }
-
-  public isValidPlacement(tile: Tile): boolean {
-    return !tile.isWater();
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

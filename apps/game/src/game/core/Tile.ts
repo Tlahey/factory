@@ -39,4 +39,8 @@ export abstract class Tile {
   public isGrass(): boolean {
     return this.getType() === TileType.GRASS;
   }
+
+  public isTree(): boolean {
+    return this.getType() === TileType.TREE;
+  }
 }

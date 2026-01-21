@@ -1,7 +1,22 @@
 import * as THREE from "three";
 import { createRockTexture } from "./RockTexture";
+import {
+  ROCK_VISUAL_CONFIG,
+  RockVisualConfig,
+  generateRockChunkParams,
+  generateRockOffset,
+  getRockChunkCount,
+} from "../EnvironmentConfig";
 
-export function createRockModel(): THREE.Group {
+/**
+ * Creates a rock cluster model for world placement.
+ * Uses configuration from EnvironmentConfig for sizes and variations.
+ *
+ * @param config Optional custom configuration (defaults to ROCK_VISUAL_CONFIG)
+ */
+export function createRockModel(
+  config: RockVisualConfig = ROCK_VISUAL_CONFIG,
+): THREE.Group {
   const group = new THREE.Group();
 
   const texture = createRockTexture();
@@ -10,37 +25,33 @@ export function createRockModel(): THREE.Group {
     flatShading: true,
   });
 
-  // Create 3-5 random rocks in a small cluster
-  const numRocks = 3 + Math.floor(Math.random() * 3);
+  // Get number of rock chunks from config
+  const numRocks = getRockChunkCount(config);
 
   for (let i = 0; i < numRocks; i++) {
-    // Random rock shape (low poly icosahedron)
-    const radius = 0.2 + Math.random() * 0.3;
-    const detail = 0; // Low-poly look
-    const geometry = new THREE.IcosahedronGeometry(radius, detail);
+    // Generate random parameters from config
+    const params = generateRockChunkParams(config);
+    const offset = generateRockOffset(config);
 
-    // Randomly deform geometry slightly?
-    // For simplicity, just random scale and rotation
+    // Create rock geometry
+    const geometry = new THREE.IcosahedronGeometry(
+      params.radius,
+      params.detail,
+    );
     const mesh = new THREE.Mesh(geometry, material);
 
-    // Random position within the tile
+    // Position within tile
     mesh.position.set(
-      (Math.random() - 0.5) * 0.4,
-      radius * 0.5, // Sit on the ground
-      (Math.random() - 0.5) * 0.4,
+      offset.x,
+      params.radius * 0.5, // Sit on the ground
+      offset.z,
     );
 
-    mesh.rotation.set(
-      Math.random() * Math.PI,
-      Math.random() * Math.PI,
-      Math.random() * Math.PI,
-    );
+    // Random rotation
+    mesh.rotation.set(params.rotation.x, params.rotation.y, params.rotation.z);
 
-    mesh.scale.set(
-      0.8 + Math.random() * 0.4,
-      0.5 + Math.random() * 1.0, // Some are flatter, some taller
-      0.8 + Math.random() * 0.4,
-    );
+    // Apply axis scale variation for natural shapes
+    mesh.scale.set(params.scaleX, params.scaleY, params.scaleZ);
 
     group.add(mesh);
   }

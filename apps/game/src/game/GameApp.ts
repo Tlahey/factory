@@ -1,6 +1,11 @@
 import * as THREE from "three";
 import { createRockModel } from "./environment/rock/RockModel";
-import { createBatchedTerrain } from "./visuals/TerrainBatcher"; // Terrain batcher import
+import {
+  createTreeModel,
+  updateTreeVisualByDepletion,
+} from "./environment/tree/TreeModel";
+import { createBatchedTerrain } from "./visuals/TerrainBatcher";
+import { Tree } from "./environment/tree/Tree";
 // import { ResourceTile } from './core/ResourceTile';
 import { useGameStore } from "./state/store";
 import { World } from "./core/World";
@@ -24,6 +29,7 @@ import {
   VisualContext,
 } from "./buildings/BuildingFactory";
 import { ToonWaterController } from "./visuals/ToonWaterShader";
+import { treeShaderController } from "./visuals/TreeShader";
 
 export class GameApp {
   private renderer: THREE.WebGLRenderer;
@@ -59,6 +65,8 @@ export class GameApp {
 
   // Performance: Cached rock meshes for O(1) updates
   private rockMeshes: Map<string, THREE.Object3D> = new Map();
+  // Performance: Cached tree meshes for O(1) updates
+  private treeMeshes: Map<string, THREE.Group> = new Map();
 
   // Performance: Dirty flag for cable updates
   private cablesDirty = true;
@@ -475,8 +483,9 @@ export class GameApp {
       this.environmentGroup = null;
     }
 
-    // 3. Clear rock meshes cache (Performance optimization)
+    // 3. Clear rock and tree meshes cache (Performance optimization)
     this.rockMeshes.clear();
+    this.treeMeshes.clear();
 
     // Materials
     // const grassTexture = createGrassTexture(); // Removed in favor of procedural shader
@@ -504,7 +513,7 @@ export class GameApp {
 
     // --- BATCHED TERRAIN IMPLEMENTATION ---
     // Generate merged meshes for Grass, Sand, and Water to reduce draw calls from ~2500 to ~5
-    const { grassMesh, sandMesh, waterMesh, rockPositions } =
+    const { grassMesh, sandMesh, waterMesh, rockPositions, treePositions } =
       createBatchedTerrain(this.world.grid, grassMat, sandMat, waterMat);
 
     if (grassMesh) this.terrainGroup.add(grassMesh);
@@ -535,12 +544,39 @@ export class GameApp {
         if (child instanceof THREE.Mesh) {
           child.castShadow = true;
           child.receiveShadow = true;
-          // Optimize materials on rocks too if needed
         }
       });
 
       this.terrainGroup?.add(rocks);
       this.rockMeshes.set(`${pos.x},${pos.y}`, rocks);
+    });
+
+    // Add trees (Not batched yet as they are complex models, but cached)
+    treePositions.forEach((pos) => {
+      const trees = createTreeModel(pos.treeCount);
+      trees.position.set(pos.x, 0, pos.y);
+      trees.name = `tree_${pos.x}_${pos.y}`;
+      trees.userData = { x: pos.x, y: pos.y };
+
+      // Enable shadows
+      trees.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+
+      // Apply initial depletion state (usually 100%)
+      const tile = this.world.getTile(pos.x, pos.y);
+      if (tile.isTree()) {
+        const treeTile = tile as Tree;
+        const percent =
+          treeTile.resourceAmount / treeTile.initialResourceAmount;
+        updateTreeVisualByDepletion(trees, percent);
+      }
+
+      this.terrainGroup?.add(trees);
+      this.treeMeshes.set(`${pos.x},${pos.y}`, trees);
     });
 
     // Waterfall Effect
@@ -1016,6 +1052,9 @@ export class GameApp {
       this.waterfallController.update(delta);
     }
 
+    // Update Tree Shader (wind animation)
+    treeShaderController.update(delta);
+
     this.factorySystem.update(delta);
     this.powerSystem.update(delta);
     this.guidanceSystem.update(delta);
@@ -1083,6 +1122,21 @@ export class GameApp {
         rockMesh.visible = tile.isVisualVisible();
       } else {
         rockMesh.visible = false;
+      }
+    });
+
+    // Performance: Use cached treeMeshes Map instead of expensive scene.traverse()
+    this.treeMeshes.forEach((treeMesh, key) => {
+      const [x, y] = key.split(",").map(Number);
+      const tile = this.world.getTile(x, y);
+      if (tile && tile.isTree()) {
+        const treeTile = tile as Tree;
+        const percentRemaining =
+          treeTile.resourceAmount / treeTile.initialResourceAmount;
+        updateTreeVisualByDepletion(treeMesh, percentRemaining);
+        treeMesh.visible = tile.isVisualVisible();
+      } else {
+        treeMesh.visible = false;
       }
     });
 

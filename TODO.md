@@ -3,6 +3,10 @@
 - Les types onDragStart et onDragEnd doivent implémenter une interface pour les éléments.
   Actuellement si on souhaite appliquer une règle, ça devient complexe. De plus il faudra en faire un type générique <T> pour que le drag and drop se face seulement sur les types qu'on a défini.
 
+- Les ressources peuvent entrer par la sortie (IO) il faudrait éviter ce cas et bloquer.
+  - Les ressources peuvent seulement entrer par l'input autrement le convoyeur se stope
+  - Les ressources peuvent sortir par l'output autrement rien ne sort
+
 ---
 
 - La popup de dialogue s'ouvre toujours quand on ouvre le menu de construction. Elle ne devrait s'ouvrir qu'une seule fois la première fois qu'on l'ouvre.

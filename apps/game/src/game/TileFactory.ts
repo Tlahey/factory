@@ -4,6 +4,7 @@ import { Grass } from "./environment/grass/Grass";
 import { Rock } from "./environment/rock/Rock";
 import { Water } from "./environment/water/Water";
 import { Sand } from "./environment/sand/Sand";
+import { Tree } from "./environment/tree/Tree";
 import { EmptyTile } from "./core/EmptyTile";
 
 export class TileFactory {
@@ -17,6 +18,8 @@ export class TileFactory {
         return new Water();
       case TileType.SAND:
         return new Sand();
+      case TileType.TREE:
+        return new Tree(resourceAmount);
       case TileType.EMPTY:
       default:
         return new EmptyTile();

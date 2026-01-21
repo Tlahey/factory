@@ -210,9 +210,16 @@ export class World implements IWorld {
         } else if (d < SAND_BORDER) {
           row.push(TileFactory.createTile(TileType.SAND));
         } else {
-          // Inner world: Simple random generation
-          if (Math.random() < 0.1) {
+          // Inner world: Resource generation with rarity
+          const rand = Math.random();
+          if (rand < 0.08) {
+            // 8% chance for stone (common)
             row.push(TileFactory.createTile(TileType.STONE));
+          } else if (rand < 0.15) {
+            // 7% chance for trees (common) - slightly less than stone
+            // Wood amount: 300-700 (high yield, configurable)
+            const woodAmount = 300 + Math.floor(Math.random() * 400);
+            row.push(TileFactory.createTile(TileType.TREE, woodAmount));
           } else {
             row.push(TileFactory.createTile(TileType.GRASS));
           }

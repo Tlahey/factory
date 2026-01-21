@@ -1,6 +1,6 @@
 # Factory Automation Game
 
-![Factory Game Hero](public/assets/factory_hero.png)
+![Factory Game Hero](apps/game/public/assets/factory_hero.png)
 
 A web-based isometric factory building game inspired by classics like Factorio and Satisfactory. Built with Next.js and TypeScript.
 

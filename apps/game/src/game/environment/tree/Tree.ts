@@ -14,10 +14,17 @@ export class Tree extends ResourceTile {
   /** Number of trees in this cluster (1-3) */
   public readonly treeCount: number;
 
-  constructor(resourceAmount: number = 500, treeCount?: number) {
+  constructor(
+    resourceAmount: number = 500,
+    treeCount?: number,
+    variantId?: string | null,
+  ) {
     super(resourceAmount);
     // Default tree count: random 1-3 if not specified
     this.treeCount = treeCount ?? Math.floor(Math.random() * 3) + 1;
+    if (variantId !== undefined) {
+      this.variantId = variantId;
+    }
   }
 
   public getType(): TileType {

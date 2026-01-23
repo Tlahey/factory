@@ -2,7 +2,6 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { Tile } from "../../environment/Tile";
 import { WORLD_HEIGHT, WORLD_WIDTH } from "../../constants";
-import { Tree } from "../../environment/tree/Tree";
 
 /**
  * Creates batched terrain meshes using ONLY top faces.
@@ -17,14 +16,12 @@ export function createBatchedTerrain(
   grassMesh: THREE.Mesh | null;
   sandMesh: THREE.Mesh | null;
   waterMesh: THREE.Mesh | null;
-  rockPositions: { x: number; y: number }[];
-  treePositions: { x: number; y: number; treeCount: number }[];
+  natureAssets: { x: number; y: number; type: "tree" | "rock" }[];
 } {
   const grassGeometries: THREE.BufferGeometry[] = [];
   const sandGeometries: THREE.BufferGeometry[] = [];
   const waterGeometries: THREE.BufferGeometry[] = [];
-  const rockPositions: { x: number; y: number }[] = [];
-  const treePositions: { x: number; y: number; treeCount: number }[] = [];
+  const natureAssets: { x: number; y: number; type: "tree" | "rock" }[] = [];
 
   // Helper to get height based on distance from edge (for sand slope)
   const getHeightAt = (x: number, z: number) => {
@@ -97,11 +94,9 @@ export function createBatchedTerrain(
         // Grass at 0
         addFlatTile(x, y, 0, grassGeometries);
         if (tile.isStone()) {
-          rockPositions.push({ x, y });
+          natureAssets.push({ x, y, type: "rock" });
         } else if (tile.isTree()) {
-          // Get tree count from the Tree tile
-          const treeTile = tile as Tree;
-          treePositions.push({ x, y, treeCount: treeTile.treeCount });
+          natureAssets.push({ x, y, type: "tree" });
         }
       }
     }
@@ -111,7 +106,7 @@ export function createBatchedTerrain(
   const sandMesh = mergeAndCreateMesh(sandGeometries, sandMaterial);
   const waterMesh = mergeAndCreateMesh(waterGeometries, waterMaterial);
 
-  return { grassMesh, sandMesh, waterMesh, rockPositions, treePositions };
+  return { grassMesh, sandMesh, waterMesh, natureAssets };
 }
 
 function mergeAndCreateMesh(

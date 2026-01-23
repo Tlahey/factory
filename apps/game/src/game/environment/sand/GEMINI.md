@@ -13,7 +13,7 @@ Terrain tile found near water bodies, creating the transition between the ocean 
   - Smooth gradient transition with grass at edges
   - Wind gust shadows
   - Micro shimmer sparkles
-- **Legacy**: `SandTexture.ts` (no longer used, replaced by shader)
+- **Legacy**: `SandTexture.ts` was replaced by the procedural shader and has been removed.
 
 ## Visual Properties
 

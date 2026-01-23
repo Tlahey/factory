@@ -8,7 +8,7 @@ A natural resource found in clusters of 1-3 trees on the world map. Trees are a 
 
 - **Tile**: `Tree.ts` (ResourceTile)
 - **Resource**: `WoodResource.ts` (GameResource, id: `wood`)
-- **Visuals**: `TreeModel.ts` (Low-poly toon-style tree)
+- **Visuals**: `NatureAssetVisual.tsx` (using `tree` entityId). Procedural fallback in `TreeModel.ts`.
 
 ## Behavior
 

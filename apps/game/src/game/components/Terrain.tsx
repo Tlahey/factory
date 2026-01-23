@@ -57,10 +57,7 @@ export function Terrain() {
         sandMesh={terrainData.sandMesh}
       />
       <WaterLayer waterMesh={terrainData.waterMesh} />
-      <NatureLayer
-        rockPositions={terrainData.rockPositions}
-        treePositions={terrainData.treePositions}
-      />
+      <NatureLayer natureAssets={terrainData.natureAssets} />
     </group>
   );
 }

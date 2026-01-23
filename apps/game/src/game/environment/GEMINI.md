@@ -21,8 +21,39 @@ src/game/environment/
 ├── sand/                    # Sand tile logic
 ├── tree/                    # Tree tile logic
 ├── water/                   # Water tile logic
-└── EnvironmentConfig.ts     # Centralized visual configuration
+├── BaseNatureVisual.tsx     # Generic GLTF/Persistence wrapper
+├── NatureAssetVisual.tsx    # Unified entry point for nature visuals
+├── ProceduralNatureFallback.tsx # Unified procedural rendering logic
+├── ResourceTile.ts          # Base for depletable tiles
+├── Tile.ts                  # Base tile class
+└── EnvironmentConfig.ts     # Procedural visual parameters
 ```
+
+## 🌳 Nature Asset System (Phase 2)
+
+We use a unified, persistent system for rendering all nature entities (Trees, Rocks, etc.).
+
+### 1. Unified Visual Pipeline
+
+Instead of having specific visual components per type, we use a single entry point:
+
+- **`NatureAssetVisual`**: Determines the entity type and orchestrates loading.
+- **`BaseNatureVisual`**: Handles the logic for dynamic GLTF discovery and persistence.
+- **`ProceduralNatureFallback`**: Centralized logic for procedural models (used when no specialized GLTF is found).
+
+### 2. Dynamic Discovery
+
+GLTF models are discovered dynamically by scanning the `public/models/[entityId]/` directory.
+
+- API: `/api/assets` returns the manifest.
+- Proxy: `/api/model/` serves assets correctly (bypassing IDM issues).
+
+### 3. Persistence
+
+Selected model variants are stored in the Save File:
+
+- Each `ResourceTile` has a `variantId`.
+- If missing, a variant is lazily assigned and persisted.
 
 ## ⚙️ EnvironmentConfig.ts
 

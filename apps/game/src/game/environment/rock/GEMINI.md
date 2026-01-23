@@ -8,4 +8,4 @@ A natural resource found in clusters on the world map.
 
 - **Tile**: `Rock.ts` (ResourceTile)
 - **Resource**: `StoneResource.ts` (GameResource, id: `stone`)
-- **Visuals**: `RockModel.ts` (Cluster of low-poly icosahedrons)
+- **Visuals**: `NatureAssetVisual.tsx` (using `rock` entityId). Procedural fallback in `RockModel.ts`.

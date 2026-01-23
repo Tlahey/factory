@@ -44,3 +44,10 @@ src_backup
 next-env.d.ts
 
 .agent
+.agents
+.gemini
+
+# igore all the models insides public/models folder
+apps/game/public/models/**/*.bin
+apps/game/public/models/**/*.gltf
+apps/game/public/models/**/*.png

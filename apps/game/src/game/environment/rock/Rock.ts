@@ -5,8 +5,11 @@ import { Grass } from "../grass/Grass";
 import { IWorld } from "../../entities/types";
 
 export class Rock extends ResourceTile {
-  constructor(resourceAmount: number = 100) {
+  constructor(resourceAmount: number = 100, variantId?: string | null) {
     super(resourceAmount);
+    if (variantId !== undefined) {
+      this.variantId = variantId;
+    }
   }
 
   public getType(): TileType {

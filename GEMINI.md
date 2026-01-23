@@ -92,7 +92,7 @@ To add a new building (e.g., "SolarPanel"):
 ## 🛠 Key Points to Watch
 
 - **Performance**: Minimize heavy calculations in `tick()`. Use deltas.
-- **Persistence**: Ensure new state data is correctly saved/loaded if necessary.
+- **Persistence**: Ensure new state data is correctly saved/loaded if necessary. The Nature Asset system persists model choices via `variantId`.
 - **UI**: Buildings with `hasMenu: true` must have their `upgrades` defined in their config to automatically appear in the info panel.
 - **HUD Composability**: Use shared panels (`ResourceProducerPanel`) for similar buildings. Compose from widgets (`StatusIndicatorWidget`, `PowerConsumerWidget`, etc.) for unique buildings.
 - **Drag & Drop Safety**: When implementing drag-and-drop affecting game state (e.g. moving items), use **Immediate Removal** from source to prevent duplication bugs (e.g. items being processed by conveyor while dragged). Implement **Transaction Confirmation** (e.g. `GAME_ITEM_TRANSFER_SUCCESS` event) to robustly confirm successful drops across different UI components, rather than relying solely on `dropEffect`.

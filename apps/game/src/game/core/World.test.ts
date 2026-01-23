@@ -162,5 +162,19 @@ describe("World", () => {
       expect(restored.slots[0].count).toBe(15);
       expect(restored.speedMultiplier).toBe(2.5);
     });
+
+    it("should persist nature asset variantId", () => {
+      const x = 5,
+        y = 5;
+      const variantId = "tree_fancy_01";
+      world.grid[y][x] = TileFactory.createTile(TileType.TREE, 500, variantId);
+
+      const data = world.serialize();
+      const newWorld = new World();
+      newWorld.deserialize(data);
+
+      const restoredTile = newWorld.getTile(x, y) as any;
+      expect(restoredTile.variantId).toBe(variantId);
+    });
   });
 });

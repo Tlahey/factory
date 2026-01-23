@@ -618,6 +618,7 @@ export class World implements IWorld {
           type: tile.getType(),
           resourceAmount:
             tile instanceof ResourceTile ? tile.resourceAmount : 0,
+          variantId: tile instanceof ResourceTile ? tile.variantId : undefined,
         })),
       ),
       buildings: uniqueBuildings.map((b) => {
@@ -648,9 +649,14 @@ export class World implements IWorld {
         for (let x = 0; x < WORLD_WIDTH; x++) {
           if (worldData.grid[y] && worldData.grid[y][x]) {
             const tData = worldData.grid[y][x];
+            // Safe access for potential old save data without variantId
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const variantId = (tData as any).variantId;
+
             this.grid[y][x] = TileFactory.createTile(
               tData.type,
               tData.resourceAmount,
+              variantId,
             );
           }
         }

@@ -1,6 +1,6 @@
-import { ResourceTile } from "../../core/ResourceTile";
+import { ResourceTile } from "../ResourceTile";
 import { TileType } from "../../constants";
-import { Tile } from "../../core/Tile";
+import { Tile } from "../Tile";
 import { Grass } from "../grass/Grass";
 import { IWorld } from "../../entities/types";
 

@@ -47,10 +47,6 @@ export type BuildingCategory =
 export interface BuildingRegistryEntry {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   Logic: { new (...args: any[]): any };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  Visual: { new (...args: any[]): any };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  createVisual?: (building: any, context: any) => any;
 }
 
 /**

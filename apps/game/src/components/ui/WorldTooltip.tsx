@@ -10,6 +10,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 export default function WorldTooltip() {
   const hoveredEntityKey = useGameStore((state) => state.hoveredEntityKey);
   const selectedBuilding = useGameStore((state) => state.selectedBuilding);
+  const isHoveringUI = useGameStore((state) => state.openedEntityKey !== null);
 
   let building: BuildingEntity | null = null;
   let connections = 0;
@@ -47,6 +48,9 @@ export default function WorldTooltip() {
 
   // User request: "Au passage de la souris au dessus du poteau..." (On mouse over...)
   // Providing a tooltip next to the mouse is best.
+  // Add check to ensure we are not hovering a UI element (like the hub panel)
+  // This is a naive check; ideally we'd use a shared "isHoveringUI" state.
+  if (isHoveringUI) return null;
 
   return (
     <TooltipContent

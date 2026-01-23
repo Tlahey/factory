@@ -95,9 +95,13 @@ interface GameState {
   setRenderStats: (stats: {
     drawCalls: number;
     triangles: number;
-    textures: number;
     geometries: number;
+    textures: number;
   }) => void;
+
+  // Settings
+  fpsLimit: number; // 0 = Unlimited, 30, 60
+  setFpsLimit: (limit: number) => void;
 
   // Dialogue / Tutorial
   activeDialogueId: string | null;
@@ -276,6 +280,8 @@ export const useGameStore = create<GameState>()(
       setViewMode: (mode) => set({ viewMode: mode }),
       setCameraAngles: (azimuth, elevation) =>
         set({ cameraAzimuth: azimuth, cameraElevation: elevation }),
+      fpsLimit: 0,
+      setFpsLimit: (limit) => set({ fpsLimit: limit }),
 
       // UI Overhaul Implementation
       isBuildingMenuOpen: false,

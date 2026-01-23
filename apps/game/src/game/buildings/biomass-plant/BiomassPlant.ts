@@ -19,6 +19,7 @@ export class BiomassPlant
   extends BuildingEntity
   implements IPowered, IIOBuilding
 {
+  public active: boolean = false;
   /** Current wood fuel storage */
   public fuelAmount: number = 0;
 
@@ -63,10 +64,6 @@ export class BiomassPlant
     if (!this.isEnabled) {
       logicalStatus = "idle";
       this.isBurning = false;
-    } else if (this.networkSize <= 1) {
-      // Not connected to any power grid (isolated building)
-      logicalStatus = "idle";
-      this.isBurning = false;
     } else if (this.fuelAmount <= 0 && this.combustionProgress <= 0) {
       logicalStatus = "no_resources";
       this.isBurning = false;
@@ -93,6 +90,7 @@ export class BiomassPlant
     }
 
     this.operationStatus = logicalStatus;
+    this.active = this.isBurning;
 
     // 5. Update power status for the grid
     // Power is generated only when burning

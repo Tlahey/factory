@@ -2,7 +2,7 @@ import { BuildingEntity } from "../../entities/BuildingEntity";
 import { IWorld, Direction } from "../../entities/types";
 import { Conveyor } from "../conveyor/Conveyor";
 import { Chest } from "../chest/Chest";
-import { ResourceTile } from "../../core/ResourceTile";
+import { ResourceTile } from "../../environment/ResourceTile";
 import {
   IExtractable,
   IPowered,
@@ -20,7 +20,6 @@ export class Sawmill
   implements IExtractable, IPowered, IIOBuilding
 {
   public active: boolean = false;
-
   public speedMultiplier: number = 1.0;
   private accumTime: number = 0;
 
@@ -73,24 +72,18 @@ export class Sawmill
     }
 
     // Status Debouncing
-    if (logicalStatus === "blocked") {
+    // We debounce both 'blocked' and 'no_power' to prevent rapid flickering
+    if (logicalStatus === "blocked" || logicalStatus === "no_power") {
       this.blockStabilityTimer += delta;
     } else {
       this.blockStabilityTimer = 0;
     }
 
-    const oldStatus = this.operationStatus;
     if (
-      logicalStatus !== "blocked" ||
+      (logicalStatus !== "blocked" && logicalStatus !== "no_power") ||
       this.blockStabilityTimer >= this.STABILITY_THRESHOLD
     ) {
       this.operationStatus = logicalStatus;
-    }
-
-    if (this.operationStatus !== oldStatus) {
-      console.log(
-        `[Sawmill] machine at ${this.x},${this.y} status change: ${oldStatus} -> ${this.operationStatus}`,
-      );
     }
 
     // Check Power Status
@@ -108,9 +101,7 @@ export class Sawmill
     }
 
     if (this.active !== oldActive) {
-      console.log(
-        `[Sawmill] machine at ${this.x},${this.y} active flag change: ${oldActive} -> ${this.active}`,
-      );
+      // Log is fine
     }
 
     // Harvesting Step

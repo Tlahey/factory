@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { World } from "../../core/World";
 import { Hub } from "./Hub";
 import { useGameStore } from "../../state/store";
-import { TileFactory } from "../../TileFactory";
+import { TileFactory } from "../../environment/TileFactory";
 import { TileType } from "../../constants";
 
 describe("Hub Connection Logic", () => {

@@ -77,6 +77,27 @@ export default function DebugMenu() {
                 </span>
               </div>
 
+              {/* FPS Limit Selector */}
+              <div className="flex items-center justify-between p-2 rounded-lg bg-gray-800 border border-gray-700">
+                <span className="text-xs text-gray-400">Max FPS:</span>
+                <div className="flex gap-1">
+                  {[0, 30, 60].map((limit) => (
+                    <button
+                      key={limit}
+                      onClick={() => useGameStore.getState().setFpsLimit(limit)}
+                      className={clsx(
+                        "px-2 py-0.5 text-[10px] rounded border transition-colors",
+                        useGameStore.getState().fpsLimit === limit
+                          ? "bg-purple-500 text-white border-purple-400"
+                          : "bg-gray-700 text-gray-400 border-gray-600 hover:bg-gray-600",
+                      )}
+                    >
+                      {limit === 0 ? "∞" : limit}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Toggle Debug Overlay */}
               <button
                 onClick={toggleDebugOverlay}
@@ -144,7 +165,7 @@ export default function DebugMenu() {
                   Add Resources (100x)
                 </label>
                 <div className="grid grid-cols-3 gap-2">
-                  {RESOURCES.map((res) => (
+                  {[...RESOURCES].sort().map((res) => (
                     <button
                       key={res}
                       onClick={() => addItem(res, 100)}

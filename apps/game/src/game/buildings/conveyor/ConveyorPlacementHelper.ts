@@ -57,8 +57,11 @@ export function determineConveyorDirection(
   }
 
   // Case 3: Only input source (building producing flow)
-  // Continue the building's output direction
+  // Default to building's output direction, but respect user rotation if it's valid (not reverse flow)
   if (inputSource && inputSource.type === "building") {
+    if (isValidConveyorDirection(x, y, userRotation, world)) {
+      return userRotation;
+    }
     return inputSource.direction;
   }
 

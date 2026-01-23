@@ -78,7 +78,6 @@ export function calculateTurnType(
   }
 
   // If neither left nor right matches, it's a 180° turn (invalid, treat as straight)
-  console.warn(`Invalid turn: flowIn=${flowIn}, flowOut=${flowOut}`);
   return "straight";
 }
 
@@ -236,16 +235,17 @@ export function determineFlowInputDirection(
 
     // GENERIC: Check if neighbor has an output port pointing at us
     // This works for any building implementing IIOBuilding (extractor, conveyor, chest, furnace, etc.)
-    if (
-      !hasOutputPortAt(
-        neighbor as unknown as {
-          getOutputPosition?: () => { x: number; y: number } | null;
-        },
-        conveyorX,
-        conveyorY,
-      )
-    )
+    const hasOutput = hasOutputPortAt(
+      neighbor as unknown as {
+        getOutputPosition?: () => { x: number; y: number } | null;
+      },
+      conveyorX,
+      conveyorY,
+    );
+
+    if (!hasOutput) {
       continue;
+    }
 
     // For conveyors, we can use their direction
     if (neighbor.getType() === "conveyor") {
@@ -256,14 +256,13 @@ export function determineFlowInputDirection(
     const dx = conveyorX - neighborX;
     const dy = conveyorY - neighborY;
 
-    if (dy === -1) return "north";
-    if (dy === 1) return "south";
-    if (dx === 1) return "east";
-    if (dx === -1) return "west";
+    let result: "north" | "south" | "east" | "west" = "north";
+    if (dy === -1) result = "north";
+    else if (dy === 1) result = "south";
+    else if (dx === 1) result = "east";
+    else if (dx === -1) result = "west";
 
-    return (
-      (neighbor.direction as "north" | "south" | "east" | "west") || "north"
-    );
+    return result;
   }
 
   return null;

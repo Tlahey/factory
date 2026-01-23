@@ -41,7 +41,7 @@ describe("PowerSystem with Batteries", () => {
     // Create Consumer
     consumer = new (class extends BuildingEntity implements IPowered {
       constructor() {
-        super(0, 10, "consumer");
+        super(0, 10, "consumer" as any);
       }
       get powerConfig() {
         return { type: "consumer" as const, rate: 100 };
@@ -62,6 +62,10 @@ describe("PowerSystem with Batteries", () => {
       get io() {
         return { hasInput: false, hasOutput: false };
       }
+      serialize() {
+        return {};
+      }
+      deserialize() {}
     })();
 
     // Place in World

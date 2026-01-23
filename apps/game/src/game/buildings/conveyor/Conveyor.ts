@@ -133,6 +133,27 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
     return { x: this.x + offset.dx, y: this.y + offset.dy };
   }
 
+  public getInputPositions(): { x: number; y: number }[] {
+    if (!this.io.hasInput) return [];
+
+    // Conveyor accepts inputs from Back, Left, and Right (all except Front)
+    const validDirs: Direction[] = [];
+
+    // Back
+    validDirs.push(getOppositeDirection(this.direction));
+
+    // Left (-90)
+    validDirs.push(this.getRotatedDirection(this.direction, -1));
+
+    // Right (+90)
+    validDirs.push(this.getRotatedDirection(this.direction, 1));
+
+    return validDirs.map((dir) => {
+      const offset = getDirectionOffset(dir);
+      return { x: this.x + offset.dx, y: this.y + offset.dy };
+    });
+  }
+
   /** Rotate direction by 90° increments. steps > 0 = clockwise */
   private getRotatedDirection(dir: Direction, steps: number): Direction {
     const order: Direction[] = ["north", "east", "south", "west"];

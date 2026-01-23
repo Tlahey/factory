@@ -1,6 +1,6 @@
 import { Entity } from "./Entity";
-import { Tile } from "../core/Tile";
-import { ResourceTile } from "../core/ResourceTile";
+import { Tile } from "../environment/Tile";
+import { ResourceTile } from "../environment/ResourceTile";
 import {
   getBuildingConfig,
   BuildingConfig,
@@ -23,7 +23,6 @@ export abstract class BuildingEntity extends Entity {
   public connectedOutputSides: IOSide[] = [];
 
   public abstract get powerConfig(): PowerConfig | undefined;
-
   public powerStatus: "active" | "warn" | "idle" = "idle"; // 'warn' = no power
 
   // Real-time tracking for UI
@@ -90,8 +89,6 @@ export abstract class BuildingEntity extends Entity {
 
     if (this.buildingType === "extractor") {
       // Logic specific to extractor
-      // We might want to throttle this so it doesn't run every frame, but every second.
-      // For now, let's just log or assume external throttle, OR handle it here with a timer accumulator.
     }
   }
 

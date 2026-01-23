@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach } from "vitest";
 import { World } from "../../core/World";
 import { Conveyor } from "./Conveyor";
 import { Extractor } from "../extractor/Extractor";
-import { TileFactory } from "../../TileFactory";
+import { TileFactory } from "../../environment/TileFactory";
 import { TileType } from "../../constants";
 import { getNextValidConveyorRotation } from "./ConveyorPlacementHelper";
 

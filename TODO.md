@@ -259,3 +259,7 @@ En mode preview il faudrait que les flèches d'IO ne changement pas de couleur (
 ---
 
 Il faudrait fixer le nombre de FPS à 60
+
+---
+
+Les améliorations doivent se faire les unes après les autres, il n'est pas possible d'en faire ne parallèlement

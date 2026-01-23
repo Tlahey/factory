@@ -17,9 +17,10 @@ import {
 import { isValidConveyorDirection } from "../buildings/conveyor/ConveyorPlacementHelper";
 import { updateBuildingConnectivity } from "../buildings/BuildingIOHelper";
 
-import { Tile } from "./Tile";
-import { ResourceTile } from "./ResourceTile";
-import { TileFactory } from "../TileFactory";
+import { Tile } from "../environment/Tile";
+import { Conveyor } from "../buildings/conveyor/Conveyor";
+import { ResourceTile } from "../environment/ResourceTile";
+import { TileFactory } from "../environment/TileFactory";
 
 interface AutoOrientable {
   autoOrient(world: IWorld): void;
@@ -232,9 +233,8 @@ export class World implements IWorld {
 
   public updateConveyorNetwork(): void {
     // 1. Reset all conveyors to unresolved
-    this.buildings.forEach((b) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (b.getType() === "conveyor") (b as any).isResolved = false;
+    this.buildings.forEach((_b) => {
+      // Reset logic here if needed
     });
 
     // 2. Propagate resolution backwards from all sinks (buildings that can receive input)
@@ -282,10 +282,8 @@ export class World implements IWorld {
               "canInput" in sinkBuilding &&
               (sinkBuilding as unknown as IIOBuilding).canInput(nx, ny)
             ) {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              if (!(neighbor as any).isResolved) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (neighbor as any).isResolved = true;
+              if (!(neighbor as unknown as Conveyor).isResolved) {
+                (neighbor as unknown as Conveyor).isResolved = true;
                 queue.push({ x: nx, y: ny });
               }
             }
@@ -304,14 +302,6 @@ export class World implements IWorld {
   public addCable(x1: number, y1: number, x2: number, y2: number): boolean {
     this.cables.push({ x1, y1, x2, y2 });
     return true;
-  }
-
-  public removeCable(x1: number, y1: number, x2: number, y2: number): void {
-    this.cables = this.cables.filter(
-      (c) =>
-        !(c.x1 === x1 && c.y1 === y1 && c.x2 === x2 && c.y2 === y2) &&
-        !(c.x1 === x2 && c.y1 === y2 && c.x2 === x1 && c.y2 === y1),
-    );
   }
 
   public getConnectionsCount(x: number, y: number): number {
@@ -380,6 +370,35 @@ export class World implements IWorld {
     return true;
   }
 
+  public removeCable(
+    start: { x: number; y: number },
+    end: { x: number; y: number },
+  ): boolean {
+    const initialLen = this.cables.length;
+
+    // Remove exact match or reversed match
+    this.cables = this.cables.filter(
+      (c) =>
+        !(
+          (c.x1 === start.x &&
+            c.y1 === start.y &&
+            c.x2 === end.x &&
+            c.y2 === end.y) ||
+          (c.x1 === end.x &&
+            c.y1 === end.y &&
+            c.x2 === start.x &&
+            c.y2 === start.y)
+        ),
+    );
+
+    if (this.cables.length < initialLen) {
+      // Cable was removed
+      // Trigger connectivity update if needed
+      return true;
+    }
+    return false;
+  }
+
   public placeBuilding(
     x: number,
     y: number,
@@ -413,19 +432,21 @@ export class World implements IWorld {
 
     // For conveyors and mergers, compute visual state and connectivity
     if (type === "conveyor" || type === "conveyor_merger") {
+      // 1. Update neighbors first (so they orient toward us)
+      this.updateNeighborConnectivity(x, y);
+
+      // 2. Now update ourselves (we can see neighbors pointing at us)
       if (type === "conveyor") {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (building as any).updateVisualState(this);
       }
+
       if ("io" in building) {
         updateBuildingConnectivity(
           building as BuildingEntity & IIOBuilding,
           this,
         );
       }
-
-      // Also update neighbors' connectivity (they may now be connected to us)
-      this.updateNeighborConnectivity(x, y);
     }
 
     // Update conveyor network resolution (which conveyors lead to chests)
@@ -462,12 +483,27 @@ export class World implements IWorld {
     ];
 
     for (const dir of directions) {
-      const neighbor = this.getBuilding(x + dir.dx, y + dir.dy);
-      if (neighbor && "io" in neighbor) {
-        updateBuildingConnectivity(
-          neighbor as BuildingEntity & IIOBuilding,
-          this,
-        );
+      const neighborX = x + dir.dx;
+      const neighborY = y + dir.dy;
+      const neighbor = this.getBuilding(neighborX, neighborY);
+
+      if (neighbor) {
+        // Force non-conveyor neighbors to re-orient toward the new building
+        if (neighbor.getType() !== "conveyor") {
+          this.autoOrientBuilding(neighborX, neighborY);
+        }
+
+        if ("io" in neighbor) {
+          updateBuildingConnectivity(
+            neighbor as BuildingEntity & IIOBuilding,
+            this,
+          );
+        }
+
+        // Force visual update (straight/left/right) for neighboring conveyors
+        if (neighbor.getType() === "conveyor") {
+          (neighbor as unknown as Conveyor).updateVisualState(this);
+        }
       }
     }
   }

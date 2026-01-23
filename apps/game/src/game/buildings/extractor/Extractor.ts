@@ -2,7 +2,7 @@ import { BuildingEntity } from "../../entities/BuildingEntity";
 import { IWorld, Direction } from "../../entities/types";
 import { Conveyor } from "../conveyor/Conveyor";
 import { Chest } from "../chest/Chest";
-import { ResourceTile } from "../../core/ResourceTile";
+import { ResourceTile } from "../../environment/ResourceTile";
 import {
   IExtractable,
   IPowered,
@@ -72,7 +72,8 @@ export class Extractor
     }
 
     // Status Debouncing:
-    if (logicalStatus === "blocked") {
+    // We debounce both 'blocked' and 'no_power' to prevent rapid flickering
+    if (logicalStatus === "blocked" || logicalStatus === "no_power") {
       this.blockStabilityTimer += delta;
     } else {
       this.blockStabilityTimer = 0;
@@ -80,7 +81,7 @@ export class Extractor
 
     const oldStatus = this.operationStatus;
     if (
-      logicalStatus !== "blocked" ||
+      (logicalStatus !== "blocked" && logicalStatus !== "no_power") ||
       this.blockStabilityTimer >= this.STABILITY_THRESHOLD
     ) {
       this.operationStatus = logicalStatus;
@@ -97,22 +98,15 @@ export class Extractor
     const oldActive = this.active;
 
     // ACTIVE flag logic
-    // Working if we are mining OR outputting
-    // Mining condition: hasResources AND !isBufferFull
-    // We update accumTime if we have power and are effectively working
+    // We consider it "active" (animating and light green) if it's in the working state
     const canMine = hasResources && !isBufferFull;
-
-    // We consider it "active" (animating) if it's processing or moving items.
-    // If it's blocked, it stops.
-    // If it's no_resources but has items to output, it might still active?
-    // Usually drill animation is linked to mining.
     const isWorking = canMine && powerFactor > 0;
 
     if (isWorking) {
       this.accumTime += delta * powerFactor;
-      this.active = true;
+      this.active = true; // REVERT: Restore direct active state
     } else {
-      this.active = false;
+      this.active = false; // REVERT: Restore direct active state
     }
 
     if (this.active !== oldActive) {

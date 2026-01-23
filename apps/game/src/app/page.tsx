@@ -18,7 +18,8 @@ import HighlightOverlay from "@/components/ui/HighlightOverlay";
 import WorldTooltip from "@/components/ui/WorldTooltip";
 import { PlacementCostHUD } from "@/components/ui/PlacementCostHUD";
 
-const GameCanvas = dynamic(() => import("@/components/GameCanvas"), {
+// R3F Canvas - Migrated from legacy GameCanvas
+const GameCanvas = dynamic(() => import("@/components/R3FCanvas"), {
   ssr: false,
 });
 

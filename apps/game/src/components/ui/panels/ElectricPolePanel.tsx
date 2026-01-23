@@ -2,9 +2,9 @@ import { BuildingEntity } from "@/game/entities/BuildingEntity";
 import { Activity } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ElectricPole } from "@/game/buildings/electric-pole/ElectricPole";
-import { GameApp } from "@/game/GameApp";
 import { useGameStore } from "@/game/state/store";
 import { ElectricPoleConfigType } from "@/game/buildings/electric-pole/ElectricPoleConfig";
+import { World } from "@/game/core/World";
 
 interface ElectricPolePanelProps {
   building: BuildingEntity;
@@ -25,7 +25,7 @@ export function ElectricPolePanel({ building }: ElectricPolePanelProps) {
   // Since we don't have direct access to World here easily (unless we use the global instance hack or context),
   // we will use the global window.game instance for now as seen in BuildingInfoPanel.
 
-  const world = (window as unknown as { game: GameApp }).game?.world;
+  const world = (window as unknown as { game: { world: World } }).game?.world;
   const connectionsCount = world
     ? world.getConnectionsCount(building.x, building.y)
     : 0;

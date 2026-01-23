@@ -163,7 +163,7 @@ describe("Conveyor Orientation & Flow", () => {
       1,
       10,
       world as unknown as IWorld,
-      "north",
+      "west", // User wants West (opposite of East flow) -> Invalid
     );
 
     // Should continue in extractor's direction (east), not user's rotation (north)

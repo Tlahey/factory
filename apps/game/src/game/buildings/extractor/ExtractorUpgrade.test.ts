@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach } from "vitest";
 import { Extractor } from "./Extractor";
 import { Chest } from "../chest/Chest";
-import { ResourceTile } from "../../core/ResourceTile";
+import { ResourceTile } from "../../environment/ResourceTile";
 import { IWorld } from "../../entities/types";
 import { TileType } from "../../constants";
 

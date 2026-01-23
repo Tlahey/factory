@@ -98,6 +98,7 @@ describe("Chest IO & Storage", () => {
         x: 5,
         y: 6,
         getOutputPosition: () => ({ x: 5, y: 7 }), // conveyor outputs further away
+        getInputPosition: () => ({ x: 5, y: 5 }), // accepts input from chest
       };
 
       world.buildings.set("5,5", chest as unknown as BuildingEntity);

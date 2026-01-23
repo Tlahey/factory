@@ -39,6 +39,7 @@ describe("WorldTooltip", () => {
         selector({
           hoveredEntityKey: null,
           selectedBuilding: "select",
+          openedEntityKey: null,
         }),
     );
   });
@@ -54,6 +55,7 @@ describe("WorldTooltip", () => {
         selector({
           hoveredEntityKey: "10,10",
           selectedBuilding: "select",
+          openedEntityKey: null,
         }),
     );
     mockGetBuilding.mockReturnValue(null);
@@ -68,6 +70,7 @@ describe("WorldTooltip", () => {
         selector({
           hoveredEntityKey: "10,10",
           selectedBuilding: "select",
+          openedEntityKey: null,
         }),
     );
 
@@ -87,6 +90,7 @@ describe("WorldTooltip", () => {
         selector({
           hoveredEntityKey: "5,5",
           selectedBuilding: "select",
+          openedEntityKey: null,
         }),
     );
 
@@ -113,6 +117,7 @@ describe("WorldTooltip", () => {
         selector({
           hoveredEntityKey: "10,10",
           selectedBuilding: "select",
+          openedEntityKey: null,
         }),
     );
 
@@ -143,6 +148,7 @@ describe("WorldTooltip", () => {
         selector({
           hoveredEntityKey: "10,10",
           selectedBuilding: "extractor", // Placing extractor
+          openedEntityKey: null,
         }),
     );
     mockGetBuilding.mockReturnValue({

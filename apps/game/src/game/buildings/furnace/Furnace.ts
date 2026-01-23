@@ -15,7 +15,6 @@ type ProcessingJob = {
 
 export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
   public active: boolean = false;
-
   // IO State
   public inputQueue: { type: string; count: number }[] = [];
   public outputSlot: { type: string; count: number } | null = null;
@@ -24,6 +23,10 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
   // Processing State
   public selectedRecipeId: string | null = null;
   public activeJobs: ProcessingJob[] = []; // Supports parallel processing
+
+  // Stability Timers
+  private statusStabilityTimer: number = 0;
+  private readonly STABILITY_THRESHOLD = 1.5;
 
   // Power State
   public currentPowerDraw: number = 0;
@@ -78,8 +81,25 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
       logicalStatus = "no_resources"; // Or idle
     }
 
-    this.operationStatus = logicalStatus;
-    this.active = logicalStatus === "working";
+    // Status Debouncing:
+    if (logicalStatus === "blocked" || logicalStatus === "no_power") {
+      this.statusStabilityTimer += delta;
+    } else {
+      this.statusStabilityTimer = 0;
+    }
+
+    if (
+      (logicalStatus !== "blocked" && logicalStatus !== "no_power") ||
+      this.statusStabilityTimer >= this.STABILITY_THRESHOLD
+    ) {
+      this.operationStatus = logicalStatus;
+    }
+
+    if (logicalStatus === "working") {
+      this.active = true;
+    } else {
+      this.active = false;
+    }
 
     // 3. Process Active Jobs
     if (this.active) {
@@ -273,21 +293,9 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
   }
 
   public canInput(fromX: number, fromY: number): boolean {
-    // 1. Check if the input is coming from the correct side/position
+    // Structural check: return true if the input position matches
     const inputPos = this.getInputPosition();
-    if (!inputPos || fromX !== inputPos.x || fromY !== inputPos.y) return false;
-
-    // 2. Check if queue is full
-    const currentItems = this.inputQueue.reduce(
-      (acc, item) => acc + item.count,
-      0,
-    );
-    if (currentItems >= this.getQueueSize()) return false;
-
-    // 3. Check if we have a recipe selected (machines without recipe shouldn't accept items)
-    if (!this.selectedRecipeId) return false;
-
-    return true;
+    return inputPos !== null && fromX === inputPos.x && fromY === inputPos.y;
   }
 
   // Emulate `IStorage` for input compatibility if needed, or just specific method.

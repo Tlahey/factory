@@ -3,7 +3,7 @@ import {
   createTreeFoliageMaterial,
   createTreeTrunkMaterial,
   treeShaderController,
-} from "../../visuals/TreeShader";
+} from "../../visuals/shaders/TreeShader";
 import {
   TREE_VISUAL_CONFIG,
   TreeVisualConfig,

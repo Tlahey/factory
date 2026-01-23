@@ -1,4 +1,4 @@
-import { Tile } from "../../core/Tile";
+import { Tile } from "../Tile";
 import { TileType } from "../../constants";
 
 export class Grass extends Tile {

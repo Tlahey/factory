@@ -17,8 +17,16 @@ export class FactorySystem {
   }
 
   private tick(delta: number) {
+    const processedIds = new Set<string>();
+
     this.world.buildings.forEach((building: BuildingEntity) => {
+      if (processedIds.has(building.id)) return;
+      processedIds.add(building.id);
+
+      // Logic Tick
       building.tick(delta, this.world);
+      // Visual/State smoothing
+      building.update(delta);
     });
   }
 }

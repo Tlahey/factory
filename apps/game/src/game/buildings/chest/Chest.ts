@@ -134,11 +134,9 @@ export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   }
 
   public canInput(fromX: number, fromY: number): boolean {
-    if (this.isFull()) return false;
-    // Validate that input comes from correct position
+    // Structural check: return true if the input position matches
     const inputPos = this.getInputPosition();
-    if (!inputPos) return false;
-    return fromX === inputPos.x && fromY === inputPos.y;
+    return inputPos !== null && fromX === inputPos.x && fromY === inputPos.y;
   }
 
   public canOutput(): boolean {

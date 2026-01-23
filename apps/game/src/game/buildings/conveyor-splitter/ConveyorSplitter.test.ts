@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach } from "vitest";
 import { ConveyorSplitter } from "./ConveyorSplitter";
 import { IWorld } from "../../entities/types";
 import { Conveyor } from "../conveyor/Conveyor";
-import { Tile } from "../../core/Tile";
+import { Tile } from "../../environment/Tile";
 import { BuildingEntity } from "../../entities/BuildingEntity";
 
 // Mock World for testing

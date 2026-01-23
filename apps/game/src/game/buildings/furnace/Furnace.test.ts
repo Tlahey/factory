@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Furnace } from "./Furnace";
 import { IWorld } from "../../entities/types";
 import { Chest } from "../chest/Chest";
-import { ResourceTile } from "../../core/ResourceTile";
+import { ResourceTile } from "../../environment/ResourceTile";
 import { Grass } from "../../environment/grass/Grass";
 import { Rock } from "../../environment/rock/Rock";
 import { Water } from "../../environment/water/Water";

@@ -10,7 +10,7 @@ import { createConveyorTexture } from "@/game/buildings/conveyor/ConveyorTexture
 import {
   createItemModel,
   updateItemVisuals,
-} from "@/game/environment/ResourceRegistryHelper";
+} from "@/game/resources/ResourceRegistryHelper";
 import { createHubModel } from "@/game/buildings/hub/HubModel";
 import { createBatteryModel } from "@/game/buildings/battery/BatteryModel";
 import { createFurnaceModel } from "@/game/buildings/furnace/FurnaceModel";

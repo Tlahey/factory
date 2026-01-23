@@ -1,5 +1,5 @@
 import { BuildingEntity } from "./BuildingEntity";
-import { Tile } from "../core/Tile";
+import { Tile } from "../environment/Tile";
 import { TileType } from "../constants";
 import { BuildingId } from "../buildings/BuildingConfig";
 

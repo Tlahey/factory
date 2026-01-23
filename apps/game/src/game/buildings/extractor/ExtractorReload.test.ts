@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach } from "vitest";
 import { World } from "../../core/World";
 import { TileType } from "../../constants";
 import { Rock } from "../../environment/rock/Rock";
-import { ResourceTile } from "../../core/ResourceTile";
+import { ResourceTile } from "../../environment/ResourceTile";
 
 describe("Extractor - Reload after Resource Depletion", () => {
   let world: World;

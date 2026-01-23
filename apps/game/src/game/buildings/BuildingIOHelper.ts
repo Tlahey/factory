@@ -7,7 +7,6 @@ import {
   BuildingConfig,
   IOConfig,
 } from "./BuildingConfig";
-import { logChanged } from "../utils/DebugLog";
 
 /**
  * SIMPLIFIED ARROW VISIBILITY RULES:
@@ -57,6 +56,54 @@ function isOutputConnectedInternal(
 }
 
 /**
+ * Check if a building has its OUTPUT port at the given target position.
+ */
+export function hasOutputPortAt(
+  building: {
+    getOutputPosition?: () => { x: number; y: number } | null;
+    getOutputPositions?: () => { x: number; y: number }[];
+  },
+  targetX: number,
+  targetY: number,
+): boolean {
+  if (building.getOutputPositions) {
+    const ports = building.getOutputPositions();
+    return ports.some((p) => p.x === targetX && p.y === targetY);
+  }
+
+  if (!building.getOutputPosition) return false;
+
+  const outputPos = building.getOutputPosition();
+  if (!outputPos) return false;
+
+  return outputPos.x === targetX && outputPos.y === targetY;
+}
+
+/**
+ * Check if a building has its INPUT port at the given target position.
+ */
+export function hasInputPortAt(
+  building: {
+    getInputPosition?: () => { x: number; y: number } | null;
+    getInputPositions?: () => { x: number; y: number }[];
+  },
+  sourceX: number,
+  sourceY: number,
+): boolean {
+  if (building.getInputPositions) {
+    const ports = building.getInputPositions();
+    return ports.some((p) => p.x === sourceX && p.y === sourceY);
+  }
+
+  if (!building.getInputPosition) return false;
+
+  const inputPos = building.getInputPosition();
+  if (!inputPos) return false;
+
+  return inputPos.x === sourceX && inputPos.y === sourceY;
+}
+
+/**
  * Check if input is connected (any neighbor's output points at us)
  * Checks ALL adjacent positions, not just the canonical input direction,
  * to handle 90° angle connections properly.
@@ -78,25 +125,9 @@ function isInputConnectedInternal(
 
     if (!neighbor) continue;
 
-    if ("getOutputPosition" in neighbor) {
-      const neighborOutput = (
-        neighbor as { getOutputPosition: () => { x: number; y: number } | null }
-      ).getOutputPosition();
-
-      if (neighborOutput) {
-        // Check if the neighbor's output targets ANY tile of the building at (x, y)
-        const targetBuilding = world.getBuilding(
-          neighborOutput.x,
-          neighborOutput.y,
-        );
-        const us = world.getBuilding(x, y);
-
-        // neighbor must be different from us (cannot point to ourselves)
-        // and targetBuilding must be the same as us
-        if (targetBuilding && us && targetBuilding === us && neighbor !== us) {
-          return true;
-        }
-      }
+    // Check if neighbor has an output at OUR position
+    if (hasOutputPortAt(neighbor as BuildingEntity & IIOBuilding, x, y)) {
+      return true;
     }
   }
 
@@ -141,12 +172,6 @@ export function updateBuildingConnectivity(
 
   if (io.hasOutput) {
     for (const side of validOutputSides) {
-      // We calculate the source position (edge of the building)
-      // For multi-tile buildings, this logic might need refinement if ports are not centered
-      // But currently we assume ports are logically at the "center" or standard offset
-      // Since isOutputConnectedInternal uses standard offset from (x,y), let's stick to that for 1x1
-      // For larger buildings, getIOOffset usually handles it relative to (x,y).
-
       // Use getIOOffset to find the external tile
       const offset = getIOOffset(side, building.direction, width, height);
       const targetX = building.x + offset.dx;
@@ -157,13 +182,14 @@ export function updateBuildingConnectivity(
       let isConnected =
         neighbor !== undefined && neighbor !== null && neighbor !== building;
 
-      // Smarter check: is the neighbor actually receptive to our input?
-      if (isConnected && neighbor && "canInput" in neighbor) {
-        // For multi-tile buildings, we need to pass the tile that is actually adjacent to the neighbor
+      // Smarter check: does the neighbor have an input port where we output?
+      if (isConnected && neighbor) {
+        // Calculate the tile of THIS building that is adjacent to the neighbor
         const sourceX = targetX - Math.sign(offset.dx);
         const sourceY = targetY - Math.sign(offset.dy);
 
-        isConnected = (neighbor as unknown as IIOBuilding).canInput(
+        isConnected = hasInputPortAt(
+          neighbor as BuildingEntity & IIOBuilding,
           sourceX,
           sourceY,
         );
@@ -196,33 +222,17 @@ export function updateBuildingConnectivity(
       const neighbor = world.getBuilding(feederX, feederY);
       let isConnected = false;
 
-      if (neighbor && "getOutputPosition" in neighbor) {
-        const neighborOutput = (
-          neighbor as unknown as {
-            getOutputPosition: () => { x: number; y: number } | null;
-          }
-        ).getOutputPosition();
+      if (neighbor) {
+        // Check if neighbor has an output port pointing at ANY tile of THIS building
+        // For now, simpler: check if it points to the tile it's adjacent to (which belongs to us)
+        const targetX = feederX - Math.sign(offset.dx);
+        const targetY = feederY - Math.sign(offset.dy);
 
-        if (neighborOutput) {
-          // Check if neighbor outputs to ANY tile that belongs to this building
-          const targetBuilding = world.getBuilding(
-            neighborOutput.x,
-            neighborOutput.y,
-          );
-          const isUs = targetBuilding === building;
-
-          if (building.buildingType === "furnace") {
-            logChanged(
-              "IOHelper",
-              `furnace_check_${side}`,
-              `neighbor=${neighbor.buildingType} at (${feederX},${feederY}), output=(${neighborOutput.x},${neighborOutput.y}), isUs=${isUs}`,
-            );
-          }
-
-          if (isUs) {
-            isConnected = true;
-          }
-        }
+        isConnected = hasOutputPortAt(
+          neighbor as BuildingEntity & IIOBuilding,
+          targetX,
+          targetY,
+        );
       }
 
       // Special handling for Conveyor as 'building':

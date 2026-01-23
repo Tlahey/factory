@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi, Mock } from "vitest";
 import { World } from "../../core/World";
-import { TileFactory } from "../../TileFactory";
+import { TileFactory } from "../../environment/TileFactory";
 import { TileType } from "../../constants";
 import { useGameStore } from "../../state/store";
 

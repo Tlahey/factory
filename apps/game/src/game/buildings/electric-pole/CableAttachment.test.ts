@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { getCableAttachmentPoint } from "./CableVisual";
+import { getCableAttachmentPoint } from "../../visuals/helpers/CableVisualHelper";
 import { Hub } from "../hub/Hub";
 import { ElectricPole } from "./ElectricPole";
 import { Extractor } from "../extractor/Extractor";

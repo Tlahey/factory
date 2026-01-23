@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { World } from "../../core/World";
 import { useGameStore } from "../../state/store";
-import { TileFactory } from "../../TileFactory";
+import { TileFactory } from "../../environment/TileFactory";
 import { TileType } from "../../constants";
 
 describe("Furnace Rotation Repro", () => {

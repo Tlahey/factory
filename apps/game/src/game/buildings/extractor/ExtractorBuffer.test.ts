@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { Extractor } from "./Extractor";
 import { World } from "../../core/World";
-import { ResourceTile } from "../../core/ResourceTile";
-import { TileFactory } from "../../TileFactory";
+import { ResourceTile } from "../../environment/ResourceTile";
+import { TileFactory } from "../../environment/TileFactory";
 import { TileType } from "../../constants";
 import { Conveyor } from "../conveyor/Conveyor";
 

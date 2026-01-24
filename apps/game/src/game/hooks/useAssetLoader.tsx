@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { useGLTF } from "@react-three/drei";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
-import { Group } from "three";
+import { Group, Mesh } from "three";
 
 interface GLTFEntityModelProps {
   url: string;
@@ -22,7 +22,14 @@ export function GLTFEntityModel({
 
   // Clone the scene to ensure independent instances (essential for many identical trees)
   const clonedScene = useMemo(() => {
-    return clone(scene) as Group;
+    const s = clone(scene) as Group;
+    s.traverse((child) => {
+      if (child instanceof Mesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    return s;
   }, [scene]);
 
   React.useEffect(() => {

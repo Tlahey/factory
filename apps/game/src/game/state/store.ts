@@ -124,6 +124,10 @@ interface GameState {
 
   isDraggingItem: boolean;
   setIsDraggingItem: (dragging: boolean) => void;
+
+  // Loading State
+  isSceneReady: boolean;
+  setSceneReady: (ready: boolean) => void;
 }
 
 const INVENTORY_SIZE = 10;
@@ -531,6 +535,9 @@ export const useGameStore = create<GameState>()(
       isDraggingItem: false,
       setIsDraggingItem: (dragging: boolean) =>
         set({ isDraggingItem: dragging }),
+
+      isSceneReady: false,
+      setSceneReady: (ready) => set({ isSceneReady: ready }),
     }),
     {
       name: "factory-game-storage", // name of the item in the storage (must be unique)

@@ -9,16 +9,15 @@ import { createWaterfallMeshes } from "./WaterfallUtils";
 
 interface WaterLayerProps {
   waterMesh?: THREE.Mesh | null;
+  waterController?: ToonWaterController | null;
 }
 
-export function WaterLayer({ waterMesh }: WaterLayerProps) {
+export function WaterLayer({ waterMesh, waterController }: WaterLayerProps) {
   const { world } = useGameContext();
   const { gl, scene, camera, size } = useThree();
-  const _groupRef = useRef<THREE.Group>(null);
   const waterGroupRef = useRef<THREE.Group>(null);
 
   // Controllers
-  const waterControllerRef = useRef<ToonWaterController | null>(null);
   const waterfallControllerRef = useRef<WaterfallController | null>(null);
 
   // Depth Target for Foam Effect
@@ -32,23 +31,13 @@ export function WaterLayer({ waterMesh }: WaterLayerProps) {
   }, [size.width, size.height]);
 
   // Resize Depth Target
-  useEffect(() => {
-    depthTarget.setSize(size.width, size.height);
-    if (waterControllerRef.current) {
-      waterControllerRef.current.setResolution(size.width, size.height);
-    }
-  }, [size, depthTarget]);
-
-  // Setup Water Controllers and Meshes
   // Setup Water Controllers
-  const [waterController] = useState(() => new ToonWaterController({}));
   const [waterfallController] = useState(() => new WaterfallController());
 
   // Sync refs for useFrame
   useEffect(() => {
-    waterControllerRef.current = waterController;
     waterfallControllerRef.current = waterfallController;
-  }, [waterController, waterfallController]);
+  }, [waterfallController]);
 
   // Create Meshes
   const waterfallMeshes = useMemo(() => {
@@ -58,20 +47,18 @@ export function WaterLayer({ waterMesh }: WaterLayerProps) {
 
   // Sync material
   useEffect(() => {
-    if (waterMesh) {
+    if (waterMesh && waterController) {
       waterMesh.material = waterController.material;
     }
   }, [waterMesh, waterController]);
 
   // Cleanup
-  // Cleanup
   useEffect(() => {
     return () => {
-      waterController.dispose();
       waterfallController.dispose();
       depthTarget.dispose();
     };
-  }, [waterController, waterfallController, depthTarget]);
+  }, [waterfallController, depthTarget]);
 
   // Frame Loop: Animation & Depth Pass
   useFrame(({ clock }, delta) => {
@@ -92,21 +79,16 @@ export function WaterLayer({ waterMesh }: WaterLayerProps) {
       waterGroupRef.current.visible = true;
 
       // 4. Update Water Uniforms
-      if (waterControllerRef.current) {
-        waterControllerRef.current.setDepthTexture(depthTarget.depthTexture);
+      if (waterController) {
+        waterController.setDepthTexture(depthTarget.depthTexture);
       }
     }
 
     // Update Animations
-    waterControllerRef.current?.update(delta);
-    if (
-      waterControllerRef.current &&
-      waterControllerRef.current.material.uniforms.uTime
-    ) {
-      waterControllerRef.current.material.uniforms.uTime.value = elapsedTime;
-      waterControllerRef.current.updateCamera(
-        camera as THREE.PerspectiveCamera,
-      );
+    waterController?.update(delta);
+    if (waterController && waterController.material.uniforms.uTime) {
+      waterController.material.uniforms.uTime.value = elapsedTime;
+      waterController.updateCamera(camera as THREE.PerspectiveCamera);
     }
 
     waterfallControllerRef.current?.update(delta);
@@ -121,7 +103,7 @@ export function WaterLayer({ waterMesh }: WaterLayerProps) {
 
   return (
     <group ref={waterGroupRef}>
-      {waterMesh && <primitive object={waterMesh} />}
+      {waterMesh && <primitive object={waterMesh} receiveShadow />}
       {waterfallMeshes.map((wf, idx) => (
         <primitive key={`waterfall-${idx}`} object={wf} />
       ))}

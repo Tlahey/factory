@@ -9,6 +9,9 @@ import { GroundLayer } from "./terrain/GroundLayer";
 import { WaterLayer } from "./terrain/WaterLayer";
 import { NatureLayer } from "./terrain/NatureLayer";
 
+import { useGameStore } from "../state/store";
+import { useEffect } from "react";
+
 /**
  * Terrain Component
  *
@@ -25,38 +28,53 @@ export function Terrain() {
   // createBatchedTerrain creates 3 big meshes: Grass, Sand, Water.
   // We need temporary materials for the batcher to work,
   // but the Layers will manage the live materials/controllers.
+  // 1. Generate Foundation Meshes (Batched)
   const terrainData = useMemo(() => {
-    // Create temp materials just for batch generation signatures
-    const tempGrass = createGrassShaderMaterial();
-    // Helpers for Sand/Water materials
-    const tempSand = new SandShaderController({
+    // Create materials synchronously so meshes are born with them (Prevents White Blink)
+    const grassMat = createGrassShaderMaterial();
+    const sandController = new SandShaderController({
       worldWidth: WORLD_WIDTH,
       worldHeight: WORLD_HEIGHT,
-    }).material;
-    const tempWater = new ToonWaterController({}).material;
+    });
+    const waterController = new ToonWaterController({});
 
     const data = createBatchedTerrain(
       world.grid,
-      tempGrass,
-      tempSand,
-      tempWater,
+      grassMat,
+      sandController.material,
+      waterController.material,
     );
 
-    // Dispose temp materials?
-    // createBatchedTerrain assigns them to the meshes.
-    // We will overwrite them in the sub-components with the "Real" controller-managed materials.
-    // So this is fine.
-
-    return data;
+    return {
+      ...data,
+      sandController,
+      waterController,
+    };
   }, [world]);
+
+  // Signal that the heaviest part of the scene is mounted/ready
+  useEffect(() => {
+    // Small timeout to ensure at least one frame has passed?
+    // Usually useEffect fires after layout/paint.
+    // Let's set it immediately, it's better than arbitrary 500ms.
+    useGameStore.getState().setSceneReady(true);
+
+    return () => {
+      useGameStore.getState().setSceneReady(false);
+    };
+  }, []);
 
   return (
     <group name="TerrainSystem">
       <GroundLayer
         grassMesh={terrainData.grassMesh}
         sandMesh={terrainData.sandMesh}
+        sandController={terrainData.sandController}
       />
-      <WaterLayer waterMesh={terrainData.waterMesh} />
+      <WaterLayer
+        waterMesh={terrainData.waterMesh}
+        waterController={terrainData.waterController}
+      />
       <NatureLayer natureAssets={terrainData.natureAssets} />
     </group>
   );

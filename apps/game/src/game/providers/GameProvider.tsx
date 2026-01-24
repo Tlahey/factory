@@ -240,6 +240,9 @@ export function GameContextProvider({ children }: GameContextProviderProps) {
         // No save found, ensure welcome dialogue is shown for new users
         useGameStore.getState().showDialogue("welcome");
       }
+
+      // Reset Scene Ready state on full re-init
+      useGameStore.getState().setSceneReady(false);
       setIsLoading(false);
     };
 

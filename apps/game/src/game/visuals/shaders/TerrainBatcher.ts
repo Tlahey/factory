@@ -119,6 +119,5 @@ function mergeAndCreateMesh(
   geometries.forEach((g) => g.dispose());
   const mesh = new THREE.Mesh(merged, material);
   mesh.receiveShadow = true;
-  // mesh.castShadow = true; // Ground usually doesn't need to cast shadows on itself
   return mesh;
 }

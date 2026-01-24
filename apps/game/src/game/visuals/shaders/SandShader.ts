@@ -127,6 +127,27 @@ export const SandShader = {
         return normalize( abs( fDet ) * surf_norm - vGrad );
     }
 
+    // --- LECTURE MANUELLE DE L'OMBRE ---
+    float getCustomShadow() {
+      float shadow = 1.0;
+      #ifdef USE_SHADOWMAP
+      #if NUM_DIR_LIGHT_SHADOWS > 0
+        vec4 shadowCoord = vDirectionalShadowCoord[0];
+        vec3 shadowCoord3 = shadowCoord.xyz / shadowCoord.w;
+        if ( shadowCoord3.x >= 0.0 && shadowCoord3.x <= 1.0 && 
+             shadowCoord3.y >= 0.0 && shadowCoord3.y <= 1.0 && 
+             shadowCoord3.z <= 1.0 ) {
+          float shadowDepth = unpackRGBAToDepth( texture2D( directionalShadowMap[ 0 ], shadowCoord3.xy ) );
+          float bias = 0.0005; 
+          if ( shadowDepth < shadowCoord3.z - bias ) {
+            shadow = 0.0;
+          }
+        }
+      #endif
+      #endif
+      return shadow;
+    }
+
     void main() {
       vec2 worldXZ = vWorldPosition.xz;
       
@@ -193,6 +214,11 @@ export const SandShader = {
       vec3 cloudShadowColor = mix(uColorGrass * 0.77, uColorCloud, sandFactor);
       
       finalColor = mix(finalColor, cloudShadowColor, cloudMixFactor);
+
+      // --- OMBRES PORTÉES (Buildings) ---
+      float shadowMask = getCustomShadow(); 
+      vec3 shadowColor = finalColor * 0.6; 
+      finalColor = mix(shadowColor, finalColor, shadowMask);
 
       #include <fog_fragment>
 

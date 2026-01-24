@@ -37,7 +37,10 @@ export const ToonWaterShader = {
     cameraNear: { value: 0.1 },
     cameraFar: { value: 1000.0 },
     resolution: {
-      value: new THREE.Vector2(window.innerWidth, window.innerHeight),
+      value: new THREE.Vector2(
+        typeof window !== "undefined" ? window.innerWidth : 1024,
+        typeof window !== "undefined" ? window.innerHeight : 1024,
+      ),
     },
     uFoamDistance: { value: 0.4 }, // Distance RÉDUITE pour une ligne fine
     uFoamCutoff: { value: 0.8 }, // Netteté de la coupure
@@ -47,6 +50,7 @@ export const ToonWaterShader = {
 
   vertexShader: /* glsl */ `
     #include <common>
+    #include <shadowmap_pars_vertex>
     #include <fog_pars_vertex>
 
     uniform float uTime;
@@ -64,37 +68,36 @@ export const ToonWaterShader = {
     void main() {
       vUv = uv;
 
-      vec4 worldPos = modelMatrix * vec4(position, 1.0);
-      vWorldPosition = worldPos.xyz;
+      #include <beginnormal_vertex>
+      #include <defaultnormal_vertex>
+      #include <begin_vertex>
+
+      // Base world position for damp calculation
+      vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
 
       // --- Animation douce des sommets (Houle) ---
-      // Moins frénétique, plus "nappe d'eau"
-      float wave = sin(worldPos.x * WAVE_FREQ + uTime * WAVE_SPEED) * WAVE_AMP;
-      wave += cos(worldPos.z * WAVE_FREQ * 0.7 + uTime * WAVE_SPEED * 0.6) * WAVE_AMP * 0.5;
-      
-      vec3 displaced = position;
+      float wave = sin(worldPosition.x * WAVE_FREQ + uTime * WAVE_SPEED) * WAVE_AMP;
+      wave += cos(worldPosition.z * WAVE_FREQ * 0.7 + uTime * WAVE_SPEED * 0.6) * WAVE_AMP * 0.5;
       
       // --- FIX GAP : DAMPING AT EDGES ---
-      // On annule la vague si on est proche du bord du monde (0,0) ou (worldSize)
-      // edgeDist = 2.0 ensures water tiles at the very edge (within 2 units) are completely flat
       float edgeDamp = 1.0;
-      float edgeDist = 2.0; // Distance from edge where waves start to reduce (was 1.0)
-      
-      // Bord Ouest/Est (X = 0 ou X = Width)
-      float distX = min(worldPos.x, uWorldSize.x - worldPos.x);
-      // Bord Nord/Sud (Z = 0 ou Z = Height)
-      float distZ = min(worldPos.z, uWorldSize.y - worldPos.z);
-      
+      float edgeDist = 2.0; 
+      float distX = min(worldPosition.x, uWorldSize.x - worldPosition.x);
+      float distZ = min(worldPosition.z, uWorldSize.y - worldPosition.z);
       float minDist = min(distX, distZ);
       edgeDamp = smoothstep(0.0, edgeDist, minDist);
       
-      displaced.y += wave * edgeDamp;
+      transformed.y += wave * edgeDamp;
 
-      vec4 mvPosition = modelViewMatrix * vec4(displaced, 1.0);
-      gl_Position = projectionMatrix * mvPosition;
+      #include <project_vertex>
+      
+      // worldPosition is required by shadowmap_vertex - must be vec4 and updated with transformed
+      worldPosition = modelMatrix * vec4( transformed, 1.0 );
+      vWorldPosition = worldPosition.xyz;
 
       vScreenPos = gl_Position;
 
+      #include <shadowmap_vertex>
       #include <fog_vertex>
     }
   `,
@@ -127,6 +130,8 @@ export const ToonWaterShader = {
 
     #include <common>
     #include <packing>
+    #include <lights_pars_begin>
+    #include <shadowmap_pars_fragment>
     #include <fog_pars_fragment>
     
     // --- SHARED UTILS ---
@@ -179,6 +184,27 @@ export const ToonWaterShader = {
     float readDepthTexture(vec2 screenUv) {
       float depthSample = texture2D(tDepth, screenUv).r;
       return getLinearDepth(depthSample);
+    }
+
+    // --- LECTURE MANUELLE DE L'OMBRE ---
+    float getCustomShadow() {
+      float shadow = 1.0;
+      #ifdef USE_SHADOWMAP
+      #if NUM_DIR_LIGHT_SHADOWS > 0
+        vec4 shadowCoord = vDirectionalShadowCoord[0];
+        vec3 shadowCoord3 = shadowCoord.xyz / shadowCoord.w;
+        if ( shadowCoord3.x >= 0.0 && shadowCoord3.x <= 1.0 && 
+             shadowCoord3.y >= 0.0 && shadowCoord3.y <= 1.0 && 
+             shadowCoord3.z <= 1.0 ) {
+          float shadowDepth = unpackRGBAToDepth( texture2D( directionalShadowMap[ 0 ], shadowCoord3.xy ) );
+          float bias = 0.001; 
+          if ( shadowDepth < shadowCoord3.z - bias ) {
+            shadow = 0.0;
+          }
+        }
+      #endif
+      #endif
+      return shadow;
     }
 
     void main() {
@@ -253,6 +279,12 @@ export const ToonWaterShader = {
       // On mixe avec la couleur d'ombre définie
       finalColor = mix(finalColor, uColorCloud, cloudMixFactor * 0.8);
 
+      // 6. OMBRES PORTÉES (Buildings)
+      // On applique les ombres portées S'IL N'Y A PAS D'ÉCUME (pour un look plus propre sur l'eau)
+      // Ou on les mixe. Ici on les mixe avec la couleur finale.
+      float shadowMask = getCustomShadow();
+      finalColor = mix(finalColor * 0.7, finalColor, shadowMask);
+
       #include <fog_fragment>
 
       gl_FragColor = vec4(finalColor, 1.0);
@@ -290,6 +322,7 @@ export function createToonWaterMaterial(
   options: ToonWaterOptions = {},
 ): THREE.ShaderMaterial {
   const uniforms = THREE.UniformsUtils.merge([
+    THREE.UniformsLib.lights,
     THREE.UniformsLib.fog,
     ToonWaterShader.uniforms,
   ]);
@@ -342,6 +375,7 @@ export function createToonWaterMaterial(
     vertexShader: ToonWaterShader.vertexShader,
     fragmentShader: ToonWaterShader.fragmentShader,
     defines: defines,
+    lights: true,
     fog: true,
     transparent: false, // OPAQUE
     side: THREE.FrontSide, // Optimisation

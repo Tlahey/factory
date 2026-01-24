@@ -263,3 +263,12 @@ Il faudrait fixer le nombre de FPS à 60
 ---
 
 Les améliorations doivent se faire les unes après les autres, il n'est pas possible d'en faire ne parallèlement
+
+---
+
+Ajouter un workshop dans le hub ou à côté, il permettra de craft des items (qui n'ont pas besoin de fournaise) à la main
+Donc on place 1 item et ça en constuit un autre.
+
+---
+
+Implémenter un système de chunk pour la carte. Chaque chuncks doit avoir un nombre max de ressources en tree et stone.

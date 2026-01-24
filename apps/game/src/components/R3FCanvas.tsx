@@ -12,6 +12,7 @@ import { SelectionView } from "@/game/components/visuals/SelectionView";
 import { CablesView } from "@/game/components/visuals/CablesView";
 import { useGameStore } from "@/game/state/store";
 import { WORLD_WIDTH, WORLD_HEIGHT } from "@/game/constants";
+import { Lights } from "@/game/components/Lights";
 
 /**
  * R3FCanvas
@@ -40,13 +41,7 @@ export default function R3FCanvas() {
             <GameInput />
 
             {/* Lighting */}
-            <ambientLight intensity={0.5} />
-            <directionalLight
-              position={[50, 50, 25]}
-              intensity={1.0}
-              castShadow
-              shadow-mapSize={[2048, 2048]}
-            />
+            <Lights />
 
             {/* Declarative Visuals */}
             <Terrain />

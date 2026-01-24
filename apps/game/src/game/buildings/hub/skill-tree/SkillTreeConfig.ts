@@ -10,10 +10,10 @@
  * Buildings must be unlocked before they can be upgraded.
  */
 
-import { BUILDINGS } from "../../BuildingConfig";
+import { BuildingId } from "../../BuildingConfig";
 
-// Derive building IDs from configuration for type safety
-export type BuildingId = keyof typeof BUILDINGS;
+// Re-export for consumers
+export type { BuildingId };
 
 // Skill node types
 export type SkillNodeType = "unlock" | "upgrade" | "tech";

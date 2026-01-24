@@ -148,11 +148,19 @@ export function GameContextProvider({ children }: GameContextProviderProps) {
     const handleSave = (e: Event) => {
       const customEvent = e as CustomEvent;
       const inv = customEvent.detail?.inventory;
+      const state = useGameStore.getState();
 
       const worldData = world.serialize();
       const saveData = {
         world: worldData,
-        inventory: inv || [],
+        inventory: inv || state.inventory, // Use store inventory as fallback/primary
+        progression: {
+          unlockedSkills: state.unlockedSkills,
+          unlockedBuildings: state.unlockedBuildings,
+          unlockedRecipes: state.unlockedRecipes,
+          purchasedCounts: state.purchasedCounts,
+          isUnlimitedResources: state.isUnlimitedResources,
+        },
         timestamp: Date.now(),
       };
       localStorage.setItem("factory_save", JSON.stringify(saveData));
@@ -163,12 +171,13 @@ export function GameContextProvider({ children }: GameContextProviderProps) {
       if (!saved) return false;
       try {
         const rawData = JSON.parse(saved);
-        let worldData, inventoryData;
+        let worldData, inventoryData, progressionData;
 
         // Legacy support
         if (rawData.world) {
           worldData = rawData.world;
           inventoryData = rawData.inventory || [];
+          progressionData = rawData.progression;
         } else {
           worldData = rawData;
           inventoryData = [];
@@ -192,10 +201,25 @@ export function GameContextProvider({ children }: GameContextProviderProps) {
         markCablesDirty();
         setWorldRevision((prev) => prev + 1);
 
+        // Restore Progression
+        if (progressionData) {
+          useGameStore.setState({
+            unlockedSkills: progressionData.unlockedSkills || [],
+            unlockedBuildings: progressionData.unlockedBuildings || ["hub"],
+            unlockedRecipes: progressionData.unlockedRecipes || [],
+            purchasedCounts: progressionData.purchasedCounts || {},
+            isUnlimitedResources: progressionData.isUnlimitedResources || false,
+          });
+        }
+
         // Dispatch inventory event back to UI
         window.dispatchEvent(
           new CustomEvent("GAME_LOAD_INVENTORY", { detail: inventoryData }),
         );
+        // Also update store inventory directly if possible, or trust the event loop
+        // The event GAME_LOAD_INVENTORY is legacy, normally we should set store
+        useGameStore.getState().setInventory(inventoryData);
+
         return true;
       } catch (err) {
         console.error("Load Failed", err);

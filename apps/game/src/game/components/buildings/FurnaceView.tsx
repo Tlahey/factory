@@ -9,6 +9,8 @@ import {
   createIOArrows,
   updateIOArrows,
 } from "../../visuals/helpers/IOArrowHelper";
+import { HoverProgressCard } from "../../../components/ui/HoverProgressCard";
+import { useState } from "react";
 
 interface FurnaceViewProps {
   entity: Furnace;
@@ -132,9 +134,24 @@ export function FurnaceView({ entity, particleSystem }: FurnaceViewProps) {
   };
   const rotationY = directionToRotation[entity.direction] || 0;
 
+  const [hovered, setHovered] = useState(false);
+
   return (
-    <group ref={groupRef} position={position} rotation={[0, rotationY, 0]}>
+    <group
+      ref={groupRef}
+      position={position}
+      rotation={[0, rotationY, 0]}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        setHovered(true);
+      }}
+      onPointerOut={(e) => {
+        e.stopPropagation();
+        setHovered(false);
+      }}
+    >
       <primitive object={mesh} />
+      <HoverProgressCard entity={entity} visible={hovered} />
     </group>
   );
 }

@@ -226,18 +226,6 @@ On va essayer une nouvelle méthode pour le drag and drop des convoyeurs.
 
 ---
 
-Création de la Centrale à Biomasse qui permet de générer de l'énergie grâce à la biomasse.
-
-- On pourra lui donner du bois pour gérer cette ressource.
-- Chaque morceau de bois va prendre 5 secondes à se consommer.
-- Pour améliorer la centrale, on pourra acheter des améliorations dans le HUB.
-- La centrale génèra du courant qu'on va devoir réinjecter dans le réseau grâce à aux câbles
-- La centrale aura aussi un bouton on / off pour activer/desactiver la centrale. Et donc ne plus consommer de bois
-- La centrale généra une faible quantité d'énergie par seconde (au allentour de 20 et cette valeur fluctura)
-- On reprendra le même affichage que pour le HUB pour voir la quantité d'énergie produit
-
----
-
 Il faudrait à la fin que l'IHM des batiments puissent hériter des types de l'interface du batiments.
 
 - Automatiquement on saura qu'un batiment qui est de type ressource / chargeur / etc ... doivent avoir cette interface
@@ -245,20 +233,9 @@ Il faudrait à la fin que l'IHM des batiments puissent hériter des types de l'i
 
 ---
 
-Voir la faisabilité et le gain de passer sur React Three Fiber
-
-- Le gain que ça peut apporter
-- ???
-
----
-
 En mode preview il faudrait que les flèches d'IO ne changement pas de couleur (grise)
 
 - Elles doivent être de la couleur initial sans faire de changements
-
----
-
-Il faudrait fixer le nombre de FPS à 60
 
 ---
 

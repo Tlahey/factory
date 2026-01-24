@@ -276,6 +276,7 @@ export class SkillTreeManager {
 
   /**
    * Get the active upgrade for a building (the highest unlocked level)
+   * Useful for UI to display current tier name/description.
    */
   getActiveUpgrade(buildingId: BuildingId): BuildingUpgrade | undefined {
     const level = this.getBuildingUpgradeLevel(buildingId);
@@ -290,31 +291,66 @@ export class SkillTreeManager {
   }
 
   /**
+   * Get ALL unlocked upgrades for a building
+   */
+  getAllUnlockedUpgrades(buildingId: BuildingId): BuildingUpgrade[] {
+    const unlocked = this.getUnlockedNodeIds();
+    const config = getBuildingConfig(buildingId);
+    if (!config || !("upgrades" in config)) return [];
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const appUpgrades = (config as any).upgrades as BuildingUpgrade[];
+
+    // Get all unlocked upgrade nodes for this building
+    const unlockedNodes = getSkillNodesForBuilding(buildingId).filter(
+      (node) => node.type === "upgrade" && unlocked.includes(node.id),
+    );
+
+    // Map to upgrade definitions
+    return unlockedNodes
+      .map((node) => appUpgrades.find((u) => u.level === node.level))
+      .filter((u): u is BuildingUpgrade => !!u);
+  }
+
+  /**
    * Get the multiplier for a specific stat on a building
-   * Returns 1.0 if no upgrades affect this stat
+   * Accumulates multipliers from ALL unlocked upgrades.
    */
   getStatMultiplier(buildingId: BuildingId, stat: string): number {
-    const upgrade = this.getActiveUpgrade(buildingId);
-    if (!upgrade) return 1.0;
+    const upgrades = this.getAllUnlockedUpgrades(buildingId);
+    let totalMultiplier = 1.0;
 
-    const effect = upgrade.effects.find(
-      (e) => e.type === "multiplier" && e.stat === stat,
-    );
-    return effect?.value ?? 1.0;
+    for (const upgrade of upgrades) {
+      const effect = upgrade.effects.find(
+        (e) => e.type === "multiplier" && e.stat === stat,
+      );
+      if (effect) {
+        // Multipliers stack multiplicatively
+        totalMultiplier *= effect.value;
+      }
+    }
+
+    return totalMultiplier;
   }
 
   /**
    * Get the additive bonus for a specific stat on a building
-   * Returns 0 if no upgrades affect this stat
+   * Accumulates additives from ALL unlocked upgrades.
    */
   getStatAdditive(buildingId: BuildingId, stat: string): number {
-    const upgrade = this.getActiveUpgrade(buildingId);
-    if (!upgrade) return 0;
+    const upgrades = this.getAllUnlockedUpgrades(buildingId);
+    let totalAdditive = 0;
 
-    const effect = upgrade.effects.find(
-      (e) => e.type === "additive" && e.stat === stat,
-    );
-    return effect?.value ?? 0;
+    for (const upgrade of upgrades) {
+      const effect = upgrade.effects.find(
+        (e) => e.type === "additive" && e.stat === stat,
+      );
+      if (effect) {
+        totalAdditive += effect.value;
+      }
+    }
+
+    return totalAdditive;
   }
 }
 

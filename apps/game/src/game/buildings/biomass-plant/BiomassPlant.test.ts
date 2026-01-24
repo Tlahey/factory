@@ -1,6 +1,26 @@
 import { BiomassPlant } from "./BiomassPlant";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
+import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
+
+// Mock the SkillTreeManager singleton
+vi.mock("../hub/skill-tree/SkillTreeManager", () => ({
+  skillTreeManager: {
+    getStatMultiplier: vi.fn(),
+    getStatAdditive: vi.fn(),
+  },
+}));
 
 describe("BiomassPlant", () => {
+  beforeEach(() => {
+    // Default mocks
+    vi.mocked(skillTreeManager.getStatMultiplier).mockReturnValue(1.0);
+    vi.mocked(skillTreeManager.getStatAdditive).mockReturnValue(0);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
   describe("initialization", () => {
     it("should initialize with default values", () => {
       const plant = new BiomassPlant(0, 0, "north");
@@ -55,6 +75,48 @@ describe("BiomassPlant", () => {
       const result = plant.addItem("wood", 1);
       expect(result).toBe(false);
       expect(plant.fuelAmount).toBe(capacity);
+    });
+
+    it("should increase capacity with upgrades", () => {
+      const plant = new BiomassPlant(0, 0);
+
+      // Default capacity is 20
+      expect(plant.getFuelCapacity()).toBe(20);
+
+      // Mock upgrade active (+10)
+      vi.mocked(skillTreeManager.getStatAdditive).mockReturnValue(10);
+
+      // New capacity should be 30
+      expect(plant.getFuelCapacity()).toBe(30);
+
+      // Should handle fill to new capacity
+      plant.fuelAmount = 20;
+      expect(plant.addItem("wood", 5)).toBe(true);
+      expect(plant.fuelAmount).toBe(25);
+    });
+  });
+
+  describe("upgrades handling", () => {
+    it("should apply consumption time multiplier", () => {
+      const plant = new BiomassPlant(0, 0);
+      // Default is 5s
+      expect(plant.getConsumptionTime()).toBe(5);
+
+      // Mock 20% speed boost (0.8x time)
+      vi.mocked(skillTreeManager.getStatMultiplier).mockReturnValue(0.8);
+
+      expect(plant.getConsumptionTime()).toBe(4);
+    });
+
+    it("should apply power rate multiplier", () => {
+      const plant = new BiomassPlant(0, 0);
+      // Default is 20
+      expect(plant.getBasePowerRate()).toBe(20);
+
+      // Mock 25% power boost (1.25x)
+      vi.mocked(skillTreeManager.getStatMultiplier).mockReturnValue(1.25);
+
+      expect(plant.getBasePowerRate()).toBe(25);
     });
   });
 

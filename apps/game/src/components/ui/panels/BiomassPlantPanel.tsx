@@ -44,7 +44,8 @@ export function BiomassPlantPanel({
       {/* 2. Unified Fuel & Combustion Panel */}
       <FuelCombustionPanel
         fuelAmount={building.fuelAmount}
-        maxFuel={building.getFuelCapacity()}
+        // Ensure max displayed never drops below current amount (legacy/bug support)
+        maxFuel={Math.max(building.fuelAmount, building.getFuelCapacity())}
         combustionProgress={building.combustionProgress}
         isBurning={building.isBurning}
         isEnabled={building.isEnabled}

@@ -145,6 +145,10 @@
     "biomass_plant": {
       "name": "Biomass Power Plant",
       "description": "Generates electricity by burning wood. Feed it biomass to produce sustainable power."
+    },
+    "solar_panel": {
+      "name": "Solar Panel",
+      "description": "Generates clean energy from sunlight. Efficiency depends on the time of day."
     }
   },
   "skill_tree": {
@@ -263,6 +267,16 @@
       "speed_1": {
         "name": "Fast Burn I",
         "description": "Reduces fuel consumption time by 20%"
+      }
+    },
+    "solar_panel": {
+      "efficiency_1": {
+        "name": "Photovoltaic Cells",
+        "description": "Increases power generation by 20%."
+      },
+      "storage_1": {
+        "name": "Daisy Chaining",
+        "description": "Allows connecting more cables to the panel (+1 connection)."
       }
     }
   },

@@ -146,24 +146,35 @@ export function GameContextProvider({ children }: GameContextProviderProps) {
     if (isDestroyed) return;
 
     const handleSave = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      const inv = customEvent.detail?.inventory;
-      const state = useGameStore.getState();
+      console.log("[GameProvider] handleSave Triggered");
+      try {
+        const customEvent = e as CustomEvent;
+        const inv = customEvent.detail?.inventory;
+        const state = useGameStore.getState();
 
-      const worldData = world.serialize();
-      const saveData = {
-        world: worldData,
-        inventory: inv || state.inventory, // Use store inventory as fallback/primary
-        progression: {
-          unlockedSkills: state.unlockedSkills,
-          unlockedBuildings: state.unlockedBuildings,
-          unlockedRecipes: state.unlockedRecipes,
-          purchasedCounts: state.purchasedCounts,
-          isUnlimitedResources: state.isUnlimitedResources,
-        },
-        timestamp: Date.now(),
-      };
-      localStorage.setItem("factory_save", JSON.stringify(saveData));
+        console.log("[GameProvider] Serializing World...");
+        const worldData = world.serialize();
+        console.log("[GameProvider] World Serialized. Building count:", worldData.buildings.length);
+
+        const saveData = {
+          world: worldData,
+          inventory: inv || state.inventory,
+          progression: {
+            unlockedSkills: state.unlockedSkills,
+            unlockedBuildings: state.unlockedBuildings,
+            unlockedRecipes: state.unlockedRecipes,
+            purchasedCounts: state.purchasedCounts,
+            isUnlimitedResources: state.isUnlimitedResources,
+          },
+          timestamp: Date.now(),
+        };
+
+        console.log("[GameProvider] Saving to LocalStorage...");
+        localStorage.setItem("factory_save", JSON.stringify(saveData));
+        console.log("[GameProvider] LocalStorage setItem success. Data length:", JSON.stringify(saveData).length);
+      } catch (err) {
+        console.error("[GameProvider] CRITICAL SAVE ERROR:", err);
+      }
     };
 
     const loadFromStorage = (): boolean => {

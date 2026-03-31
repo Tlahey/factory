@@ -10,3 +10,4 @@ export * from "./BiomassPlantPanel";
 export * from "./BreakerSwitch";
 export * from "./SawmillPanel";
 export * from "./ResourceProducerPanel";
+export * from "./SolarPanelPanel";

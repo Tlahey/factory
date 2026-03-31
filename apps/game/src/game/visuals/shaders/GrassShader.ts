@@ -9,7 +9,7 @@ export const GrassShader = {
     // Note : Base est maintenant la couleur dominante (claire), Dark est l'ombre (nuage)
     uColorBase: { value: new THREE.Color("#7baa5e") }, // Vert moyen lumineux (Sol par défaut)
     uColorLight: { value: new THREE.Color("#a6c875") }, // Vert très clair (Touches de lumière)
-    uColorDark: { value: new THREE.Color("#6ea056") }, // Vert foncé (Ombres des nuages - Plus doux)
+    uColorDark: { value: new THREE.Color("#557d42") }, // Vert foncé (Ombres des nuages - Plus sombre)
     uColorEarth: { value: new THREE.Color("#c7b0a4") }, // Terre
 
     // --- Settings ---
@@ -100,11 +100,6 @@ export const GrassShader = {
       vec3 grainColor = mix(finalColor * 0.92, finalColor * 1.08, grainFactor);
       finalColor = grainColor;
 
-      // 3. Nuages (Zone Dark qui bouge)
-      // Utilisation de la logique partagée
-      float cloudFactor = getCloudFactor(vWorldPosition.xz, uTime);
-      finalColor = mix(finalColor, uColorDark, cloudFactor);
-
       // 4. Zones de Lumière (Fixes ou très lentes)
       // Pour ajouter de la richesse et ne pas avoir juste 2 couleurs
       float noiseLight = snoise(vWorldPosition.xz * scaleLight - vec2(50.0));
@@ -115,6 +110,11 @@ export const GrassShader = {
       float noiseEarth = snoise(vWorldPosition.xz * scaleEarth + vec2(10.0, 20.0));
       float maskEarth = smoothstep(0.65, 0.85, noiseEarth);
       finalColor = mix(finalColor, uColorEarth, maskEarth);
+
+      // 3. Nuages (Zone Dark qui bouge) - APPLIQUÉ À LA FIN
+      // Utilisation de la logique partagée
+      float cloudFactor = getCloudFactor(vWorldPosition.xz, uTime);
+      finalColor = mix(finalColor, uColorDark, cloudFactor);
 
       // 6. Ombres Portées (Buildings)
       float shadowMask = getCustomShadow(); 

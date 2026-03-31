@@ -148,7 +148,10 @@ export const TreeShader = {
       
       // Cloud shadows
       float cloudFactor = getCloudFactor(vWorldPosition.xz, uTime);
-      finalColor = mix(finalColor, finalColor * 0.7, cloudFactor * 0.4);
+      // Darken more significantly to match terrain (mix to black or dark green)
+      // Original was: mix(finalColor, finalColor * 0.7, cloudFactor * 0.4); 
+      // Current terrain uses heavy darkening. Let's make it stronger for consistency.
+      finalColor = mix(finalColor, finalColor * 0.5, cloudFactor * 0.8);
       
       // Building shadows
       float shadowMask = getCustomShadow();

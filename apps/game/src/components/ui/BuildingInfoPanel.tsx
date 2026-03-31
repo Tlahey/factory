@@ -27,7 +27,9 @@ import {
   ConveyorPanel,
   BiomassPlantPanel,
   SawmillPanel,
+  SolarPanelPanel,
 } from "./panels";
+import { SolarPanel } from "@/game/buildings/solar-panel/SolarPanel";
 import FurnaceDashboard from "./FurnaceDashboard";
 
 export default function BuildingInfoPanel() {
@@ -252,9 +254,8 @@ export default function BuildingInfoPanel() {
 
   return (
     <div
-      className={`fixed right-6 top-24 bg-gray-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl text-white overflow-hidden z-panel animate-in slide-in-from-right-10 fade-in duration-200 transition-[width] ease-in-out flex flex-col max-h-[calc(100vh-8rem)] ${
-        isChest ? "w-[440px]" : "w-80"
-      }`}
+      className={`fixed right-6 top-24 bg-gray-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl text-white overflow-hidden z-panel animate-in slide-in-from-right-10 fade-in duration-200 transition-[width] ease-in-out flex flex-col max-h-[calc(100vh-8rem)] ${isChest ? "w-[440px]" : "w-80"
+        }`}
       onDragOver={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -354,6 +355,10 @@ export default function BuildingInfoPanel() {
             />
           )}
 
+          {building instanceof SolarPanel && (
+            <SolarPanelPanel building={building} />
+          )}
+
           {!isChest &&
             !isExtractor &&
             !isBattery &&
@@ -361,6 +366,7 @@ export default function BuildingInfoPanel() {
             !isConveyor &&
             !isBiomassPlant &&
             !isSawmill &&
+            !(building instanceof SolarPanel) &&
             building.getType() !== "electric_pole" && (
               <div className="flex items-center justify-center h-full text-gray-500 text-sm italic py-8 text-center uppercase tracking-widest opacity-50">
                 No statistics available

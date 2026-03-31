@@ -208,10 +208,6 @@ Le modèle du batiment montrera une presse qui tappe vers le sol (TODO: trouver 
 
 ---
 
-Au hover des batiments qui craft des éléments comme la fournaise, on affiche la ressource en train d'être crafté au hover avec en background la progression (background transition de la gauche vers la droite)
-
----
-
 Crée un batiment tour qui quand il est placé va augmenter la vision autour de lui sous forme de zone en cercle. Sur cette zone on y génèra des ressources aléatoirement.
 
 - Pour des raisons d'équilibre on ne mettra pas les plus grosses ressources mais d'autres.

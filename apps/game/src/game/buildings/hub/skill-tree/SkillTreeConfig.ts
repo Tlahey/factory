@@ -283,6 +283,35 @@ export const SKILL_TREE: SkillNode[] = [
     position: { x: 5, y: 4 },
     unlockDuration: 90,
   },
+
+  // === TIER 2: Solar Panel (Requires Battery) ===
+  {
+    id: "solar_panel_unlock",
+    type: "unlock",
+    buildingId: "solar_panel",
+    level: 0,
+    requires: ["battery_unlock"],
+    position: { x: 5, y: 3 }, // Below Battery
+    unlockDuration: 40,
+  },
+  {
+    id: "solar_panel_efficiency_1",
+    type: "upgrade",
+    buildingId: "solar_panel",
+    level: 1,
+    requires: ["solar_panel_unlock"],
+    position: { x: 5, y: 4 },
+    unlockDuration: 60,
+  },
+  {
+    id: "solar_panel_storage_1",
+    type: "upgrade",
+    buildingId: "solar_panel",
+    level: 2,
+    requires: ["solar_panel_efficiency_1"],
+    position: { x: 5, y: 5 },
+    unlockDuration: 90,
+  },
   // Electric Pole Upgrades
   {
     id: "electric_pole_connections",

@@ -71,14 +71,14 @@ const SkillTreeNode = ({ data }: NodeProps) => {
   const config = getBuildingConfig(node.buildingId);
   const visuals = isTechNode
     ? {
-        colors: {
-          bg: "bg-purple-500/20",
-          border: "border-purple-500/50",
-          glow: "shadow-purple-500/30",
-          accent: "text-purple-400",
-        },
-        icon: <Settings className="w-3 h-3" />, // Fallback icon for tech
-      }
+      colors: {
+        bg: "bg-purple-500/20",
+        border: "border-purple-500/50",
+        glow: "shadow-purple-500/30",
+        accent: "text-purple-400",
+      },
+      icon: <Settings className="w-3 h-3" />, // Fallback icon for tech
+    }
     : getBuildingCategoryVisuals(config?.category || "production");
 
   const colors = visuals.colors;
@@ -273,9 +273,8 @@ const SkillTreeNode = ({ data }: NodeProps) => {
               </div>
             ) : canUnlock ? (
               <div
-                className={`w-5 h-5 rounded-full ${
-                  canAfford ? "bg-blue-500 animate-bounce" : "bg-gray-500"
-                } flex items-center justify-center shadow-lg`}
+                className={`w-5 h-5 rounded-full ${canAfford ? "bg-blue-500 animate-bounce" : "bg-gray-500"
+                  } flex items-center justify-center shadow-lg`}
               >
                 <Lock className="w-2.5 h-2.5 text-white" />
               </div>
@@ -515,8 +514,8 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                   <div className="text-lg font-mono font-bold text-green-400">
                     {hub.statsHistory && hub.statsHistory.length > 0
                       ? hub.statsHistory[
-                          hub.statsHistory.length - 1
-                        ].production.toFixed(1)
+                        hub.statsHistory.length - 1
+                      ].production.toFixed(1)
                       : powerGeneration.toFixed(1)}
                     <span className="text-[10px] text-gray-500 ml-1">kW</span>
                   </div>
@@ -529,8 +528,8 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                   <div className="text-lg font-mono font-bold text-red-400">
                     {hub.statsHistory && hub.statsHistory.length > 0
                       ? hub.statsHistory[
-                          hub.statsHistory.length - 1
-                        ].consumption.toFixed(1)
+                        hub.statsHistory.length - 1
+                      ].consumption.toFixed(1)
                       : "0.0"}
                     <span className="text-[10px] text-gray-500 ml-1">kW</span>
                   </div>
@@ -641,59 +640,59 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
             {unlockedSkills.filter(
               (s) => s.includes("_") && !s.includes("unlock"),
             ).length > 0 && (
-              <div className="mb-4">
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
-                  Active Upgrades
-                </h4>
-                <div className="space-y-2">
-                  {(["extractor", "chest", "hub"] as BuildingId[]).map(
-                    (buildingId) => {
-                      const level =
-                        skillTreeManager.getBuildingUpgradeLevel(buildingId);
-                      const upgrade =
-                        skillTreeManager.getActiveUpgrade(buildingId);
-                      if (level === 0 || !upgrade) return null;
+                <div className="mb-4">
+                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                    Active Upgrades
+                  </h4>
+                  <div className="space-y-2">
+                    {(["extractor", "chest", "hub"] as BuildingId[]).map(
+                      (buildingId) => {
+                        const level =
+                          skillTreeManager.getBuildingUpgradeLevel(buildingId);
+                        const upgrade =
+                          skillTreeManager.getActiveUpgrade(buildingId);
+                        if (level === 0 || !upgrade) return null;
 
-                      return (
-                        <div
-                          key={buildingId}
-                          className="p-2 bg-white/5 border border-white/10 rounded-lg"
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="w-6 h-6 rounded overflow-hidden bg-black/30">
-                              <ModelPreview
-                                type="building"
-                                id={buildingId}
-                                width={24}
-                                height={24}
-                                static
-                              />
-                            </div>
-                            <span className="text-xs font-bold text-white">
-                              {t(`building.${buildingId}.name`)} Lv.{level}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {upgrade.effects.map((effect, i) => (
-                              <span
-                                key={i}
-                                className="px-1.5 py-0.5 text-[9px] font-mono rounded bg-indigo-500/20 text-indigo-300"
-                              >
-                                {effect.type === "multiplier"
-                                  ? `${effect.stat} ×${effect.value}`
-                                  : effect.type === "additive"
-                                    ? `${effect.stat} +${effect.value}`
-                                    : `Unlock: ${effect.stat}`}
+                        return (
+                          <div
+                            key={buildingId}
+                            className="p-2 bg-white/5 border border-white/10 rounded-lg"
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="w-6 h-6 rounded overflow-hidden bg-black/30">
+                                <ModelPreview
+                                  type="building"
+                                  id={buildingId}
+                                  width={24}
+                                  height={24}
+                                  static
+                                />
+                              </div>
+                              <span className="text-xs font-bold text-white">
+                                {t(`building.${buildingId}.name`)} Lv.{level}
                               </span>
-                            ))}
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {upgrade.effects.map((effect, i) => (
+                                <span
+                                  key={i}
+                                  className="px-1.5 py-0.5 text-[9px] font-mono rounded bg-indigo-500/20 text-indigo-300"
+                                >
+                                  {effect.type === "multiplier"
+                                    ? `${effect.stat} ×${effect.value}`
+                                    : effect.type === "additive"
+                                      ? `${effect.stat} +${effect.value}`
+                                      : `Unlock: ${effect.stat}`}
+                                </span>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    },
-                  )}
+                        );
+                      },
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Pending Unlocks */}
             {pendingUnlocks.length > 0 && (
@@ -835,8 +834,8 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                           <h3 className="font-bold text-white text-sm">
                             {hoveredNode.type === "unlock"
                               ? `${t("skill_tree.unlock")} ${t(
-                                  `building.${hoveredNode.buildingId}.name`,
-                                )}`
+                                `building.${hoveredNode.buildingId}.name`,
+                              )}`
                               : hoveredUpgrade
                                 ? t(hoveredUpgrade.name)
                                 : `${t(`building.${hoveredNode.buildingId}.name`)} Lv.${hoveredNode.level}`}
@@ -844,8 +843,8 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                           <p className="text-xs text-gray-400 mt-0.5">
                             {hoveredNode.type === "unlock"
                               ? t(
-                                  `building.${hoveredNode.buildingId}.description`,
-                                )
+                                `building.${hoveredNode.buildingId}.description`,
+                              )
                               : hoveredUpgrade
                                 ? t(hoveredUpgrade.description)
                                 : ""}
@@ -922,7 +921,7 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                   )}
                 </div>
               ) : activeTab === "shop" ? (
-                <div id="hub-shop-panel" className="w-full h-full">
+                <div id="hub-shop-panel" className="w-full h-full flex flex-col">
                   <ShopView onPurchased={() => forceUpdate((n) => n + 1)} />
                 </div>
               ) : (

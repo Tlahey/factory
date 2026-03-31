@@ -29,6 +29,8 @@ import { BiomassPlant } from "../buildings/biomass-plant/BiomassPlant";
 import { ElectricPole } from "../buildings/electric-pole/ElectricPole";
 import { ConveyorMerger } from "../buildings/conveyor-merger/ConveyorMerger";
 import { ConveyorSplitter } from "../buildings/conveyor-splitter/ConveyorSplitter";
+import { SolarPanelView } from "./buildings/SolarPanelView";
+import { SolarPanel } from "../buildings/solar-panel/SolarPanel";
 
 /**
  * BuildingsRenderer Component
@@ -163,6 +165,13 @@ export function BuildingsRenderer() {
             <ConveyorSplitterView
               key={key}
               entity={building as unknown as ConveyorSplitter}
+            />
+          );
+        } else if (building.getType() === "solar_panel") {
+          return (
+            <SolarPanelView
+              key={key}
+              entity={building as unknown as SolarPanel}
             />
           );
         } else {

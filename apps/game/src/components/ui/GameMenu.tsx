@@ -43,7 +43,11 @@ export default function GameMenu({
 
         <button
           onClick={() => {
-            console.log("UI: Save clicked");
+            console.log("UI: Save clicked - Dispatching GAME_SAVE");
+            // Direct dispatch for robustness
+            const event = new CustomEvent("GAME_SAVE");
+            window.dispatchEvent(event);
+            console.log("UI: GAME_SAVE Dispatched");
             onSave();
           }}
           className="bg-white/10 hover:bg-white/20 text-white py-3 px-4 rounded-lg font-semibold transition-all border border-white/10 active:scale-95"

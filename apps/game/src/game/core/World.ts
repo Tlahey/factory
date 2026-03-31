@@ -629,6 +629,7 @@ export class World implements IWorld {
           direction: b.direction,
         };
 
+        console.log(`[World] Serializing building: ${b.getType()} at ${b.x},${b.y}`);
         return {
           ...base,
           ...b.serialize(),

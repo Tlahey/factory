@@ -16,6 +16,7 @@ import { createConveyorMergerModel } from "../../buildings/conveyor-merger/Conve
 import { createConveyorSplitterModel } from "../../buildings/conveyor-splitter/ConveyorSplitterModel";
 import { createSawmillModel } from "../../buildings/sawmill/SawmillModel";
 import { createBiomassPlantModel } from "../../buildings/biomass-plant/BiomassPlantModel";
+import { createSolarPanelModel } from "../../buildings/solar-panel/SolarPanelModel";
 import {
   getBuildingConfig,
   IOConfig,
@@ -230,6 +231,8 @@ export class PlacementVisuals {
           mesh = createSawmillModel();
         } else if (ghostType === "biomass_plant") {
           mesh = createBiomassPlantModel();
+        } else if (ghostType === "solar_panel") {
+            mesh = createSolarPanelModel(true);
         }
 
         if (mesh) {
@@ -246,6 +249,10 @@ export class PlacementVisuals {
       }
 
       if (this.ghostMesh) {
+        if (ghostType === "solar_panel") {
+             console.log("[PlacementVisuals] Ghost Mesh Visible:", this.ghostMesh.visible, "Position:", this.ghostMesh.position);
+             console.log("[PlacementVisuals] Ghost Mesh Children:", this.ghostMesh.children.length);
+        }
         this.ghostMesh.visible = true; // FIX: Ensure visible if it was hidden previously
 
         // Ghost Position Logic - Center it on the footprint center

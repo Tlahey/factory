@@ -28,7 +28,7 @@ export const SandShader = {
     // Wait, I didn't add uCloudColor to CloudUniforms in Step 218.
     // I specifically commented: "We might need separate colors per shader"
     // So I should keep uColorCloud here.
-    uColorCloud: { value: new THREE.Color("#dbbb80") }, // Sable ombragé (Plus doux)
+    uColorCloud: { value: new THREE.Color("#b09560") }, // Sable ombragé (Plus sombre/marqué)
 
     // --- REGLAGES TRANSITION ---
     // uEdgeSize : À quelle distance du bord commence le sable ?

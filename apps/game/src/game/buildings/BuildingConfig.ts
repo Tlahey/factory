@@ -24,6 +24,10 @@ import {
   BIOMASS_PLANT_CONFIG,
   BiomassPlantConfigType,
 } from "./biomass-plant/BiomassPlantConfig";
+import {
+  SOLAR_PANEL_CONFIG,
+  SolarPanelConfigType,
+} from "./solar-panel/SolarPanelConfig";
 import { IWorld, Direction } from "../entities/types";
 
 // --- CORE TYPES & ENUMS ---
@@ -75,6 +79,7 @@ export type BuildingId =
   | "conveyor_splitter"
   | "sawmill"
   | "biomass_plant"
+  | "solar_panel"
   | "cable";
 
 export interface PowerConfig {
@@ -317,8 +322,10 @@ export type BuildingConfig =
   | FurnaceConfigType
   | ConveyorMergerConfigType
   | ConveyorSplitterConfigType
+  | ConveyorSplitterConfigType
   | SawmillConfigType
   | BiomassPlantConfigType
+  | SolarPanelConfigType
   | BaseBuildingConfig; // For simple buildings like 'cable'
 
 export const BUILDINGS: Record<BuildingId, BuildingConfig> = {
@@ -345,6 +352,7 @@ export const BUILDINGS: Record<BuildingId, BuildingConfig> = {
   conveyor_splitter: CONVEYOR_SPLITTER_CONFIG,
   sawmill: SAWMILL_CONFIG,
   biomass_plant: BIOMASS_PLANT_CONFIG,
+  solar_panel: SOLAR_PANEL_CONFIG,
 };
 
 export const getBuildingConfig = (

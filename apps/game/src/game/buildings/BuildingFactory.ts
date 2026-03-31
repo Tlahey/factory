@@ -13,6 +13,7 @@ import { Battery } from "./battery/Battery";
 import { Furnace } from "./furnace/Furnace";
 import { Sawmill } from "./sawmill/Sawmill";
 import { BiomassPlant } from "./biomass-plant/BiomassPlant";
+import { SolarPanel } from "./solar-panel/SolarPanel";
 
 type Direction = "north" | "south" | "east" | "west";
 
@@ -53,7 +54,11 @@ export const BuildingRegistry: Partial<
   biomass_plant: {
     Logic: BiomassPlant,
   },
+  solar_panel: {
+    Logic: SolarPanel,
+  },
 };
+
 
 export function createBuildingLogic(
   type: BuildingId,

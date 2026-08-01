@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { GameResource } from "../GameResource";
-import { createIngotModel, updateIngotVisuals } from "../ResourceModelBuilder";
+import { createIngotModel, updateIngotVisuals } from "../models/IngotModel";
 
 export class GoldIngot extends GameResource {
   public readonly id = "gold_ingot";

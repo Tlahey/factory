@@ -80,69 +80,6 @@ export function createTreeModel(
 }
 
 /**
- * Creates a wood item model for conveyor transport.
- * Represents a log/wood piece.
- */
-export function createWoodItemModel(): THREE.Group {
-  const group = new THREE.Group();
-
-  const woodMaterial = new THREE.MeshLambertMaterial({
-    color: 0x8b5a2b,
-    flatShading: true,
-  });
-
-  // Create log shapes (2-4 logs stacked)
-  const maxLogs = 4;
-  for (let i = 0; i < maxLogs; i++) {
-    const logGeometry = new THREE.CylinderGeometry(0.04, 0.04, 0.15, 6);
-    const log = new THREE.Mesh(logGeometry, woodMaterial);
-    log.rotation.z = Math.PI / 2; // Horizontal log
-    group.add(log);
-  }
-
-  updateWoodItemVisuals(group, 0);
-  return group;
-}
-
-/**
- * Deterministic pseudo-random number generator
- */
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
-
-/**
- * Updates the wood item visuals based on seed for variety.
- */
-export function updateWoodItemVisuals(group: THREE.Group, seed: number): void {
-  let s = seed * 1234.5678;
-  const activeCount = 2 + Math.floor(seededRandom(s++) * 3); // 2-4 logs
-
-  group.children.forEach((child, i) => {
-    if (i < activeCount) {
-      child.visible = true;
-
-      const r1 = seededRandom(s + i * 11);
-      const r2 = seededRandom(s + i * 23);
-      const r3 = seededRandom(s + i * 37);
-
-      // Stack logs randomly
-      const x = (r1 - 0.5) * 0.08;
-      const y = 0.04 + i * 0.06;
-      const z = (r2 - 0.5) * 0.08;
-
-      child.position.set(x, y, z);
-      child.rotation.y = r3 * Math.PI;
-    } else {
-      child.visible = false;
-    }
-  });
-
-  group.scale.set(1.0, 1.0, 1.0);
-}
-
-/**
  * Updates tree model scale based on remaining resources.
  * Shrinks from top as resources deplete.
  * @param group The tree model group

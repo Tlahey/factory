@@ -1,9 +1,6 @@
 import * as THREE from "three";
 import { GameResource } from "../GameResource";
-import {
-  createWoodItemModel,
-  updateWoodItemVisuals,
-} from "../../environment/tree/TreeModel";
+import { createWoodItemModel, updateWoodItemVisuals } from "./WoodModel";
 
 /**
  * Wood resource - harvested from trees.

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { GameResource } from "../GameResource";
-import { createOreModel, updateOreVisuals } from "../ResourceModelBuilder";
+import { createOreModel, updateOreVisuals } from "../models/OreModel";
 
 export class CopperOre extends GameResource {
   public readonly id = "copper_ore";

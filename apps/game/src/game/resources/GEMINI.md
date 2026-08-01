@@ -32,13 +32,17 @@ src/game/resources/
 ├── gold_ore/
 ├── iron_ingot/
 ├── iron_ore/
-├── stone/
-├── wood/
+├── stone/                   # StoneResource.ts + StoneModel.ts
+├── wood/                    # WoodResource.ts + WoodModel.ts
+├── models/                  # Models shared by several resources
+│   ├── ChunkGeometry.ts     # Chipped rock geometry helper
+│   ├── IngotModel.ts        # Shared by the three ingots
+│   └── OreModel.ts          # Shared by the three ores
 ├── GameResource.ts          # Base class for all resources
 ├── ResourceInitialization.ts # Central registration logic
+├── ResourceModels.test.ts   # Size/pose contracts for every item model
 ├── ResourceRegistry.ts      # Central registry singleton
-├── ResourceRegistryHelper.ts# Visual helpers for simplified usage
-└── ResourceModelBuilder.ts  # Shared geometric logic for Ores/Ingots
+└── ResourceRegistryHelper.ts# Visual helpers for simplified usage
 ```
 
 ## 🔌 Adding a New Resource
@@ -50,9 +54,28 @@ src/game/resources/
 
 ## 🎨 Visuals
 
-Resources use `createModel()` to provide their 3D representation via `ResourceModelBuilder` or custom model logic.
+`createModel()` builds the mesh once; `updateVisuals(group, seed)` poses it from
+the item id and **runs every frame**, so it may only set transforms and
+visibility — never build geometry or materials there.
 
-- **Ores**: Use clustered icosahedrons for a rough, natural look.
-- **Ingots**: Use box geometry with metallic materials.
-- **Wood**: Use cylinder geometry for logs.
-- **Special**: Can implement custom model logic (like Stone/Rock, Trees).
+Materials come from `visuals/materials/ResourceMaterials.ts`, which mirrors the
+building palette. Every item is a dark body plus one bright accent, because at
+belt scale (~0.2 world units) that contrast is all the player can read:
+
+- **Ores**: chipped rock chunk in a darkened ore tint, with brighter metallic
+  vein crystals breaking the surface (`models/OreModel.ts`).
+- **Ingots**: cast bar, drafted on all four sides, with a stamped top face
+  (`models/IngotModel.ts`).
+- **Wood**: a stacked bundle of logs, bark on the sides and pale end grain on
+  the cut faces (`wood/WoodModel.ts`).
+- **Stone**: three to five chipped chunks in two granite tones
+  (`stone/StoneModel.ts`).
+
+Deterministic variation uses `utils/SeededRandom.ts` — never `Math.random()`,
+which would make items twitch as they travel.
+
+Item meshes deliberately stay out of the shadow pass: there is one per occupied
+belt tile, so shadow-casting items would cost hundreds of extra draw calls.
+
+`ResourceModels.test.ts` locks each model's size budget, so a redesign can
+change the shape but not the scale the item reads at on a belt.

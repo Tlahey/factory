@@ -19,6 +19,7 @@ import { createConveyorSplitterModel } from "@/game/buildings/conveyor-splitter/
 import { createSawmillModel } from "@/game/buildings/sawmill/SawmillModel";
 import { createBiomassPlantModel } from "@/game/buildings/biomass-plant/BiomassPlantModel";
 import { createSolarPanelModel } from "@/game/buildings/solar-panel/SolarPanelModel";
+import { createOutdoorEnvironment } from "@/game/visuals/environment/OutdoorEnvironment";
 
 // Singleton Renderer to prevent Context Loss (Limit ~16 contexts involved)
 import { getBuildingConfig, BuildingId } from "@/game/buildings/BuildingConfig";
@@ -27,6 +28,31 @@ import { getBuildingConfig, BuildingId } from "@/game/buildings/BuildingConfig";
 // Use globalThis to survive Hot Module Reloading
 const GLOBAL_RENDERER_KEY = "__THREE_SHARED_RENDERER__";
 const GLOBAL_CACHE_KEY = "__PREVIEW_IMAGE_CACHE__";
+
+/**
+ * Prefiltered environment map per renderer.
+ *
+ * Building models are metallic; without an env map they preview as black
+ * silhouettes in the shop. A `WeakMap` because the texture belongs to one WebGL
+ * context — the shared renderer and any dynamic renderer each need their own.
+ */
+const previewEnvironments = new WeakMap<
+  THREE.WebGLRenderer,
+  THREE.WebGLRenderTarget
+>();
+
+function applyPreviewEnvironment(
+  scene: THREE.Scene,
+  renderer: THREE.WebGLRenderer,
+): void {
+  let target = previewEnvironments.get(renderer);
+  if (!target) {
+    target = createOutdoorEnvironment(renderer);
+    previewEnvironments.set(renderer, target);
+  }
+  scene.environment = target.texture;
+  scene.environmentIntensity = 0.6;
+}
 
 function getSharedCache(): Map<string, string> {
   const g = globalThis as unknown as Record<string, Map<string, string>>;
@@ -130,7 +156,8 @@ export default function ModelPreview({
       if (type === "building") {
         if (id === "extractor") {
           model = createExtractorModel();
-          model.position.y = -0.4;
+          model.scale.set(0.85, 0.85, 0.85);
+          model.position.y = -0.5;
         } else if (id === "conveyor") {
           const texture = createConveyorTexture();
           model = createConveyorModel("straight", texture);
@@ -143,10 +170,10 @@ export default function ModelPreview({
           model.position.y = -0.4;
         } else if (id === "hub") {
           model = createHubModel();
-          // Center the model (2x2, parts around 0.5, 0.5)
-          model.position.set(-0.5, -0.4, -0.5);
-          model.position.set(-0.5, -0.4, -0.5);
-          model.scale.set(0.8, 0.8, 0.8);
+          // The model is authored centred on its 2x2 footprint, so it only
+          // needs to be dropped so the mast stays in frame.
+          model.position.set(0, -0.55, 0);
+          model.scale.set(0.55, 0.55, 0.55);
         } else if (id === "battery") {
           model = createBatteryModel();
           model.scale.set(1.2, 1.2, 1.2); // Larger scale for better visibility
@@ -202,8 +229,8 @@ export default function ModelPreview({
           model.position.y = -0.1;
         } else if (id === "furnace") {
           model = createFurnaceModel();
-          model.scale.set(0.75, 0.75, 0.75);
-          model.position.y = -0.5;
+          model.scale.set(0.6, 0.6, 0.6);
+          model.position.y = -0.6;
         } else if (id === "conveyor_merger") {
           model = createConveyorMergerModel();
           model.scale.set(1.2, 1.2, 1.2);
@@ -214,8 +241,8 @@ export default function ModelPreview({
           model.position.y = -0.3;
         } else if (id === "sawmill") {
           model = createSawmillModel();
-          model.scale.set(1.1, 1.1, 1.1);
-          model.position.y = -0.3;
+          model.scale.set(1.05, 1.05, 1.05);
+          model.position.y = -0.35;
         } else if (id === "biomass_plant") {
           model = createBiomassPlantModel();
           model.scale.set(1.2, 1.2, 1.2);
@@ -274,6 +301,7 @@ export default function ModelPreview({
 
       const { scene, camera } = setupScene();
       const renderer = getSharedRenderer();
+      applyPreviewEnvironment(scene, renderer);
 
       // Render to Data URL
       renderer.setSize(width, height);
@@ -328,6 +356,7 @@ export default function ModelPreview({
     container.innerHTML = "";
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
+    applyPreviewEnvironment(scene, renderer);
 
     const animate = () => {
       frameIdRef.current = requestAnimationFrame(animate);

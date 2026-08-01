@@ -1,3 +1,7 @@
+/* eslint-disable react-hooks/immutability */
+// Per-frame animation writes straight to the Three.js material, as in every
+// other building view: routing it through React state would re-render the tree
+// 60 times a second.
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
@@ -13,41 +17,28 @@ export function HubView({ entity }: HubViewProps) {
   const groupRef = useRef<THREE.Group>(null);
 
   // 1. Create Model (Once)
-  // Hub is static, no dynamic parts extracted currently.
-  // If we want to animate glow, we need to extract the material.
-  const { mesh, glowMat } = useMemo(() => {
+  const { mesh, beaconMat } = useMemo(() => {
     const mesh = createHubModel();
 
-    // Find glow material to animate
-    // createHubModel uses: const glowMat = new THREE.MeshBasicMaterial({ color: glowColor });
-    // We can traverse to find it or modify createHubModel to name it.
-    // Or just rely on finding meshes with that material uuid?
-    // Traversing is safer.
-    let foundMat: THREE.Material | undefined;
-    mesh.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        // Check if material color is Orange (0xffa500)
-        const mat = child.material as THREE.MeshBasicMaterial;
-        if (mat.color && mat.color.getHex() === 0xffa500) {
-          foundMat = mat;
-        }
-      }
-    });
+    // The beacon is a named node. It used to be located by scanning every mesh
+    // for the literal colour 0xffa500, which picks the wrong part as soon as
+    // two of them share a colour.
+    const beacon = mesh.getObjectByName("hub_beacon") as THREE.Mesh | undefined;
+    const beaconMat = beacon?.material as
+      | THREE.MeshStandardMaterial
+      | undefined;
 
-    return { mesh, glowMat: foundMat as THREE.MeshBasicMaterial | undefined };
+    return { mesh, beaconMat };
   }, []);
 
-  // 2. Pulse Animation (Subtle)
+  // 2. Beacon Pulse
+  // The beacon is emissive instead of `MeshBasicMaterial`, so the pulse can
+  // drive `emissiveIntensity`. The previous version had no animatable property
+  // and its frame loop was left empty.
   useFrame((state) => {
-    if (glowMat) {
-      const time = state.clock.elapsedTime;
-      const _pulse = 0.8 + Math.sin(time * 2) * 0.2;
-      // MeshBasicMaterial doesn't have emissiveIntensity. It just has color.
-      // If it was Standard, we could Pulse emissive.
-      // For Basic, we can Pulse opacity (if transparent) or change color value slightly?
-      // Or just leave it static as SimpleVisual did.
-      // Let's leave it static to save Perf for now.
-    }
+    if (!beaconMat) return;
+    beaconMat.emissiveIntensity =
+      1.2 + Math.sin(state.clock.elapsedTime * 2) * 0.6;
   });
 
   // 3. Position & Rotation

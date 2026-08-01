@@ -13,6 +13,7 @@ import { CablesView } from "@/game/components/visuals/CablesView";
 import { useGameStore } from "@/game/state/store";
 import { WORLD_WIDTH, WORLD_HEIGHT } from "@/game/constants";
 import { Lights } from "@/game/components/Lights";
+import { SceneEnvironment } from "@/game/components/SceneEnvironment";
 
 /**
  * R3FCanvas
@@ -42,6 +43,7 @@ export default function R3FCanvas() {
 
             {/* Lighting */}
             <Lights />
+            <SceneEnvironment />
 
             {/* Declarative Visuals */}
             <Terrain />

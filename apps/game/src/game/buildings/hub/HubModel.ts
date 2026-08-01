@@ -1,91 +1,236 @@
 import * as THREE from "three";
+import {
+  PALETTE,
+  createConcreteMaterial,
+  createDarkMetalMaterial,
+  createEmissiveMaterial,
+  createFrameMaterial,
+  createHazardMaterial,
+  createPaintedMaterial,
+  createSteelMaterial,
+  enableShadows,
+} from "../../visuals/materials/BuildingMaterials";
+import {
+  createLadderGeometry,
+  createLouverGeometry,
+  createPipeGeometry,
+  createRivetRowGeometry,
+} from "../../visuals/helpers/DetailGeometry";
 
-export function createHubModel(): THREE.Object3D {
-  const group = new THREE.Group();
+/**
+ * The Hub — the player's starting base, on a 2x2 footprint.
+ *
+ * Model origin is the **centre of the footprint**, so it spans x/z in [-1, 1]
+ * (see `getFootprintCenter` in `BuildingFootprint.ts`).
+ *
+ * Shape language: an asymmetric silhouette — a tall control block with a
+ * corrugated roof, a lower service wing, and a radio mast off-centre. The mast
+ * being off the middle is what tells you at a glance which way the hub faces.
+ */
 
-  // -- Materials --
-  const wallColor = 0x8b4513; // Rusty Brown
-  // const roofColor = 0x555555; // Dark Grey
-  const solarColor = 0x0044aa; // Solar Blue
-  const metalColor = 0x444444; // Dark Metal
-  const glowColor = 0xffa500; // Orange Glow
-  const poleColor = 0x666666; // Pole Grey
+/** Half-extent of the 2x2 footprint, with a small margin so tiles stay visible. */
+const HALF = 0.95;
+/** Height of the radio mast tip above ground. */
+const MAST_TOP = 2.6;
 
-  const wallMat = new THREE.MeshLambertMaterial({ color: wallColor });
-  // const roofMat = new THREE.MeshLambertMaterial({ color: roofColor });
-  const solarMat = new THREE.MeshLambertMaterial({
-    color: solarColor,
-    emissive: 0x001133,
-  });
-  const metalMat = new THREE.MeshLambertMaterial({ color: metalColor });
-  const glowMat = new THREE.MeshBasicMaterial({ color: glowColor });
-  const poleMat = new THREE.MeshLambertMaterial({ color: poleColor });
+/** Concrete pad the whole structure sits on. */
+function addFoundation(group: THREE.Group): void {
+  const slab = new THREE.Mesh(
+    new THREE.BoxGeometry(HALF * 2, 0.18, HALF * 2),
+    createConcreteMaterial(),
+  );
+  slab.position.y = 0.09;
+  group.add(slab);
 
-  // -- Geometry Helper --
-  // Origin (0,0,0) corresponds to the center of the Top-Left tile (x,y).
-  // The building is 2x2, so it covers tiles with centers (0,0), (1,0), (0,1), (1,1).
-  // The center of the building footprint is at (0.5, 0, 0.5).
+  // Hazard-striped kerb around the pad edge, front and back only: it frames the
+  // building without boxing in the I/O sides.
+  const kerbMat = createHazardMaterial();
+  for (const side of [-1, 1]) {
+    const kerb = new THREE.Mesh(
+      new THREE.BoxGeometry(HALF * 2, 0.06, 0.1),
+      kerbMat,
+    );
+    kerb.position.set(0, 0.21, side * (HALF - 0.05));
+    group.add(kerb);
+  }
+}
 
-  // 1. Base Slab (Concrete/Metal Foundation) - Covers 2x2
-  const baseGeo = new THREE.BoxGeometry(1.9, 0.2, 1.9);
-  const base = new THREE.Mesh(baseGeo, metalMat);
-  base.position.set(0, 0.1, 0); // Was 0.5, 0.5
-  base.castShadow = true;
-  base.receiveShadow = true;
-  group.add(base);
+/** Tall control block: the main volume, back-left of the pad. */
+function addControlBlock(group: THREE.Group): void {
+  const wallMat = createPaintedMaterial(PALETTE.rust);
 
-  // 2. Main Structure (Block)
-  const mainGeo = new THREE.BoxGeometry(1.8, 1.0, 1.8);
-  const mainBldg = new THREE.Mesh(mainGeo, wallMat);
-  mainBldg.position.set(0, 0.6, 0); // Was 0.5, 0.5
-  mainBldg.castShadow = true;
-  mainBldg.receiveShadow = true;
-  group.add(mainBldg);
+  const block = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.0, 1.5), wallMat);
+  block.position.set(-0.35, 0.68, -0.1);
+  group.add(block);
 
-  // 3. Solar Panels (Flat on top)
-  const panelGeo = new THREE.BoxGeometry(1.6, 0.05, 1.6);
-  const panel = new THREE.Mesh(panelGeo, solarMat);
-  panel.position.set(0, 1.12, 0); // Was 0.5, 0.5
-  group.add(panel);
+  // Corrugated roof: ribs merged into one mesh, laid flat over the block.
+  const ribs = new THREE.Mesh(
+    createLouverGeometry({
+      count: 9,
+      width: 1.2,
+      height: 1.6,
+      depth: 0.06,
+      tilt: 0,
+    }),
+    createFrameMaterial(),
+  );
+  ribs.rotation.x = -Math.PI / 2;
+  ribs.position.set(-0.35, 1.2, -0.1);
+  group.add(ribs);
 
-  // 4. Central Electric Pole
-  // Main Pole Shaft
-  const poleHeight = 2.5; // Total height from ground
-  const poleGeo = new THREE.CylinderGeometry(0.15, 0.15, poleHeight);
-  const pole = new THREE.Mesh(poleGeo, poleMat);
-  pole.position.set(0, poleHeight / 2, 0); // Was 0.5, 0.5
-  pole.castShadow = true;
-  group.add(pole);
+  // Roof cap that the ribs sit on, so you never see through the gaps.
+  const roof = new THREE.Mesh(
+    new THREE.BoxGeometry(1.2, 0.06, 1.6),
+    createDarkMetalMaterial(),
+  );
+  roof.position.set(-0.35, 1.16, -0.1);
+  group.add(roof);
 
-  // Crossbar for cables (T-shape)
-  const crossbarGeo = new THREE.BoxGeometry(0.8, 0.1, 0.1);
-  const crossbar = new THREE.Mesh(crossbarGeo, poleMat);
-  crossbar.position.set(0, poleHeight - 0.2, 0); // Was 0.5, 0.5
-  group.add(crossbar);
+  // Cooling vents on the outward-facing wall.
+  const vents = new THREE.Mesh(
+    createLouverGeometry({ count: 5, width: 0.5, height: 0.4, depth: 0.04 }),
+    createDarkMetalMaterial(),
+  );
+  vents.position.set(-0.91, 0.85, -0.1);
+  vents.rotation.y = -Math.PI / 2;
+  group.add(vents);
 
-  // Insulators / Connection Points
-  const insulatorGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.1);
-  const insulatorL = new THREE.Mesh(insulatorGeo, glowMat);
-  insulatorL.rotation.x = Math.PI / 2;
-  insulatorL.position.set(-0.35, poleHeight - 0.2, 0); // Was 0.5 - 0.35 = 0.15
-  group.add(insulatorL);
+  // Panel seam rivets along the top of the front wall.
+  const rivets = new THREE.Mesh(
+    createRivetRowGeometry({
+      count: 9,
+      from: new THREE.Vector3(-0.85, 1.06, 0.66),
+      to: new THREE.Vector3(0.15, 1.06, 0.66),
+    }),
+    createSteelMaterial(),
+  );
+  group.add(rivets);
+}
 
-  const insulatorR = new THREE.Mesh(insulatorGeo, glowMat);
-  insulatorR.rotation.x = Math.PI / 2;
-  insulatorR.position.set(0.35, poleHeight - 0.2, 0); // Was 0.5 + 0.35 = 0.85
-  group.add(insulatorR);
+/** Low service wing with the entrance, front-right of the pad. */
+function addServiceWing(group: THREE.Group): void {
+  const wing = new THREE.Mesh(
+    new THREE.BoxGeometry(0.7, 0.62, 1.5),
+    createPaintedMaterial(PALETTE.frame),
+  );
+  wing.position.set(0.5, 0.49, -0.1);
+  group.add(wing);
 
-  // Top Light / Indicator
-  const topLightGeo = new THREE.SphereGeometry(0.15);
-  const topLight = new THREE.Mesh(topLightGeo, glowMat);
-  topLight.position.set(0, poleHeight, 0); // Was 0.5, 0.5
-  group.add(topLight);
+  // Flat roof lip.
+  const lip = new THREE.Mesh(
+    new THREE.BoxGeometry(0.78, 0.05, 1.58),
+    createDarkMetalMaterial(),
+  );
+  lip.position.set(0.5, 0.82, -0.1);
+  group.add(lip);
 
-  // 5. Entrance / Details
-  const doorGeo = new THREE.BoxGeometry(0.6, 0.6, 0.1);
-  const door = new THREE.Mesh(doorGeo, metalMat);
-  door.position.set(0, 0.4, 0.91); // Front face (+Z Relative to center 0)
+  // Entrance: recessed door with a hazard-yellow frame.
+  const doorFrame = new THREE.Mesh(
+    new THREE.BoxGeometry(0.46, 0.5, 0.06),
+    createHazardMaterial(),
+  );
+  doorFrame.position.set(0.5, 0.43, 0.64);
+  group.add(doorFrame);
+
+  const door = new THREE.Mesh(
+    new THREE.BoxGeometry(0.36, 0.4, 0.06),
+    createDarkMetalMaterial(),
+  );
+  door.position.set(0.5, 0.4, 0.66);
   group.add(door);
+
+  // Maintenance ladder up to the control block roof.
+  const ladder = new THREE.Mesh(
+    createLadderGeometry({ height: 1.14 }),
+    createSteelMaterial(),
+  );
+  ladder.position.set(0.5, 0.18, -0.88);
+  group.add(ladder);
+}
+
+/** Radio mast with a crossarm, insulators and the beacon at the top. */
+function addMast(group: THREE.Group): void {
+  const steelMat = createSteelMaterial();
+  const mastX = -0.35;
+  const mastZ = 0.6;
+
+  const shaft = new THREE.Mesh(
+    // Tapered: reads as a mast rather than a pipe.
+    new THREE.CylinderGeometry(0.045, 0.08, MAST_TOP - 0.15, 8),
+    steelMat,
+  );
+  shaft.position.set(mastX, (MAST_TOP - 0.15) / 2, mastZ);
+  group.add(shaft);
+
+  // Guy struts bracing the mast down to the roof.
+  for (const side of [-1, 1]) {
+    const strut = new THREE.Mesh(
+      new THREE.BoxGeometry(0.035, 0.7, 0.035),
+      createFrameMaterial(),
+    );
+    strut.position.set(mastX + side * 0.16, 1.2, mastZ - 0.16);
+    strut.rotation.z = side * 0.35;
+    strut.rotation.x = 0.35;
+    group.add(strut);
+  }
+
+  const crossarm = new THREE.Mesh(
+    new THREE.BoxGeometry(0.8, 0.06, 0.08),
+    createFrameMaterial(),
+  );
+  crossarm.position.set(mastX, MAST_TOP - 0.35, mastZ);
+  group.add(crossarm);
+
+  // Ceramic insulators the power cables hook onto.
+  const insulatorMat = createPaintedMaterial(0xdddddd);
+  for (const side of [-1, 1]) {
+    const insulator = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.045, 0.055, 0.1, 8),
+      insulatorMat,
+    );
+    insulator.position.set(mastX + side * 0.32, MAST_TOP - 0.27, mastZ);
+    group.add(insulator);
+  }
+
+  // Beacon: named so `HubView` can pulse it instead of hunting for a material
+  // by colour. Emissive (not `MeshBasicMaterial`) so intensity is animatable.
+  const beacon = new THREE.Mesh(
+    new THREE.SphereGeometry(0.09, 12, 10),
+    createEmissiveMaterial(0xffa500, 1.4),
+  );
+  beacon.name = "hub_beacon";
+  beacon.position.set(mastX, MAST_TOP, mastZ);
+  group.add(beacon);
+}
+
+/** Pipework running from the service wing down into the pad. */
+function addPipework(group: THREE.Group): void {
+  const pipe = new THREE.Mesh(
+    createPipeGeometry(
+      [
+        new THREE.Vector3(0.5, 0.78, -0.5),
+        new THREE.Vector3(0.86, 0.72, -0.5),
+        new THREE.Vector3(0.86, 0.3, -0.5),
+        new THREE.Vector3(0.86, 0.2, -0.2),
+      ],
+      0.05,
+    ),
+    createSteelMaterial(PALETTE.brass),
+  );
+  group.add(pipe);
+}
+
+export function createHubModel(): THREE.Group {
+  const group = new THREE.Group();
+  group.name = "hub_model";
+
+  addFoundation(group);
+  addControlBlock(group);
+  addServiceWing(group);
+  addMast(group);
+  addPipework(group);
+
+  enableShadows(group);
 
   return group;
 }

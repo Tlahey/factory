@@ -20,10 +20,15 @@ export default function DialogueOverlay() {
     [activeDialogueId],
   );
 
-  // Config Change Reset
-  useEffect(() => {
+  // Config Change Reset.
+  // Adjusting state during render is React's recommended alternative to
+  // resetting it from an effect, which would cause a cascading render.
+  const [renderedDialogueId, setRenderedDialogueId] =
+    useState(activeDialogueId);
+  if (renderedDialogueId !== activeDialogueId) {
+    setRenderedDialogueId(activeDialogueId);
     setPageIndex(0);
-  }, [activeDialogueId]);
+  }
 
   const textKeys = useMemo(() => {
     if (!config) return [];
@@ -32,6 +37,15 @@ export default function DialogueOverlay() {
 
   const currentTextKey = textKeys[pageIndex];
   const fullText = currentTextKey ? t(currentTextKey) : "";
+
+  // The typewriter restarts whenever the displayed text changes; flagging it
+  // here rather than inside the effect keeps the effect free of setState.
+  const typingKey = `${activeDialogueId ?? ""}#${pageIndex}#${fullText}`;
+  const [typedKey, setTypedKey] = useState<string | null>(null);
+  if (typedKey !== typingKey) {
+    setTypedKey(typingKey);
+    setIsTyping(!!activeDialogueId && !!fullText);
+  }
 
   useEffect(() => {
     // Sync Focus Element
@@ -61,7 +75,6 @@ export default function DialogueOverlay() {
     if (activeDialogueId && fullText) {
       // Reset text immediately
       if (textRef.current) textRef.current.innerText = "";
-      setIsTyping(true);
 
       let charIndex = 0;
       intervalRef.current = setInterval(() => {

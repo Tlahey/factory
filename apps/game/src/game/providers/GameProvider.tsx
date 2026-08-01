@@ -85,6 +85,9 @@ export function GameContextProvider({ children }: GameContextProviderProps) {
   };
 
   // 4. Bind World Interceptors (Logic Triggers)
+  // The World is a plain (non-React) singleton created once for the session, so
+  // patching its methods after mount is intentional and safe here.
+  // eslint-disable-next-line react-hooks/immutability
   useEffect(() => {
     // Intercept Place/Remove to Trigger Logic Updates
     const originalPlace = world.placeBuilding.bind(world);
@@ -154,7 +157,10 @@ export function GameContextProvider({ children }: GameContextProviderProps) {
 
         console.log("[GameProvider] Serializing World...");
         const worldData = world.serialize();
-        console.log("[GameProvider] World Serialized. Building count:", worldData.buildings.length);
+        console.log(
+          "[GameProvider] World Serialized. Building count:",
+          worldData.buildings.length,
+        );
 
         const saveData = {
           world: worldData,
@@ -171,7 +177,10 @@ export function GameContextProvider({ children }: GameContextProviderProps) {
 
         console.log("[GameProvider] Saving to LocalStorage...");
         localStorage.setItem("factory_save", JSON.stringify(saveData));
-        console.log("[GameProvider] LocalStorage setItem success. Data length:", JSON.stringify(saveData).length);
+        console.log(
+          "[GameProvider] LocalStorage setItem success. Data length:",
+          JSON.stringify(saveData).length,
+        );
       } catch (err) {
         console.error("[GameProvider] CRITICAL SAVE ERROR:", err);
       }

@@ -1,2 +1,4 @@
 allowBuilds:
-  unrs-resolver: set this to true or false
+  # Native resolver used by eslint-import-resolver-typescript. Its prebuilt
+  # platform packages are enough, so its install script stays disabled.
+  unrs-resolver: false

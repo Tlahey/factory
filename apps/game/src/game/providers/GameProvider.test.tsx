@@ -8,9 +8,7 @@ const { mockGetState, mockSetState, mockStore } = vi.hoisted(() => {
   const getState = vi.fn();
   const setState = vi.fn();
   // We need store to be a function to mimic hook behavior BUT also have properties
-  const store = vi.fn();
-  store.getState = getState;
-  store.setState = setState;
+  const store = Object.assign(vi.fn(), { getState, setState });
   return { mockGetState: getState, mockSetState: setState, mockStore: store };
 });
 

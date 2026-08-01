@@ -111,11 +111,7 @@ export class GuidanceSystem {
     }
 
     // 2. Power System (Clicking Pole, Turbine, Solar, Extractor)
-    if (
-      ["electric_pole", "wind_turbine", "solar_panel", "extractor"].includes(
-        type,
-      )
-    ) {
+    if (["electric_pole", "solar_panel", "extractor"].includes(type)) {
       if (
         !state.seenDialogues.includes("electricity") &&
         !state.activeDialogueId

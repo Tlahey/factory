@@ -4,6 +4,21 @@ import nextTs from "eslint-config-next/typescript";
 import tseslint from "typescript-eslint";
 import unusedImports from "eslint-plugin-unused-imports";
 
+const TS_RULES = {
+  "@typescript-eslint/no-explicit-any": "error",
+  "@typescript-eslint/no-unused-vars": "off",
+  "unused-imports/no-unused-imports": "warn",
+  "unused-imports/no-unused-vars": [
+    "warn",
+    {
+      vars: "all",
+      varsIgnorePattern: "^_",
+      args: "after-used",
+      argsIgnorePattern: "^_",
+    },
+  ],
+};
+
 const eslintConfig = defineConfig([
   // Global ignores must be the first object in the array OR use globalIgnores helper correctly
   // In v9, an object with only 'ignores' is a global ignore if it has no other keys
@@ -36,9 +51,20 @@ const eslintConfig = defineConfig([
     files: ["apps/game/**/*.{js,ts,jsx,tsx}"],
   })),
 
-  // Common rules for ALL TypeScript files
+  // Common rules for ALL TypeScript files.
+  // The @typescript-eslint plugin is only registered for the files
+  // eslint-config-next does not already cover: flat config forbids defining the
+  // same plugin namespace twice with two different plugin instances.
+  {
+    files: ["apps/game/**/*.{ts,tsx}"],
+    plugins: {
+      "unused-imports": unusedImports,
+    },
+    rules: TS_RULES,
+  },
   {
     files: ["**/*.{ts,tsx}"],
+    ignores: ["apps/game/**"],
     plugins: {
       "@typescript-eslint": tseslint.plugin,
       "unused-imports": unusedImports,
@@ -46,20 +72,7 @@ const eslintConfig = defineConfig([
     languageOptions: {
       parser: tseslint.parser,
     },
-    rules: {
-      "@typescript-eslint/no-explicit-any": "error",
-      "@typescript-eslint/no-unused-vars": "off",
-      "unused-imports/no-unused-imports": "warn",
-      "unused-imports/no-unused-vars": [
-        "warn",
-        {
-          vars: "all",
-          varsIgnorePattern: "^_",
-          args: "after-used",
-          argsIgnorePattern: "^_",
-        },
-      ],
-    },
+    rules: TS_RULES,
   },
   // Override for test files to allow 'any'
   {

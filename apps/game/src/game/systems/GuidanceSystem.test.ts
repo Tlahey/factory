@@ -92,9 +92,9 @@ describe("GuidanceSystem", () => {
       expect(state.activeDialogueId).toBe("hub_info_overview");
     });
 
-    it("should show 'electricity' when Wind Turbine is clicked", () => {
-      vi.mocked(mockBuilding.getType).mockReturnValue("wind_turbine");
-      guidanceSystem.onBuildingClicked("turbine-id");
+    it("should show 'electricity' when a power building is clicked", () => {
+      vi.mocked(mockBuilding.getType).mockReturnValue("solar_panel");
+      guidanceSystem.onBuildingClicked("solar-panel-id");
 
       const state = useGameStore.getState();
       expect(state.activeDialogueId).toBe("electricity");

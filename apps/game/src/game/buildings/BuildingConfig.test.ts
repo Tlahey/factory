@@ -31,7 +31,6 @@ describe("Building Configuration Integrity", () => {
         it("should have translation keys for every building", () => {
           Object.values(BUILDINGS).forEach((config) => {
             const buildingKey = config.id;
-            // @ts-expect-error - Accessing potential undefined or dynamic property
             const buildingLocales = data.building[buildingKey];
 
             if (!buildingLocales) {

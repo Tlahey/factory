@@ -5,6 +5,12 @@ import {
   BuildingId,
   SKILL_TREE,
 } from "../buildings/hub/skill-tree/SkillTreeConfig";
+import type { NavigationScheme } from "../camera/CameraGestures";
+import {
+  DEFAULT_CAMERA_AZIMUTH,
+  DEFAULT_CAMERA_DISTANCE,
+  DEFAULT_CAMERA_POLAR,
+} from "../camera/CameraConfig";
 
 export interface InventorySlot {
   type: string | null;
@@ -28,6 +34,14 @@ interface GameState {
   cameraAzimuth: number;
   cameraElevation: number;
   setCameraAngles: (azimuth: number, elevation: number) => void;
+  cameraDistance: number;
+  setCameraDistance: (distance: number) => void;
+  /** Input scheme the camera gestures are tuned for. */
+  cameraScheme: NavigationScheme;
+  setCameraScheme: (scheme: NavigationScheme) => void;
+  /** True while the camera is being dragged, so clicks don't reach the world. */
+  isCameraDragging: boolean;
+  setCameraDragging: (dragging: boolean) => void;
   openedEntityKey: string | null;
   setOpenedEntityKey: (key: string | null) => void;
   hoveredEntityKey: string | null;
@@ -157,8 +171,11 @@ export const useGameStore = create<GameState>()(
       isInventoryOpen: false,
       toggleInventory: () =>
         set((state) => ({ isInventoryOpen: !state.isInventoryOpen })),
-      cameraAzimuth: Math.PI / 4,
-      cameraElevation: Math.PI / 3,
+      cameraAzimuth: DEFAULT_CAMERA_AZIMUTH,
+      cameraElevation: DEFAULT_CAMERA_POLAR,
+      cameraDistance: DEFAULT_CAMERA_DISTANCE,
+      cameraScheme: "auto",
+      isCameraDragging: false,
       openedEntityKey: null,
       setOpenedEntityKey: (key) => set({ openedEntityKey: key }),
       hoveredEntityKey: null,
@@ -297,6 +314,9 @@ export const useGameStore = create<GameState>()(
       setViewMode: (mode) => set({ viewMode: mode }),
       setCameraAngles: (azimuth, elevation) =>
         set({ cameraAzimuth: azimuth, cameraElevation: elevation }),
+      setCameraDistance: (distance) => set({ cameraDistance: distance }),
+      setCameraScheme: (scheme) => set({ cameraScheme: scheme }),
+      setCameraDragging: (dragging) => set({ isCameraDragging: dragging }),
       fpsLimit: 0,
       setFpsLimit: (limit) => set({ fpsLimit: limit }),
 
@@ -615,6 +635,7 @@ export const useGameStore = create<GameState>()(
         seenDialogues: state.seenDialogues,
         purchasedCounts: state.purchasedCounts,
         unlockedRecipes: state.unlockedRecipes,
+        cameraScheme: state.cameraScheme,
       }),
     },
   ),

@@ -365,6 +365,8 @@ export function GameInput() {
   };
 
   const onPointerDown = (e: ThreeEvent<PointerEvent>) => {
+    // The camera claimed this gesture (pan / orbit): it must not act on the world.
+    if (useGameStore.getState().isCameraDragging) return;
     if (e.button === 0) {
       e.stopPropagation();
       const { x, y } = getGridPos(e.point);
@@ -452,6 +454,7 @@ export function GameInput() {
   };
 
   const onPointerUp = (e: ThreeEvent<PointerEvent>) => {
+    if (useGameStore.getState().isCameraDragging) return;
     if (e.button === 0) {
       e.stopPropagation();
       const { x, y } = getGridPos(e.point);

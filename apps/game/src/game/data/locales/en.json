@@ -385,5 +385,43 @@
   "mining": {
     "mined_stone": "+1 Stone",
     "wait_seconds": "Wait {{seconds}} seconds before mining again."
+  },
+  "camera": {
+    "rotate_left": "Rotate Left",
+    "rotate_right": "Rotate Right",
+    "zoom_in": "Zoom In",
+    "zoom_out": "Zoom Out",
+    "tilt": "Tilt",
+    "reset_view": "Reset View",
+    "scheme": {
+      "auto": "Auto",
+      "trackpad": "Trackpad",
+      "mouse": "Mouse"
+    },
+    "help": {
+      "title": "Camera Controls",
+      "close": "Close",
+      "two_finger_scroll": "Two-finger scroll",
+      "pinch": "Pinch",
+      "alt_scroll": "⌥ + scroll",
+      "shift_scroll": "⇧ + scroll",
+      "drag": "Drag",
+      "alt_drag": "⌥ + drag",
+      "two_finger_click": "Two-finger click + drag",
+      "wheel": "Wheel",
+      "shift_wheel": "⇧ + wheel",
+      "right_drag": "Right / middle drag",
+      "wasd": "WASD / Arrows",
+      "qe": "Q / E",
+      "shift_arrows": "⇧ + Arrows",
+      "plus_minus": "+ / -",
+      "space_drag": "Space + drag",
+      "home": "Home",
+      "action_move": "Move",
+      "action_zoom": "Zoom",
+      "action_orbit": "Rotate & tilt",
+      "action_rotate": "Rotate",
+      "action_reset": "Reset view"
+    }
   }
 }

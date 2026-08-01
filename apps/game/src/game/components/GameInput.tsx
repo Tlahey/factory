@@ -17,7 +17,15 @@ import {
   calculateConveyorPath,
   getSegmentDirection,
 } from "@/game/buildings/conveyor/ConveyorPathHelper";
+import {
+  getFootprintSizeForConfig,
+  getPlacementAnchorForConfig,
+} from "@/game/buildings/BuildingFootprint";
 import { PlacementView } from "./visuals/PlacementView";
+import { Rock } from "@/game/environment/rock/Rock";
+import { useTranslation } from "@/hooks/useTranslation";
+import { PickaxeTool } from "./visuals/PickaxeTool";
+import { FloatingText } from "./visuals/FloatingText";
 
 // Helper for point-to-segment distance (Unused)
 // function pointToSegmentDistance...
@@ -25,8 +33,28 @@ import { PlacementView } from "./visuals/PlacementView";
 export function GameInput() {
   const { world, powerSystem, markCablesDirty } = useGameContext();
   const _three = useThree();
+  const { t } = useTranslation();
 
-  // Local State for Interaction
+  const canMine = useGameStore((state) => {
+    const now = Date.now();
+    const oneMinuteAgo = now - 60000;
+    return state.miningTimestamps.filter((t) => t > oneMinuteAgo).length < 10;
+  });
+
+  // Local State for Mining Interaction
+  const [hoveredRock, setHoveredRock] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [floatingTexts, setFloatingTexts] = useState<
+    { id: number; x: number; y: number; text: string }[]
+  >([]);
+  const [swingCount, setSwingCount] = useState(0);
+
+  // Local State for Interaction.
+  // `x`/`y` are the placement ANCHOR (min-x/min-y tile of the footprint), not
+  // the tile under the cursor: for multi-tile buildings the two differ, and
+  // World keys everything on the anchor.
   const [hoverState, setHoverState] = useState<{
     x: number;
     y: number;
@@ -80,9 +108,20 @@ export function GameInput() {
 
       useGameStore.getState().setHoveredEntityKey(null);
 
+      if (selectedBuilding && selectedBuilding !== "select") {
+        setHoveredRock(null);
+      }
+
       // 1. Selection / Generic Hover
       if (!selectedBuilding || selectedBuilding === "select") {
         const b = world.getBuilding(x, y);
+        const tile = world.getTile(x, y);
+        if (!b && tile instanceof Rock) {
+          setHoveredRock({ x, y });
+        } else {
+          setHoveredRock(null);
+        }
+
         if (b) {
           useGameStore.getState().setHoveredEntityKey(`${b.x},${b.y}`);
           setHoverState({
@@ -153,9 +192,14 @@ export function GameInput() {
         }
       }
 
+      // Multi-tile buildings pivot around the hovered tile, so translate the
+      // cursor into the anchor before validating or placing anything.
+      const anchor = getPlacementAnchorForConfig(x, y, config, dir);
+      const size = getFootprintSizeForConfig(config, dir);
+
       let isValid = world.canPlaceBuilding(
-        x,
-        y,
+        anchor.x,
+        anchor.y,
         selectedBuilding as BuildingId,
         dir,
       );
@@ -170,20 +214,14 @@ export function GameInput() {
       if (config?.locked && !unlockedBuildings.includes(selectedBuilding))
         isValid = false;
 
-      const width = config?.width ?? 1;
-      const height = config?.height ?? 1;
-      const isRotated = dir === "east" || dir === "west";
-      const finalWidth = isRotated ? height : width;
-      const finalHeight = isRotated ? width : height;
-
       setHoverState({
-        x,
-        y,
+        x: anchor.x,
+        y: anchor.y,
         isValid,
         rotation: dir,
         ghostType: selectedBuilding,
-        width: finalWidth,
-        height: finalHeight,
+        width: size.width,
+        height: size.height,
       });
     },
     [world],
@@ -372,6 +410,37 @@ export function GameInput() {
             useGameStore.getState().setOpenedEntityKey(`${b.x},${b.y}`);
           } else {
             useGameStore.getState().setOpenedEntityKey(null);
+            if (!b) {
+              const tile = world.getTile(x, y);
+              if (tile instanceof Rock) {
+                const store = useGameStore.getState();
+                if (store.canMine()) {
+                  store.registerMine();
+                  tile.deplete(1);
+                  store.addItem("stone", 1);
+                  setSwingCount((c) => c + 1);
+
+                  // Spawn floating text
+                  const newText = {
+                    id: Date.now() + Math.random(),
+                    x,
+                    y,
+                    text: t("mining.mined_stone"),
+                  };
+                  setFloatingTexts((prev) => [...prev, newText]);
+                } else {
+                  const seconds = store.getMiningWaitTime();
+                  window.dispatchEvent(
+                    new CustomEvent("GAME_SHOW_TOAST", {
+                      detail: {
+                        message: t("mining.wait_seconds", { seconds }),
+                        type: "error",
+                      },
+                    }),
+                  );
+                }
+              }
+            }
           }
         } else if (selectedBuilding === "delete") {
           world.removeBuilding(x, y);
@@ -386,8 +455,12 @@ export function GameInput() {
     if (e.button === 0) {
       e.stopPropagation();
       const { x, y } = getGridPos(e.point);
-      const { selectedBuilding, hasResources, removeResources } =
-        useGameStore.getState();
+      const {
+        selectedBuilding,
+        hasResources,
+        removeResources,
+        unlockedBuildings,
+      } = useGameStore.getState();
 
       const wasDragging = isDraggingRef.current;
       const dragStartPos = dragState.start;
@@ -468,18 +541,81 @@ export function GameInput() {
         // Non-drag placement for other buildings
         const isDragTool =
           selectedBuilding === "conveyor" || selectedBuilding === "cable";
-        if (!isDragTool && hoverState.isValid) {
-          const success = world.placeBuilding(
+        if (!isDragTool) {
+          // Place at the anchor derived from the cursor, never at the cursor
+          // itself: they only coincide for 1x1 buildings.
+          const config = getBuildingConfig(selectedBuilding as BuildingId);
+          const anchor = getPlacementAnchorForConfig(
             x,
             y,
-            selectedBuilding as BuildingId,
+            config,
             hoverState.rotation,
           );
-          if (success) {
-            const config = getBuildingConfig(selectedBuilding as BuildingId);
-            if (config?.cost) removeResources(config?.cost);
-            powerSystem.rebuildNetworks();
-            markCablesDirty();
+          const logMsg = `Attempting placement of '${selectedBuilding}' at ${anchor.x},${anchor.y} with rotation '${hoverState.rotation}'`;
+          useGameStore.getState().addDebugLog(logMsg);
+
+          if (hoverState.isValid) {
+            const success = world.placeBuilding(
+              anchor.x,
+              anchor.y,
+              selectedBuilding as BuildingId,
+              hoverState.rotation,
+            );
+            if (success) {
+              useGameStore
+                .getState()
+                .addDebugLog(
+                  `Successfully placed '${selectedBuilding}' at ${anchor.x},${anchor.y}`,
+                );
+              if (config?.cost) removeResources(config?.cost);
+              powerSystem.rebuildNetworks();
+              markCablesDirty();
+            } else {
+              useGameStore
+                .getState()
+                .addDebugLog(
+                  `[Failed] placeBuilding returned false at ${anchor.x},${anchor.y}`,
+                );
+              // Check with logging enabled
+              world.canPlaceBuilding(
+                anchor.x,
+                anchor.y,
+                selectedBuilding as BuildingId,
+                hoverState.rotation,
+                true, // logFailures = true
+              );
+            }
+          } else {
+            useGameStore
+              .getState()
+              .addDebugLog(
+                `[Failed] Placement at ${anchor.x},${anchor.y} is marked invalid by hoverState`,
+              );
+            // Run canPlaceBuilding with logging enabled to explain why
+            world.canPlaceBuilding(
+              anchor.x,
+              anchor.y,
+              selectedBuilding as BuildingId,
+              hoverState.rotation,
+              true, // logFailures = true
+            );
+
+            // Also check client-side cost and lock status explicitly
+            if (config?.cost && !hasResources(config.cost)) {
+              useGameStore
+                .getState()
+                .addDebugLog(
+                  `[Failed] Insufficient resources. Required: ${JSON.stringify(config.cost)}`,
+                );
+            }
+            if (
+              config?.locked &&
+              !unlockedBuildings.includes(selectedBuilding)
+            ) {
+              useGameStore
+                .getState()
+                .addDebugLog(`[Failed] Building is locked in skill tree`);
+            }
           }
         }
       }
@@ -528,6 +664,16 @@ export function GameInput() {
     };
   }, [rotateSelection]);
 
+  // Periodically force re-render when mining limit is active to update pickaxe greyed-out status and prohibition sign
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!hoveredRock) return;
+    const interval = setInterval(() => {
+      setTick((t) => t + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [hoveredRock]);
+
   return (
     <group>
       <mesh
@@ -537,6 +683,7 @@ export function GameInput() {
         onPointerMove={onPointerMove}
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
+        onPointerOut={() => setHoveredRock(null)}
       >
         <planeGeometry args={[WORLD_WIDTH, WORLD_HEIGHT]} />
       </mesh>
@@ -552,6 +699,27 @@ export function GameInput() {
         conveyorPath={dragState.conveyorPath}
         cablePreview={dragState.cablePreview || undefined}
       />
+
+      {hoveredRock && (
+        <PickaxeTool
+          x={hoveredRock.x}
+          y={hoveredRock.y}
+          isBlocked={!canMine}
+          swingCount={swingCount}
+        />
+      )}
+
+      {floatingTexts.map((t) => (
+        <FloatingText
+          key={t.id}
+          x={t.x}
+          y={t.y}
+          text={t.text}
+          onComplete={() => {
+            setFloatingTexts((prev) => prev.filter((item) => item.id !== t.id));
+          }}
+        />
+      ))}
     </group>
   );
 }

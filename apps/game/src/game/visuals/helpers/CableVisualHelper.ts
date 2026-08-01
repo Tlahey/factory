@@ -67,14 +67,11 @@ export function getCableAttachmentPoint(
   // Default legacy behavior: tile center at y=0.5
   if (!b) return new THREE.Vector3(tileX, 0.5, tileY);
 
-  // 1. Calculate Logical Center (same as GameApp / PlacementVisuals)
-  const isRotated = b.direction === "east" || b.direction === "west";
-  const finalWidth = isRotated ? b.height : b.width;
-  const finalHeight = isRotated ? b.width : b.height;
-
-  // Center in world coordinates
-  const centerX = b.x + (finalWidth - 1) / 2;
-  const centerZ = b.y + (finalHeight - 1) / 2;
+  // 1. Logical centre of the footprint. `b.width`/`b.height` are ALREADY
+  //    rotated, so swapping them again here double-swapped the dimensions.
+  const center = b.getCenter();
+  const centerX = center.x;
+  const centerZ = center.y;
 
   const localX = 0;
   let localY = 0.5;

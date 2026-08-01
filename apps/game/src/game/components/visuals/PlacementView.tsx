@@ -14,7 +14,10 @@ import {
   detectConveyorType,
   getSegmentDirection,
 } from "../../buildings/conveyor/ConveyorPathHelper";
-import { determineFlowInputDirection } from "../../buildings/conveyor/ConveyorLogicSystem";
+import {
+  calculateTurnType,
+  determineFlowInputDirection,
+} from "../../buildings/conveyor/ConveyorLogicSystem";
 import { createHubModel } from "../../buildings/hub/HubModel";
 import { createBatteryModel } from "../../buildings/battery/BatteryModel";
 import { createElectricPoleModel } from "../../buildings/electric-pole/ElectricPoleModel";
@@ -27,42 +30,21 @@ import {
   getBuildingConfig,
   BuildingId,
   IIOBuilding,
+  IOSide,
 } from "../../buildings/BuildingConfig";
+import { getPortKey } from "../../buildings/BuildingFootprint";
 import {
   createIOArrowsFromConfig,
   updateIOArrows,
 } from "../../visuals/helpers/IOArrowHelper";
 import { updateBuildingConnectivity } from "../../buildings/BuildingIOHelper";
+import {
+  DIRECTION_TO_ROTATION,
+  getFootprintTransform,
+} from "../buildings/BuildingTransform";
 import { useFrame } from "@react-three/fiber";
 import { Direction } from "../../entities/types";
 import { BuildingEntity } from "../../entities/BuildingEntity";
-
-// Helper Logic
-const calculateTurnTypeLocal = (
-  flowIn: Direction,
-  flowOut: Direction,
-): "straight" | "left" | "right" => {
-  if (flowIn === flowOut) return "straight";
-  const turnMappings: Record<Direction, { left: Direction; right: Direction }> =
-    {
-      north: { left: "west", right: "east" },
-      south: { left: "east", right: "west" },
-      east: { left: "north", right: "south" },
-      west: { left: "south", right: "north" },
-    };
-  const mapping = turnMappings[flowIn];
-  if (mapping.left === flowOut) return "left";
-  if (mapping.right === flowOut) return "right";
-  return "straight";
-};
-
-// 4-direction rotation mapping
-const directionToRotation: Record<Direction, number> = {
-  north: 0,
-  east: -Math.PI / 2,
-  south: Math.PI,
-  west: Math.PI / 2,
-};
 
 interface PlacementViewProps {
   x: number;
@@ -109,7 +91,7 @@ export function PlacementView({
         world,
       );
       if (flowIn) {
-        return calculateTurnTypeLocal(flowIn, outputDirection);
+        return calculateTurnType(flowIn, outputDirection);
       }
       return "straight";
     },
@@ -256,6 +238,8 @@ export function PlacementView({
       let direction: Direction;
       let cType: "straight" | "left" | "right" = "straight";
 
+      // IMPORTANT: this must mirror exactly what GameInput places on pointer
+      // up, otherwise the ghost shows a turn the player never gets.
       if (isSingle) {
         direction = rotation;
         cType = "straight";
@@ -270,16 +254,16 @@ export function PlacementView({
         ) as Direction;
         cType = "straight";
       } else if (isLast) {
-        direction = rotation;
-        const prevDirection = getSegmentDirection(
-          prev!.x,
-          prev!.y,
+        // End of the path: keep flowing in the incoming direction.
+        direction = getSegmentDirection(
           segment.x,
           segment.y,
           null,
           null,
+          prev!.x,
+          prev!.y,
         ) as Direction;
-        cType = calculateTurnTypeLocal(prevDirection, direction);
+        cType = "straight";
       } else {
         direction = getSegmentDirection(
           segment.x,
@@ -311,16 +295,13 @@ export function PlacementView({
       arrows.name = "drag_io_arrows";
       mesh.add(arrows);
 
-      let rot = directionToRotation[direction];
+      let rot = DIRECTION_TO_ROTATION[direction];
       if (cType === "left") rot -= Math.PI / 2;
       else if (cType === "right") {
         mesh.scale.set(-1, 1, 1);
         rot += Math.PI / 2;
       }
 
-      // HACK: Hide arrows that are internally connected in the drag chain
-      // For now, simpler: we just show ALL arrows and let updateIOArrows handle it if we make it smarter.
-      // Actually, we can manually hide them here by checking our index
       const isFirstSegment = i === 0;
       const isLastSegment = i === conveyorPath.length - 1;
 
@@ -347,24 +328,39 @@ export function PlacementView({
         getConfig: () => getBuildingConfig("conveyor"),
         connectedInputSides: [],
         connectedOutputSides: [],
+        connectedInputPorts: [],
+        connectedOutputPorts: [],
       } as unknown as BuildingEntity & IIOBuilding;
 
-      // This only sees buildings ALREADY IN world.
-      // Doesn't see other segments from the SAME path.
+      // This only sees buildings ALREADY IN world; the neighbouring segments of
+      // the path being dragged don't exist yet, so their seams are added below.
       updateBuildingConnectivity(mockSegment, world);
 
-      // Manual internal connectivity for drag path
+      const addPort = (
+        ports: string[],
+        sides: IOSide[],
+        side: IOSide,
+      ): void => {
+        const key = getPortKey(side, 0);
+        if (!ports.includes(key)) ports.push(key);
+        if (!sides.includes(side)) sides.push(side);
+      };
+
       if (!isFirstSegment) {
-        // If not first, we have an input from previous segment
-        if (!mockSegment.connectedInputSides.includes("back")) {
-          mockSegment.connectedInputSides.push("back");
-        }
+        // Fed by the previous segment of the drag.
+        addPort(
+          mockSegment.connectedInputPorts,
+          mockSegment.connectedInputSides,
+          "back",
+        );
       }
       if (!isLastSegment) {
-        // If not last, we have an output to next segment
-        if (!mockSegment.connectedOutputSides.includes("front")) {
-          mockSegment.connectedOutputSides.push("front");
-        }
+        // Feeds the next segment of the drag.
+        addPort(
+          mockSegment.connectedOutputPorts,
+          mockSegment.connectedOutputSides,
+          "front",
+        );
       }
 
       updateIOArrows(arrows, mockSegment);
@@ -418,6 +414,14 @@ export function PlacementView({
 
   if ((x < 0 || y < 0) && !cablePreview) return null;
 
+  // (x, y) is the placement anchor; the ghost and the cursor box both sit on
+  // the footprint centre, exactly like a placed building does.
+  const ghostTransform = getFootprintTransform(
+    x,
+    y,
+    { width, height },
+    rotation,
+  );
   const cursorScale = [width, 1, height] as [number, number, number];
   const cursorColor = isValid ? "white" : "red";
 
@@ -428,7 +432,13 @@ export function PlacementView({
 
       {/* Cursor - Only if we have a valid target position */}
       {x >= 0 && y >= 0 && (
-        <group position={[x + (width - 1) / 2, 0.5, y + (height - 1) / 2]}>
+        <group
+          position={[
+            ghostTransform.position[0],
+            0.5,
+            ghostTransform.position[2],
+          ]}
+        >
           <lineSegments scale={cursorScale}>
             <edgesGeometry args={[new THREE.BoxGeometry(1, 1, 1)]} />
             <lineBasicMaterial color={cursorColor} linewidth={2} />
@@ -440,10 +450,10 @@ export function PlacementView({
       {ghostMesh && conveyorPath.length === 0 && (
         <primitive
           object={ghostMesh}
-          position={[x + (width - 1) / 2, 0, y + (height - 1) / 2]}
+          position={ghostTransform.position}
           rotation={[
             0,
-            directionToRotation[rotation] +
+            ghostTransform.rotationY +
               (ghostType === "conveyor" && NeededConveyorType === "left"
                 ? -Math.PI / 2
                 : ghostType === "conveyor" && NeededConveyorType === "right"

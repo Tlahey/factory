@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGameStore } from "../../state/store";
 import { useGameContext } from "../../providers/GameProvider";
+import { getFootprintCenter } from "../../buildings/BuildingFootprint";
 
 export function SelectionView() {
   const { world } = useGameContext();
@@ -42,26 +43,16 @@ export function SelectionView() {
     const [sx, sy] = openedKey.split(",").map(Number);
     const b = world.getBuilding(sx, sy);
 
-    let x = sx;
-    let y = sy;
-    let width = 1;
-    let height = 1;
-
-    if (b) {
-      x = b.x;
-      y = b.y;
-      width = b.width;
-      height = b.height;
-    }
+    const width = b?.width ?? 1;
+    const height = b?.height ?? 1;
+    const center = b
+      ? b.getCenter()
+      : getFootprintCenter(sx, sy, { width, height });
 
     groupRef.current.visible = true;
 
-    // Position
-    groupRef.current.position.set(
-      x + (width - 1) / 2,
-      0.05,
-      y + (height - 1) / 2,
-    );
+    // Position: the ring wraps the whole footprint, so it sits on its centre.
+    groupRef.current.position.set(center.x, 0.05, center.y);
 
     // Scale
     groupRef.current.scale.set(width, 1, height);

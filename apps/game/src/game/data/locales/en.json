@@ -374,6 +374,16 @@
     "add_resources": "Add Resources (100x)",
     "debug_overlay": "Debug Overlay (F3)",
     "danger_zone": "Danger Zone",
-    "hard_reset": "Hard Reset Game"
+    "hard_reset": "Hard Reset Game",
+    "action_logs": "Debug Action Logs",
+    "diagnostics_title": "System Diagnostics & Logs",
+    "copy_logs": "Copy Logs",
+    "copied": "Copied!",
+    "clear": "Clear",
+    "no_logs": "No logs recorded yet."
+  },
+  "mining": {
+    "mined_stone": "+1 Stone",
+    "wait_seconds": "Wait {{seconds}} seconds before mining again."
   }
 }

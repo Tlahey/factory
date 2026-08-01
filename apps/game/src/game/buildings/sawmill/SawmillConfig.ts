@@ -44,9 +44,9 @@ export const SAWMILL_CONFIG: SawmillConfigType = {
   },
   maxConnections: 1,
   shop: {
-    baseCost: { iron: 40, stone: 20 },
+    baseCost: { stone: 40 },
     priceMultiplier: 2.0,
-    initialCount: 0,
+    initialCount: 2,
   },
   upgrades: [
     {

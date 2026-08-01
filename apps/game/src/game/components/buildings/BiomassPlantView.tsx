@@ -11,6 +11,7 @@ import {
 } from "../../visuals/helpers/IOArrowHelper";
 import { HoverProgressCard } from "../../../components/ui/HoverProgressCard";
 import { useState } from "react";
+import { getBuildingTransform } from "./BuildingTransform";
 
 interface BiomassPlantViewProps {
   entity: BiomassPlant;
@@ -139,21 +140,11 @@ export function BiomassPlantView({ entity }: BiomassPlantViewProps) {
   });
 
   // 4. Position
-  const position: [number, number, number] = [entity.x, 0, entity.y];
-
-  const directionToRotation: Record<string, number> = {
-    north: 0,
-    east: -Math.PI / 2,
-    south: Math.PI,
-    west: Math.PI / 2,
-  };
-  const rotationY = directionToRotation[entity.direction] || 0;
+  const { position, rotationY } = getBuildingTransform(entity);
 
   const [hovered, setHovered] = useState(false);
-  const centerX = (entity.width - 1) / 2;
-  const centerZ = (entity.height - 1) / 2;
-  // Float above the center
-  const cardPos: [number, number, number] = [centerX, 2, centerZ];
+  // The group already sits on the footprint centre, so the card only floats up.
+  const cardPos: [number, number, number] = [0, 2, 0];
 
   return (
     <group

@@ -1,8 +1,19 @@
 "use client";
 
 import { useGameStore } from "@/game/state/store";
-import { Bug, Check, Unlock, Zap, X, Trash2, Eye, EyeOff } from "lucide-react";
+import {
+  Bug,
+  Check,
+  Unlock,
+  Zap,
+  X,
+  Trash2,
+  Eye,
+  EyeOff,
+  Terminal,
+} from "lucide-react";
 import { useState } from "react";
+import { useLocalization } from "@/hooks/useLocalization";
 import clsx from "clsx";
 import { RESOURCES } from "@/game/data/Items";
 
@@ -23,6 +34,9 @@ export default function DebugMenu() {
     (state) => state.isDebugOverlayVisible,
   );
   const toggleDebugOverlay = useGameStore((state) => state.toggleDebugOverlay);
+  const isDebugLogsVisible = useGameStore((state) => state.isDebugLogsVisible);
+  const toggleDebugLogs = useGameStore((state) => state.toggleDebugLogs);
+  const { t } = useLocalization();
   const currentFPS = useGameStore((state) => state.currentFPS);
 
   if (!isDev) return null;
@@ -119,6 +133,25 @@ export default function DebugMenu() {
                   </span>
                 </div>
                 {isDebugOverlayVisible && <Check size={14} />}
+              </button>
+
+              {/* Toggle Action Logs Overlay */}
+              <button
+                onClick={toggleDebugLogs}
+                className={clsx(
+                  "w-full flex items-center justify-between p-2 rounded-lg border transition-all",
+                  isDebugLogsVisible
+                    ? "bg-purple-500/10 border-purple-500/30 text-purple-300"
+                    : "bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700",
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Terminal size={14} />
+                  <span className="text-xs font-medium">
+                    {t("debug.action_logs")}
+                  </span>
+                </div>
+                {isDebugLogsVisible && <Check size={14} />}
               </button>
             </div>
 

@@ -2,10 +2,16 @@ import { BuildingEntity } from "../../entities/BuildingEntity";
 import { IPowered, PowerConfig } from "../BuildingConfig";
 import { ElectricPoleConfigType } from "./ElectricPoleConfig";
 import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
+import { createActor } from "xstate";
+import { electricPoleMachine } from "./ElectricPoleMachine";
 
 export class ElectricPole extends BuildingEntity implements IPowered {
   constructor(x: number, y: number) {
     super(x, y, "electric_pole");
+    this.actor = createActor(electricPoleMachine, {
+      input: { building: this },
+    });
+    this.actor.start();
   }
 
   // --- Trait Properties ---
@@ -38,10 +44,12 @@ export class ElectricPole extends BuildingEntity implements IPowered {
     hasSource: boolean,
     gridId: number,
   ): void {
-    this.powerSatisfaction = satisfaction;
-    this.hasPowerSource = hasSource;
-    this.currentGridId = gridId;
-    this.powerStatus = satisfaction >= 0.99 ? "active" : "warn";
+    this.actor?.send({
+      type: "UPDATE_POWER",
+      satisfaction,
+      hasSource,
+      gridId,
+    });
   }
 
   public getColor(): number {

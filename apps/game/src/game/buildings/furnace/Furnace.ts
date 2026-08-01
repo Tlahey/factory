@@ -2,10 +2,17 @@ import { BuildingEntity } from "../../entities/BuildingEntity";
 import { IWorld, Direction } from "../../entities/types";
 import { IIOBuilding, IPowered, PowerConfig, Recipe } from "../BuildingConfig";
 import { FURNACE_RECIPES, FurnaceConfigType } from "./FurnaceConfig";
-import { updateBuildingConnectivity, getIOOffset } from "../BuildingIOHelper";
+import {
+  canInputFromConfig,
+  getConfiguredInputPosition,
+  getConfiguredInputPositions,
+  getConfiguredOutputPosition,
+  getConfiguredOutputPositions,
+} from "../BuildingIOHelper";
 import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
-import { Conveyor } from "../conveyor/Conveyor";
-import { Chest } from "../chest/Chest";
+import { canPushItemToOutput, pushItemToOutput } from "../ItemTransfer";
+import { createActor } from "xstate";
+import { furnaceMachine } from "./FurnaceMachine";
 
 type ProcessingJob = {
   recipeId: string;
@@ -24,16 +31,16 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
   public selectedRecipeId: string | null = null;
   public activeJobs: ProcessingJob[] = []; // Supports parallel processing
 
-  // Stability Timers
-  private statusStabilityTimer: number = 0;
-  private readonly STABILITY_THRESHOLD = 1.5;
-
   // Power State
   public currentPowerDraw: number = 0;
   public currentPowerSatisfied: number = 0;
 
   constructor(x: number, y: number, direction: Direction = "north") {
     super(x, y, "furnace", direction);
+    this.actor = createActor(furnaceMachine, {
+      input: { building: this },
+    });
+    this.actor.start();
   }
 
   public setRecipe(recipeId: string | null): void {
@@ -42,155 +49,10 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
 
   public tick(delta: number, world?: IWorld): void {
     if (!world) return;
-
-    // 1. Update Connectivity
-    updateBuildingConnectivity(this, world);
-
-    // 2. Determine Operation Status
-    let logicalStatus: typeof this.operationStatus = "idle";
-
-    // Check Config/Recipe status
-    if (!this.selectedRecipeId) {
-      logicalStatus = "working"; // Re-using working as "Needs Config" or just idle?
-      // Actually, let's use 'idle' if waiting for config, but visually distinct?
-      // For now, let's treat no recipe as idle.
-    }
-
-    const hasPower = this.hasPowerSource && this.powerSatisfaction > 0.1;
-    const isOutputFull =
-      this.outputSlot !== null && this.outputSlot.count >= this.OUTPUT_CAPACITY;
-    const hasJobs = this.activeJobs.length > 0;
-    const canProcess =
-      hasPower && !isOutputFull && this.selectedRecipeId !== null;
-
-    // Update Demand
-    // We demand power if we have jobs running OR items to process
-    const hasItemsToProcess = this.inputQueue.length > 0;
-    this.hasDemand =
-      (hasJobs || hasItemsToProcess) &&
-      !isOutputFull &&
-      !!this.selectedRecipeId;
-
-    if (!hasPower && this.hasDemand) {
-      logicalStatus = "no_power";
-    } else if (isOutputFull) {
-      logicalStatus = "blocked";
-    } else if (hasJobs || (hasItemsToProcess && canProcess)) {
-      logicalStatus = "working";
-    } else if (!hasItemsToProcess && !hasJobs) {
-      logicalStatus = "no_resources"; // Or idle
-    }
-
-    // Status Debouncing:
-    if (logicalStatus === "blocked" || logicalStatus === "no_power") {
-      this.statusStabilityTimer += delta;
-    } else {
-      this.statusStabilityTimer = 0;
-    }
-
-    if (
-      (logicalStatus !== "blocked" && logicalStatus !== "no_power") ||
-      this.statusStabilityTimer >= this.STABILITY_THRESHOLD
-    ) {
-      this.operationStatus = logicalStatus;
-    }
-
-    if (logicalStatus === "working") {
-      this.active = true;
-    } else {
-      this.active = false;
-    }
-
-    // 3. Process Active Jobs
-    if (this.active) {
-      const speedMultiplier = this.getProcessingSpeed();
-      const powerFactor = this.powerSatisfaction;
-
-      // Advance existing jobs
-      for (let i = this.activeJobs.length - 1; i >= 0; i--) {
-        const job = this.activeJobs[i];
-        const recipe = this.getRecipe(job.recipeId);
-
-        if (!recipe) {
-          this.activeJobs.splice(i, 1); // Invalid recipe, cancel
-          continue;
-        }
-
-        // Advance progress
-        const step = delta * speedMultiplier * powerFactor;
-        job.elapsed += step;
-        job.progress = Math.min(job.elapsed / recipe.duration, 1.0);
-
-        // Check completion
-        if (job.progress >= 1.0) {
-          // Output to buffer
-          if (!this.outputSlot) {
-            this.outputSlot = { type: recipe.output, count: 0 };
-          }
-
-          if (this.outputSlot.type === recipe.output) {
-            this.outputSlot.count++;
-            this.activeJobs.splice(i, 1); // Job done
-          } else {
-            // Blocked
-          }
-        }
-      }
-
-      // Start new jobs if we have capacity and resources
-      const maxParallel = this.getParallelProcessing();
-      const availableSlots = maxParallel - this.activeJobs.length;
-
-      if (availableSlots > 0 && this.selectedRecipeId) {
-        const recipe = this.getRecipe(this.selectedRecipeId);
-
-        if (recipe) {
-          if (this.inputQueue.length > 0) {
-            const itemIndex = this.inputQueue.findIndex(
-              (item) => item.type === recipe.input,
-            );
-
-            if (itemIndex !== -1) {
-              const item = this.inputQueue[itemIndex];
-              // Check if we have enough input resources for this recipe
-              const requiredCount = recipe.inputCount;
-              if (item.count >= requiredCount) {
-                // Consume inputCount items
-                item.count -= requiredCount;
-                if (item.count <= 0) {
-                  this.inputQueue.splice(itemIndex, 1);
-                }
-
-                // Start Job
-                this.activeJobs.push({
-                  recipeId: recipe.id,
-                  progress: 0,
-                  elapsed: 0,
-                });
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // 4. Output Logic (Always try to output if we have items in Output Buffer)
-    // We only try to output if we have items AND the output is connected
-    if (
-      this.outputSlot &&
-      this.outputSlot.count > 0 &&
-      this.isOutputConnected
-    ) {
-      if (this.tryOutput(world)) {
-        this.outputSlot.count--;
-        if (this.outputSlot.count <= 0) {
-          this.outputSlot = null;
-        }
-      }
-    }
+    this.actor?.send({ type: "TICK", delta, world });
   }
 
-  private getRecipe(id: string): Recipe | undefined {
+  public getRecipe(id: string): Recipe | undefined {
     return FURNACE_RECIPES.find((r) => r.id === id);
   }
 
@@ -265,44 +127,45 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
     return (this.getConfig() as FurnaceConfigType).io;
   }
 
+  // The furnace is 1x2: its ports sit on the far tile for half the rotations,
+  // which the shared helper derives from the footprint.
   public getInputPosition(): { x: number; y: number } | null {
-    if (!this.io.hasInput) return null;
-    const inputSide = this.io.inputSide || "front";
-    // Config: width/height
-    const config = this.getConfig() as FurnaceConfigType;
-    const offset = getIOOffset(
-      inputSide,
-      this.direction,
-      config.width,
-      config.height,
-    );
-    return { x: this.x + offset.dx, y: this.y + offset.dy };
+    return getConfiguredInputPosition(this);
+  }
+
+  public getInputPositions(): { x: number; y: number }[] {
+    return getConfiguredInputPositions(this);
   }
 
   public getOutputPosition(): { x: number; y: number } | null {
-    if (!this.io.hasOutput) return null;
-    const outputSide = this.io.outputSide || "front";
-    const config = this.getConfig() as FurnaceConfigType;
-    const offset = getIOOffset(
-      outputSide,
-      this.direction,
-      config.width,
-      config.height,
-    );
-    return { x: this.x + offset.dx, y: this.y + offset.dy };
+    return getConfiguredOutputPosition(this);
+  }
+
+  public getOutputPositions(): { x: number; y: number }[] {
+    return getConfiguredOutputPositions(this);
   }
 
   public canInput(fromX: number, fromY: number): boolean {
-    // Structural check: return true if the input position matches
-    const inputPos = this.getInputPosition();
-    return inputPos !== null && fromX === inputPos.x && fromY === inputPos.y;
+    // Structural check only; capacity is answered by hasSpaceFor().
+    return canInputFromConfig(this, fromX, fromY);
   }
 
-  // Emulate `IStorage` for input compatibility if needed, or just specific method.
-  // The Conveyor logic usually checks `transportTarget` and does something.
-  // We need to ensure Conveyor can put items INTO Furnace.
-  // Looking at `Conveyor.ts` (not visible but I can infer), it likely calls `addItem` if target suggests it.
-  // I'll implement `addItem` to be safe and compatible with Chest-like push.
+  /**
+   * Capacity check used by the shared transfer layer (ItemTransfer).
+   * Kept separate from `canInput` so upstream buildings can report "blocked"
+   * without mutating anything.
+   */
+  public hasSpaceFor(type: string, amount: number = 1): boolean {
+    if (!this.selectedRecipeId) return false;
+    const recipe = this.getRecipe(this.selectedRecipeId);
+    if (!recipe || recipe.input !== type) return false;
+
+    const currentItems = this.inputQueue.reduce(
+      (acc, item) => acc + item.count,
+      0,
+    );
+    return currentItems + amount <= this.getQueueSize();
+  }
 
   public addItem(
     type: string,
@@ -374,39 +237,14 @@ export class Furnace extends BuildingEntity implements IPowered, IIOBuilding {
     return this.tryOutputResource(world, this.outputSlot.type);
   }
 
-  // --- Copying Output Logic from Extractor (Common pattern, should be util potentially) ---
+  // --- Output (shared transfer layer, see buildings/ItemTransfer.ts) ---
 
-  private checkOutputClear(world: IWorld, _itemType: string): boolean {
-    const pos = this.getOutputPosition();
-    if (!pos) return false;
-
-    const target = world.getBuilding(pos.x, pos.y);
-    if (!target) return false;
-
-    if (target instanceof Conveyor) {
-      return !target.currentItem;
-    } else if (target instanceof Chest) {
-      return !target.isFull();
-    }
-    return false;
+  private checkOutputClear(world: IWorld, itemType: string): boolean {
+    return canPushItemToOutput(world, this, itemType);
   }
 
   private tryOutputResource(world: IWorld, itemType: string): boolean {
-    const pos = this.getOutputPosition();
-    if (!pos) return false;
-
-    const target = world.getBuilding(pos.x, pos.y);
-    if (target && target instanceof Conveyor) {
-      if (!target.currentItem) {
-        target.currentItem = itemType;
-        target.itemId = Math.floor(Math.random() * 1000000);
-        target.transportProgress = 0;
-        return true;
-      }
-    } else if (target && target instanceof Chest) {
-      return target.addItem(itemType, 1);
-    }
-    return false;
+    return pushItemToOutput(world, this, itemType);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

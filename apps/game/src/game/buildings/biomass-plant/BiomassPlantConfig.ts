@@ -83,8 +83,8 @@ export const BIOMASS_PLANT_CONFIG: BiomassPlantConfigType = {
     },
   ],
   shop: {
-    baseCost: { stone: 75, iron: 50 },
+    baseCost: { stone: 75 },
     priceMultiplier: 2.0,
-    initialCount: 0,
+    initialCount: 2,
   },
 };

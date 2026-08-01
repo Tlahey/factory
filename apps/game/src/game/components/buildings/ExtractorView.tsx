@@ -9,6 +9,7 @@ import {
   createIOArrows,
   updateIOArrows,
 } from "../../visuals/helpers/IOArrowHelper";
+import { getBuildingTransform } from "./BuildingTransform";
 
 interface ExtractorViewProps {
   entity: Extractor;
@@ -106,16 +107,7 @@ export function ExtractorView({ entity, particleSystem }: ExtractorViewProps) {
   });
 
   // 3. Position & Rotation
-  // Extractor is 1x1, centered
-  const position: [number, number, number] = [entity.x, 0, entity.y];
-
-  const directionToRotation: Record<string, number> = {
-    north: 0,
-    east: -Math.PI / 2,
-    south: Math.PI,
-    west: Math.PI / 2,
-  };
-  const rotationY = directionToRotation[entity.direction] || 0;
+  const { position, rotationY } = getBuildingTransform(entity);
 
   return (
     <group ref={groupRef} position={position} rotation={[0, rotationY, 0]}>

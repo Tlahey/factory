@@ -22,7 +22,7 @@ vi.mock("../state/store", () => ({
 vi.mock("../core/World", () => {
   class MockWorld {
     serialize() {
-      return { tiles: [] };
+      return { grid: [], buildings: [], cables: [] };
     }
     deserialize() {}
     reset() {}

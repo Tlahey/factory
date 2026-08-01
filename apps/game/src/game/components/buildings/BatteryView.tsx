@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { Battery } from "../../buildings/battery/Battery";
 import { createBatteryModel } from "../../buildings/battery/BatteryModel";
+import { getBuildingTransform } from "./BuildingTransform";
 
 interface BatteryViewProps {
   entity: Battery;
@@ -89,16 +90,7 @@ export function BatteryView({ entity }: BatteryViewProps) {
 
   // 3. Position
   // Battery is 1x1.
-  const position: [number, number, number] = [entity.x, 0, entity.y];
-
-  // Rotation? Battery usually cylindrical, rotation doesn't matter visually much but it has one.
-  const directionToRotation: Record<string, number> = {
-    north: 0,
-    east: -Math.PI / 2,
-    south: Math.PI,
-    west: Math.PI / 2,
-  };
-  const rotationY = directionToRotation[entity.direction] || 0;
+  const { position, rotationY } = getBuildingTransform(entity);
 
   return (
     <group ref={groupRef} position={position} rotation={[0, rotationY, 0]}>

@@ -340,7 +340,7 @@ export const BUILDINGS: Record<BuildingId, BuildingConfig> = {
     name: "Cable",
     type: "cable",
     category: "power",
-    cost: { copper_ingot: 1 },
+    cost: { stone: 1 },
     locked: true,
     hasMenu: false,
     description: "Connects buildings to power.",

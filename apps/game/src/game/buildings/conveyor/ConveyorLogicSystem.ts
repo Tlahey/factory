@@ -96,6 +96,16 @@ export function getOppositeDirection(dir: Direction): Direction {
 }
 
 /**
+ * Rotate a direction by 90° increments.
+ * @param steps positive = clockwise, negative = counter-clockwise
+ */
+export function rotateDirection(dir: Direction, steps: number): Direction {
+  const clockwiseOrder: Direction[] = ["north", "east", "south", "west"];
+  const index = clockwiseOrder.indexOf(dir);
+  return clockwiseOrder[(index + (steps % 4) + 4) % 4];
+}
+
+/**
  * Calculate the direction from one position to another
  * Returns the cardinal direction you'd travel to go from (fromX, fromY) to (toX, toY)
  */
@@ -200,13 +210,15 @@ export function findOutputDestination(
 /**
  * RULE: Determine flow input direction for a conveyor
  *
- * A conveyor receives flow from:
- * 1. An Extractor pointing toward it (flow direction = extractor's facing direction)
- * 2. Another resolved Conveyor pointing toward it (flow direction = that conveyor's direction)
+ * A conveyor receives flow from any neighbour whose OUTPUT PORT targets its
+ * tile (extractor, furnace, another belt, a splitter side output, ...).
+ * Validating against explicit output ports avoids false positives from
+ * adjacent entities that are not actually connected.
  *
- * CRITICAL: We now validate using explicit output port positions.
- * A neighbor only counts as an input source if its OUTPUT PORT targets our position.
- * This prevents false positives from adjacent entities that aren't actually connected.
+ * PRIORITY: the tile behind the belt wins over the two sides. A straight run
+ * that also receives a side merge must keep rendering (and behaving) as a
+ * straight belt — otherwise it flips to a curve as soon as anything is dropped
+ * next to it.
  *
  * @param conveyorX - X position of this conveyor
  * @param conveyorY - Y position of this conveyor
@@ -217,15 +229,17 @@ export function findOutputDestination(
 export function determineFlowInputDirection(
   conveyorX: number,
   conveyorY: number,
-  myDirection: "north" | "south" | "east" | "west",
+  myDirection: Direction,
   world: IWorld,
-): "north" | "south" | "east" | "west" | null {
-  const directions = DIRECTIONS;
+): Direction | null {
+  // Back first, then the remaining sides in a stable order.
+  const back = getOppositeDirection(myDirection);
+  const orderedDirections: Direction[] = [
+    back,
+    ...DIRECTIONS.filter((d) => d !== back && d !== myDirection),
+  ];
 
-  for (const checkDir of directions) {
-    // Don't check the direction we are outputting to
-    if (checkDir === myDirection) continue;
-
+  for (const checkDir of orderedDirections) {
     const offset = getDirectionOffset(checkDir);
     const neighborX = conveyorX + offset.dx;
     const neighborY = conveyorY + offset.dy;
@@ -233,36 +247,24 @@ export function determineFlowInputDirection(
 
     if (!neighbor) continue;
 
-    // GENERIC: Check if neighbor has an output port pointing at us
-    // This works for any building implementing IIOBuilding (extractor, conveyor, chest, furnace, etc.)
+    // GENERIC: does the neighbour have an output port pointing at us?
+    // Works for any IIOBuilding (extractor, conveyor, splitter, furnace, ...).
     const hasOutput = hasOutputPortAt(
       neighbor as unknown as {
         getOutputPosition?: () => { x: number; y: number } | null;
+        getOutputPositions?: () => { x: number; y: number }[];
       },
       conveyorX,
       conveyorY,
     );
 
-    if (!hasOutput) {
-      continue;
-    }
+    if (!hasOutput) continue;
 
-    // For conveyors, we can use their direction
-    if (neighbor.getType() === "conveyor") {
-      return neighbor.direction as "north" | "south" | "east" | "west";
-    }
-
-    // For other buildings, the flow direction is FROM the neighbor TO us
-    const dx = conveyorX - neighborX;
-    const dy = conveyorY - neighborY;
-
-    let result: "north" | "south" | "east" | "west" = "north";
-    if (dy === -1) result = "north";
-    else if (dy === 1) result = "south";
-    else if (dx === 1) result = "east";
-    else if (dx === -1) result = "west";
-
-    return result;
+    // Flow travels FROM the neighbour TO us, so the incoming direction is the
+    // direction of the vector neighbour -> us. For a belt this is identical to
+    // its own direction, but it also works for multi-output buildings whose
+    // `direction` says nothing about which port fed us.
+    return getOppositeDirection(checkDir);
   }
 
   return null;

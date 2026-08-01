@@ -4,24 +4,42 @@ import {
   getOppositeDirection,
   determineFlowInputDirection,
   calculateTurnType,
+  rotateDirection,
 } from "./ConveyorLogicSystem";
 import { IWorld, Direction } from "../../entities/types";
 
 import { IIOBuilding, PowerConfig } from "../BuildingConfig";
 import { ConveyorConfigType } from "./ConveyorConfig";
-import { updateBuildingConnectivity } from "../BuildingIOHelper";
 import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
+import { ItemSink, canPushItem, createItemId, pushItem } from "../ItemTransfer";
+import { updateBuildingConnectivity } from "../BuildingIOHelper";
 
-export class Conveyor extends BuildingEntity implements IIOBuilding {
+import { createActor } from "xstate";
+import { conveyorMachine } from "./ConveyorMachine";
+
+export type ConveyorVisualType = "straight" | "left" | "right";
+
+export class Conveyor extends BuildingEntity implements IIOBuilding, ItemSink {
   constructor(x: number, y: number, direction: Direction = "north") {
     super(x, y, "conveyor", direction);
+    this.actor = createActor(conveyorMachine, {
+      input: { building: this },
+    });
+    this.actor.start();
   }
 
   public currentItem: string | null = null;
   public itemId: number | null = null; // Unique ID for tracking mesh
   public transportProgress: number = 0;
-  public isResolved: boolean = false; // True only if connected to a valid destination (chest)
-  public visualType: "straight" | "left" | "right" = "straight";
+  public isResolved: boolean = false; // True only if the belt leads to a real sink
+  public visualType: ConveyorVisualType = "straight";
+
+  /**
+   * Topology snapshot the visual/connectivity state was computed against.
+   * Recomputing every tick for every belt is by far the hottest path of the
+   * simulation, and the answer only changes when a building is added/removed.
+   */
+  private topologySnapshot: number = -1;
 
   public get transportSpeed(): number {
     const baseSpeed =
@@ -31,61 +49,69 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
   }
 
   public tick(delta: number, world?: IWorld): void {
-    if (world) {
-      this.updateVisualState(world);
-      updateBuildingConnectivity(this, world);
-    }
-
-    if (!this.currentItem) return;
-
-    this.transportProgress += this.transportSpeed * delta;
-
-    if (this.transportProgress >= 1) {
-      if (world) this.moveItem(world);
-    }
+    if (!world) return;
+    this.actor?.send({ type: "TICK", delta, world });
   }
 
-  private moveItem(world: IWorld): void {
-    // Determine target coordinates based on direction
-    let tx = this.x;
-    let ty = this.y;
+  /**
+   * Recompute turn visual + arrow connectivity, but only when the world
+   * topology actually changed since the last time.
+   * Returns true when a refresh happened.
+   */
+  public refreshTopology(world: IWorld): boolean {
+    const version = world.topologyVersion;
+    if (version !== undefined && version === this.topologySnapshot) {
+      return false;
+    }
+    this.topologySnapshot = version ?? -1;
+    this.updateVisualState(world);
+    updateBuildingConnectivity(this, world);
+    return true;
+  }
 
-    if (this.direction === "north") ty -= 1;
-    else if (this.direction === "south") ty += 1;
-    else if (this.direction === "east") tx += 1;
-    else if (this.direction === "west") tx -= 1;
+  /** Force a refresh on the next tick (used when neighbours change). */
+  public invalidateTopology(): void {
+    this.topologySnapshot = -1;
+  }
 
-    const targetBuilding = world.getBuilding(tx, ty);
+  /**
+   * Hand the item over to whatever sits at the output tile.
+   * Belt -> belt keeps the progress overflow so items keep a constant speed
+   * across tiles instead of stuttering at every seam.
+   */
+  public moveItem(world: IWorld): void {
+    const item = this.currentItem;
+    if (!item) return;
 
-    if (targetBuilding instanceof Conveyor) {
-      if (!targetBuilding.currentItem) {
-        targetBuilding.currentItem = this.currentItem;
-        targetBuilding.itemId = this.itemId;
-        // Preserve overflow time for smooth transition
-        targetBuilding.transportProgress = this.transportProgress - 1;
-        this.currentItem = null;
-        this.itemId = null;
-        this.transportProgress = 0;
-      }
-    } else if (
-      targetBuilding &&
-      "addItem" in targetBuilding &&
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      typeof (targetBuilding as any).addItem === "function"
-    ) {
-      // Pass coordinates to support round-robin in Mergers
-      if (
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (targetBuilding as any).addItem(this.currentItem!, 1, this.x, this.y)
-      ) {
-        this.currentItem = null;
-        this.itemId = null;
-        this.transportProgress = 0;
-      }
+    const outputPos = this.getOutputPosition();
+    if (!outputPos) {
+      this.transportProgress = Math.min(this.transportProgress, 1);
+      return;
     }
 
-    // Clamp progress
+    const target = world.getBuilding(outputPos.x, outputPos.y);
+
+    if (target instanceof Conveyor) {
+      // Never push into a belt's own output face, and never into a full belt.
+      if (target.canInput(this.x, this.y) && !target.currentItem) {
+        target.currentItem = item;
+        target.itemId = this.itemId;
+        // Preserve overflow time for a smooth transition.
+        target.transportProgress = Math.max(0, this.transportProgress - 1);
+        this.clearItem();
+      }
+    } else if (pushItem(world, this, outputPos.x, outputPos.y, item, 1)) {
+      this.clearItem();
+    }
+
+    // Clamp progress: a blocked item waits at the very end of the belt.
     if (this.transportProgress > 1) this.transportProgress = 1;
+  }
+
+  private clearItem(): void {
+    this.currentItem = null;
+    this.itemId = null;
+    this.transportProgress = 0;
   }
 
   /**
@@ -93,9 +119,7 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
    * Used when player drags an item off the belt.
    */
   public removeItem(): void {
-    this.currentItem = null;
-    this.itemId = null;
-    this.transportProgress = 0;
+    this.clearItem();
   }
 
   // --- Traits Implementation ---
@@ -108,58 +132,58 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
     return undefined;
   }
 
-  // --- IIOBuilding ---
-  public getInputPosition(): { x: number; y: number } | null {
-    if (!this.io.hasInput) return null;
+  // --- ItemSink ---
 
-    // For turns, input comes from a side, not the back
-    // - Straight: input from back (opposite of direction)
-    // - Left turn: input from the right side (90° clockwise from direction)
-    // - Right turn: input from the left side (90° counter-clockwise from direction)
-    let inputDir: "north" | "south" | "east" | "west";
+  /** Dynamic capacity: a belt tile holds exactly one item. */
+  public hasSpaceFor(): boolean {
+    return this.currentItem === null;
+  }
 
-    if (this.visualType === "left") {
-      // Left turn: input from left side of output direction (90° counter-clockwise)
-      inputDir = this.getRotatedDirection(this.direction, -1); // -90°
-    } else if (this.visualType === "right") {
-      // Right turn: input from right side of output direction (90° clockwise)
-      inputDir = this.getRotatedDirection(this.direction, 1); // +90°
-    } else {
-      // Straight: input from back
-      inputDir = getOppositeDirection(this.direction);
+  public addItem(
+    type: string,
+    _amount: number = 1,
+    fromX?: number,
+    fromY?: number,
+  ): boolean {
+    if (this.currentItem) return false;
+    if (fromX !== undefined && fromY !== undefined) {
+      if (!this.canInput(fromX, fromY)) return false;
     }
 
-    const offset = getDirectionOffset(inputDir);
+    this.currentItem = type;
+    this.itemId = createItemId();
+    this.transportProgress = 0;
+    return true;
+  }
+
+  // --- IIOBuilding ---
+
+  /**
+   * Canonical input port: the tile behind the belt.
+   * Side loading is expressed through {@link getInputPositions}; keeping this
+   * one stable avoids arrows and connectivity flipping around when the belt
+   * switches between straight and curved visuals.
+   */
+  public getInputPosition(): { x: number; y: number } | null {
+    if (!this.io.hasInput) return null;
+    const offset = getDirectionOffset(getOppositeDirection(this.direction));
     return { x: this.x + offset.dx, y: this.y + offset.dy };
   }
 
+  /** A belt accepts items from its back and from both sides — never the front. */
   public getInputPositions(): { x: number; y: number }[] {
     if (!this.io.hasInput) return [];
 
-    // Conveyor accepts inputs from Back, Left, and Right (all except Front)
-    const validDirs: Direction[] = [];
-
-    // Back
-    validDirs.push(getOppositeDirection(this.direction));
-
-    // Left (-90)
-    validDirs.push(this.getRotatedDirection(this.direction, -1));
-
-    // Right (+90)
-    validDirs.push(this.getRotatedDirection(this.direction, 1));
+    const validDirs: Direction[] = [
+      getOppositeDirection(this.direction), // back
+      rotateDirection(this.direction, -1), // left
+      rotateDirection(this.direction, 1), // right
+    ];
 
     return validDirs.map((dir) => {
       const offset = getDirectionOffset(dir);
       return { x: this.x + offset.dx, y: this.y + offset.dy };
     });
-  }
-
-  /** Rotate direction by 90° increments. steps > 0 = clockwise */
-  private getRotatedDirection(dir: Direction, steps: number): Direction {
-    const order: Direction[] = ["north", "east", "south", "west"];
-    const index = order.indexOf(dir);
-    const newIndex = (index + steps + 4) % 4;
-    return order[newIndex];
   }
 
   public getOutputPosition(): { x: number; y: number } | null {
@@ -181,34 +205,21 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
     if (dx === outputOffset.dx && dy === outputOffset.dy) return false;
 
     // Structural check only: return true even if full.
-    // Logic for item transfer handles the 'full' state separately.
+    // Capacity is answered by hasSpaceFor().
     return true;
   }
 
   public canOutput(world: IWorld): boolean {
-    let tx = this.x;
-    let ty = this.y;
-    if (this.direction === "north") ty -= 1;
-    else if (this.direction === "south") ty += 1;
-    else if (this.direction === "east") tx += 1;
-    else if (this.direction === "west") tx -= 1;
-
-    const target = world.getBuilding(tx, ty);
-    if (!target) return false;
-
-    if (target instanceof Conveyor) {
-      return !target.currentItem;
-    }
-
-    if (
-      "canInput" in target &&
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      typeof (target as any).canInput === "function"
-    ) {
-      return (target as unknown as IIOBuilding).canInput(this.x, this.y);
-    }
-
-    return false;
+    const outputPos = this.getOutputPosition();
+    if (!outputPos) return false;
+    return canPushItem(
+      world,
+      this,
+      outputPos.x,
+      outputPos.y,
+      this.currentItem ?? "",
+      1,
+    );
   }
 
   public tryOutput(world: IWorld): boolean {
@@ -222,7 +233,7 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
 
   /**
    * Update visual type (straight/left/right) based on flow direction.
-   * Direction is now fixed at placement time, so this only updates visuals.
+   * Direction is fixed at placement time, so this only updates visuals.
    */
   public updateVisualState(world: IWorld): void {
     const flowIn = determineFlowInputDirection(
@@ -232,14 +243,9 @@ export class Conveyor extends BuildingEntity implements IIOBuilding {
       world,
     );
 
-    if (flowIn) {
-      this.visualType = calculateTurnType(flowIn, this.direction) as
-        | "straight"
-        | "left"
-        | "right";
-    } else {
-      this.visualType = "straight";
-    }
+    this.visualType = flowIn
+      ? calculateTurnType(flowIn, this.direction)
+      : "straight";
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

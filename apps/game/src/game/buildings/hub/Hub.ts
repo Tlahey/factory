@@ -2,7 +2,8 @@ import { BuildingEntity } from "../../entities/BuildingEntity";
 import { IPowered, IIOBuilding, PowerConfig } from "../BuildingConfig";
 import { HubConfigType } from "./HubConfig";
 import { skillTreeManager } from "./skill-tree/SkillTreeManager";
-// import { IWorld } from '../../entities/types';
+import { createActor } from "xstate";
+import { hubMachine } from "./HubMachine";
 
 export class Hub extends BuildingEntity implements IPowered, IIOBuilding {
   constructor(x: number, y: number) {
@@ -10,6 +11,10 @@ export class Hub extends BuildingEntity implements IPowered, IIOBuilding {
     this.width = 2;
     this.height = 2;
     this.powerStatus = "active"; // Always active
+    this.actor = createActor(hubMachine, {
+      input: { building: this },
+    });
+    this.actor.start();
   }
 
   public statsHistory: {
@@ -22,11 +27,11 @@ export class Hub extends BuildingEntity implements IPowered, IIOBuilding {
   /** Breaker state - when false, hub stops generating power */
   public isEnabled: boolean = true;
 
-  public tick(_delta: number): void {
-    this.updateFluctuation();
+  public tick(delta: number): void {
+    this.actor?.send({ type: "TICK", delta });
   }
 
-  private updateFluctuation(): void {
+  public updateFluctuation(): void {
     // Solar Fluctuation logic
     const time = Date.now() / 1000;
     this.currentFluctuation = Math.sin(time * 0.5) * 5 + Math.sin(time * 2) * 2;
@@ -86,25 +91,12 @@ export class Hub extends BuildingEntity implements IPowered, IIOBuilding {
     return null;
   }
 
-  public canInput(fromX: number, fromY: number): boolean {
-    // Hub accepts items from any adjacent tile if that tile is pointing to one of its 4 tiles.
-    // The BuildingIOHelper already found this Hub by checking the target tile of the outputting building.
-    // So if we are here, it means some building at (fromX, fromY) is outputting to one of our tiles.
-
-    // Basic adjacency check for safety
-    const dx = Math.abs(fromX - this.x);
-    const dy = Math.abs(fromY - this.y);
-
-    // Since Hub is 2x2, it's adjacent if dx in [-1, 2] and dy in [-1, 2]
-    // (excluding the 4 tiles of the Hub itself)
-    const isInside =
-      fromX >= this.x &&
-      fromX < this.x + 2 &&
-      fromY >= this.y &&
-      fromY < this.y + 2;
-    if (isInside) return false;
-
-    return dx <= 2 && dy <= 2;
+  public canInput(): boolean {
+    // The Hub is a power/base building: HUB_CONFIG declares `hasInput: false`
+    // and it has no item storage. Claiming otherwise made belts pointing at it
+    // hide their output arrow and count as "resolved" while items piled up
+    // forever at the end of the belt.
+    return false;
   }
 
   public canOutput(): boolean {

@@ -13,6 +13,7 @@ import {
   createIOArrows,
   updateIOArrows,
 } from "../../visuals/helpers/IOArrowHelper";
+import { getBuildingTransform } from "./BuildingTransform";
 
 interface SawmillViewProps {
   entity: Sawmill;
@@ -114,22 +115,7 @@ export function SawmillView({ entity, particleSystem }: SawmillViewProps) {
   });
 
   // 3. Position & Rotation
-  // 1x1 building centered at 0,0 relative to parent tile
-  // Actually, BuildingEntity x/y are world coords.
-  // Legacy visual offset logic:
-  // offsetX = (width - 1) / 2
-  // position = [x + offsetX, 0, y + offsetY]
-
-  // Sawmill is 1x1 so offset is 0.
-  const position: [number, number, number] = [entity.x, 0, entity.y];
-
-  const directionToRotation: Record<string, number> = {
-    north: 0,
-    east: -Math.PI / 2,
-    south: Math.PI,
-    west: Math.PI / 2,
-  };
-  const rotationY = directionToRotation[entity.direction] || 0;
+  const { position, rotationY } = getBuildingTransform(entity);
 
   return (
     <group ref={groupRef} position={position} rotation={[0, rotationY, 0]}>

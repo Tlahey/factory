@@ -1,6 +1,6 @@
 {
   "resource": {
-    "stone": "Pierre",
+    "stone": "Roche",
     "iron": "Fer",
     "copper": "Cuivre",
     "iron_ore": "Minerai de Fer",
@@ -23,7 +23,7 @@
     "no_recipes_unlocked": "Aucune recette débloquée. Recherchez les recettes au HUB."
   },
   "common": {
-    "stone": "Pierre",
+    "stone": "Roche",
     "iron": "Fer",
     "copper": "Cuivre",
     "iron_ore": "Minerai de Fer",
@@ -145,6 +145,10 @@
     "biomass_plant": {
       "name": "Centrale à Biomasse",
       "description": "Génère de l'électricité en brûlant du bois. Alimentez-le en biomasse pour produire de l'énergie verte."
+    },
+    "solar_panel": {
+      "name": "Panneau Solaire",
+      "description": "Génère de l'énergie propre à partir de la lumière du soleil. L'efficacité dépend du moment de la journée."
     }
   },
   "skill_tree": {
@@ -250,6 +254,16 @@
         "name": "Lame Aiguisée III",
         "description": "Augmente le taux d'extraction de 60%"
       }
+    },
+    "solar_panel": {
+      "efficiency_1": {
+        "name": "Cellules Photovoltaïques",
+        "description": "Augmente la production d'énergie de 20%."
+      },
+      "storage_1": {
+        "name": "Connexion en Série",
+        "description": "Permet de connecter plus de câbles au panneau (+1 connexion)."
+      }
     }
   },
   "dialogue": {
@@ -292,8 +306,8 @@
       "text": "Cette Foreuse n'a plus de ressources à extraire. Vous devriez la déconstruire (Outil Suppression) et la déplacer vers un nouveau gisement."
     },
     "mined_stone": {
-      "title": "Pierre Extraite",
-      "text": "Vous extrayez de la Pierre. C'est un matériau de base pour les fondations et composants simples."
+      "title": "Roche Extraite",
+      "text": "Vous extrayez de la Roche. C'est un matériau de base pour les fondations et composants simples."
     },
     "mined_iron": {
       "title": "Minerai de Fer",
@@ -309,6 +323,18 @@
       "title": "Fournitures d'Usine",
       "text_1": "Bienvenue dans la Boutique du Hub. Ici, vous pouvez acheter des licences de construction supplémentaires avec vos ressources excédentaires.",
       "text_2": "Notez que chaque achat augmente le prix des futures licences de ce bâtiment. Gérez votre budget avec soin !"
+    },
+    "error_locked": {
+      "title": "Plan Verrouillé",
+      "text": "Ce bâtiment n'a pas encore été recherché ! Consultez l'Arbre de Compétences dans le Hub pour le débloquer."
+    },
+    "error_cost": {
+      "title": "Ressources Insuffisantes",
+      "text": "Vous n'avez pas assez de ressources pour construire ce bâtiment."
+    },
+    "error_limit": {
+      "title": "Limite de Placement Atteinte",
+      "text": "Vous avez atteint le nombre maximum de bâtiments de ce type que vous pouvez placer. Achetez plus de licences dans la Boutique !"
     }
   },
   "building_menu": {
@@ -334,6 +360,16 @@
     "add_resources": "Ajouter Ressources (100x)",
     "debug_overlay": "Overlay Debug (F3)",
     "danger_zone": "Zone Dangereuse",
-    "hard_reset": "Réinitialisation Totale"
+    "hard_reset": "Réinitialisation Totale",
+    "action_logs": "Logs d'Action Debug",
+    "diagnostics_title": "Diagnostics & Logs Système",
+    "copy_logs": "Copier Logs",
+    "copied": "Copié !",
+    "clear": "Effacer",
+    "no_logs": "Aucun log enregistré pour l'instant."
+  },
+  "mining": {
+    "mined_stone": "+1 Roche",
+    "wait_seconds": "Attendez {{seconds}} secondes avant de recommencer."
   }
 }

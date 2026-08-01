@@ -2,9 +2,15 @@ import { BuildingEntity } from "../../entities/BuildingEntity";
 import { IWorld, Direction } from "../../entities/types";
 import { IIOBuilding, IPowered, PowerConfig } from "../BuildingConfig";
 import { BiomassPlantConfigType } from "./BiomassPlantConfig";
-import { updateBuildingConnectivity, getIOOffset } from "../BuildingIOHelper";
+import {
+  canInputFromConfig,
+  getConfiguredInputPosition,
+  getConfiguredInputPositions,
+} from "../BuildingIOHelper";
 import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
 import { ResourceType } from "../../data/Items";
+import { createActor } from "xstate";
+import { biomassPlantMachine } from "./BiomassPlantMachine";
 
 /**
  * Biomass Power Plant
@@ -47,63 +53,18 @@ export class BiomassPlant
 
   constructor(x: number, y: number, direction: Direction = "north") {
     super(x, y, "biomass_plant", direction);
+    this.actor = createActor(biomassPlantMachine, {
+      input: { building: this },
+    });
+    this.actor.start();
   }
 
   public tick(delta: number, world?: IWorld): void {
     if (!world) return;
-
-    // 1. Update Connectivity
-    updateBuildingConnectivity(this, world);
-
-    // 2. Update fluctuation
-    this.updateFluctuation();
-
-    // 3. Determine operational status
-    let logicalStatus: typeof this.operationStatus = "idle";
-
-    if (!this.isEnabled) {
-      logicalStatus = "idle";
-      this.isBurning = false;
-    } else if (this.fuelAmount <= 0 && this.combustionProgress <= 0) {
-      logicalStatus = "no_resources";
-      this.isBurning = false;
-    } else {
-      logicalStatus = "working";
-      this.isBurning = true;
-
-      // 4. Process combustion
-      if (this.combustionProgress > 0 || this.fuelAmount > 0) {
-        // Start new combustion if not already burning
-        if (this.combustionProgress <= 0 && this.fuelAmount > 0) {
-          this.fuelAmount--;
-          this.combustionProgress = 1.0;
-        }
-
-        // Advance combustion
-        const consumptionTime = this.getConsumptionTime();
-        const progressStep = delta / consumptionTime;
-        this.combustionProgress = Math.max(
-          0,
-          this.combustionProgress - progressStep,
-        );
-      }
-    }
-
-    this.operationStatus = logicalStatus;
-    this.active = this.isBurning;
-
-    // 5. Update power status for the grid
-    // Power is generated only when burning
-    if (this.isBurning) {
-      this.powerStatus = "active";
-      this.currentPowerSatisfied = this.getPowerGeneration();
-    } else {
-      this.powerStatus = "idle";
-      this.currentPowerSatisfied = 0;
-    }
+    this.actor?.send({ type: "TICK", delta, world });
   }
 
-  private updateFluctuation(): void {
+  public updateFluctuation(): void {
     const time = Date.now() / 1000;
     const fluctuationRange = this.getFluctuationRange();
     this.currentFluctuation =
@@ -189,31 +150,26 @@ export class BiomassPlant
   }
 
   public getInputPosition(): { x: number; y: number } | null {
-    if (!this.io.hasInput) return null;
-    const inputSide = this.io.inputSide || "back";
-    const config = this.getConfig() as BiomassPlantConfigType;
-    const offset = getIOOffset(
-      inputSide,
-      this.direction,
-      config.width,
-      config.height,
-    );
-    return { x: this.x + offset.dx, y: this.y + offset.dy };
+    return getConfiguredInputPosition(this);
+  }
+
+  public getInputPositions(): { x: number; y: number }[] {
+    return getConfiguredInputPositions(this);
   }
 
   public getOutputPosition(): { x: number; y: number } | null {
     return null; // No output
   }
 
+  /** Structural check only — capacity is answered by hasSpaceFor(). */
   public canInput(fromX: number, fromY: number): boolean {
-    // 1. Check if the input is coming from the correct side/position
-    const inputPos = this.getInputPosition();
-    if (!inputPos || fromX !== inputPos.x || fromY !== inputPos.y) return false;
+    return canInputFromConfig(this, fromX, fromY);
+  }
 
-    // 2. Check if fuel storage is full
-    if (this.fuelAmount >= this.getFuelCapacity()) return false;
-
-    return true;
+  /** Capacity check used by the shared transfer layer (ItemTransfer). */
+  public hasSpaceFor(type: string, amount: number = 1): boolean {
+    if (type !== "wood") return false;
+    return this.fuelAmount + amount <= this.getFuelCapacity();
   }
 
   /**

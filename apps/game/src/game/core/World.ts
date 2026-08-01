@@ -15,7 +15,14 @@ import {
   getOppositeDirection,
 } from "../buildings/conveyor/ConveyorLogicSystem";
 import { isValidConveyorDirection } from "../buildings/conveyor/ConveyorPlacementHelper";
-import { updateBuildingConnectivity } from "../buildings/BuildingIOHelper";
+import {
+  hasOutputPortAt,
+  updateBuildingConnectivity,
+} from "../buildings/BuildingIOHelper";
+import {
+  getFootprintSizeForConfig,
+  getOccupiedTiles,
+} from "../buildings/BuildingFootprint";
 
 import { Tile } from "../environment/Tile";
 import { Conveyor } from "../buildings/conveyor/Conveyor";
@@ -26,14 +33,40 @@ interface AutoOrientable {
   autoOrient(world: IWorld): void;
 }
 
+/** Buildings that only move items around and are never a final destination. */
+const LOGISTIC_TYPES: BuildingId[] = [
+  "conveyor",
+  "conveyor_merger",
+  "conveyor_splitter",
+];
+
+const NEIGHBOR_OFFSETS: { dx: number; dy: number }[] = [
+  { dx: 0, dy: -1 },
+  { dx: 0, dy: 1 },
+  { dx: 1, dy: 0 },
+  { dx: -1, dy: 0 },
+];
+
 export class World implements IWorld {
   public grid: Tile[][];
   public buildings: Map<string, BuildingEntity>;
   public cables: { x1: number; y1: number; x2: number; y2: number }[] = [];
 
+  /**
+   * Bumped whenever the set/orientation of buildings changes.
+   * Per-tick systems compare against it to avoid recomputing connectivity
+   * for every belt on every frame.
+   */
+  public topologyVersion: number = 0;
+
   constructor() {
     this.grid = this.generateEmptyWorld();
     this.buildings = new Map();
+  }
+
+  /** Signal that the building topology changed. */
+  public markTopologyDirty(): void {
+    this.topologyVersion++;
   }
   // ...
   public getBuilding(x: number, y: number): BuildingEntity | undefined {
@@ -121,8 +154,18 @@ export class World implements IWorld {
     y: number,
     type: BuildingId,
     direction: Direction = "north",
+    logFailures: boolean = false,
   ): boolean {
-    if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) return false;
+    if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) {
+      if (logFailures) {
+        useGameStore
+          .getState()
+          .addDebugLog(
+            `[World] Placement failed: Out of bounds (coordinates x:${x}, y:${y})`,
+          );
+      }
+      return false;
+    }
 
     // Check Max Count Limits
     const config = getBuildingConfig(type);
@@ -130,13 +173,16 @@ export class World implements IWorld {
     const maxCount = getAllowedCount(type, purchasedCounts[type] || 0);
 
     let count = 0;
-    this.buildings.forEach((b) => {
+    const uniqueBuildings = new Set(this.buildings.values());
+    uniqueBuildings.forEach((b) => {
       if (b.getType() === type) count++;
     });
     if (count >= maxCount) {
-      console.log(
-        `[World] Placement failed: Max count reached for ${type} (${count}/${maxCount})`,
-      );
+      const msg = `[World] Placement failed: Max count reached for ${type} (${count}/${maxCount})`;
+      console.log(msg);
+      if (logFailures) {
+        useGameStore.getState().addDebugLog(msg);
+      }
       return false;
     }
 
@@ -145,50 +191,92 @@ export class World implements IWorld {
       type === "conveyor" &&
       !isValidConveyorDirection(x, y, direction, this)
     ) {
-      console.log(
-        `[World] Placement failed: Invalid conveyor direction (Reverse Flow) at ${x},${y}`,
-      );
+      const msg = `[World] Placement failed: Invalid conveyor direction (Reverse Flow) at ${x},${y}`;
+      console.log(msg);
+      if (logFailures) {
+        useGameStore.getState().addDebugLog(msg);
+      }
       return false;
     }
 
-    const isRotated = direction === "east" || direction === "west";
-    const width = isRotated ? config?.height || 1 : config?.width || 1;
-    const height = isRotated ? config?.width || 1 : config?.height || 1;
+    const { width, height } = getFootprintSizeForConfig(config, direction);
 
-    // Check bounds
-    if (x + width > WORLD_WIDTH || y + height > WORLD_HEIGHT) {
-      console.log(`[World] Placement failed: Out of bounds`);
+    // Check bounds. The anchor can be pulled left/up of the cursor by the
+    // rotation pivot, so the low edge needs checking too.
+    if (
+      x < 0 ||
+      y < 0 ||
+      x + width > WORLD_WIDTH ||
+      y + height > WORLD_HEIGHT
+    ) {
+      const msg = `[World] Placement failed: Out of bounds (Building width:${width}, height:${height} at x:${x}, y:${y})`;
+      console.log(msg);
+      if (logFailures) {
+        useGameStore.getState().addDebugLog(msg);
+      }
       return false;
     }
 
     // Create dummy for validation
     const dummy = createBuildingLogic(type, x, y, direction);
     if (!dummy) {
-      console.log(
-        `[World] Placement failed: Could not create dummy logic for ${type}`,
-      );
+      const msg = `[World] Placement failed: Could not create dummy logic for ${type}`;
+      console.log(msg);
+      if (logFailures) {
+        useGameStore.getState().addDebugLog(msg);
+      }
       return false;
     }
 
-    // Check collision and validity
-    for (let dx = 0; dx < width; dx++) {
-      for (let dy = 0; dy < height; dy++) {
-        if (this.buildings.has(`${x + dx},${y + dy}`)) {
-          console.log(
-            `[World] Placement failed: Tile occupied at ${x + dx},${y + dy}`,
-          );
-          return false;
+    // Check collision and validity over the whole footprint
+    for (const { x: tx, y: ty } of getOccupiedTiles(x, y, { width, height })) {
+      if (this.buildings.has(`${tx},${ty}`)) {
+        const msg = `[World] Placement failed: Tile occupied at ${tx},${ty}`;
+        console.log(msg);
+        if (logFailures) {
+          useGameStore.getState().addDebugLog(msg);
+        }
+        return false;
+      }
+
+      // Tile validity
+      const tile = this.getTile(tx, ty);
+
+      if (!dummy.isValidPlacement(tile)) {
+        const placementConfig = dummy.getConfig()?.placement;
+        let reason = "isValidPlacement returned false";
+        if (tile.isWater()) {
+          reason = "Tile is water";
+        } else if (tile.isResource()) {
+          if (!placementConfig) {
+            reason =
+              "Tile is resource but building config has no placement rules";
+          } else if (!placementConfig.canPlaceOnResources) {
+            reason = "Tile is resource but canPlaceOnResources is false";
+          } else if (
+            placementConfig.requiredResourceIds &&
+            placementConfig.requiredResourceIds.length > 0
+          ) {
+            const resType =
+              tile instanceof ResourceTile ? tile.getResourceType() : "unknown";
+            reason = `Tile is resource of type '${resType}', which is not in building's requiredResourceIds: [${placementConfig.requiredResourceIds.join(", ")}]`;
+          }
+        } else {
+          // Tile is grass/sand (not resource)
+          if (
+            placementConfig?.requiredResourceIds &&
+            placementConfig.requiredResourceIds.length > 0
+          ) {
+            reason = `Tile is non-resource, but building requires a resource in: [${placementConfig.requiredResourceIds.join(", ")}]`;
+          }
         }
 
-        // Tile validity
-        const tile = this.getTile(x + dx, y + dy);
-
-        if (!dummy.isValidPlacement(tile)) {
-          console.log(
-            `[World] Placement failed: Invalid tile placement logic for ${type} at ${x + dx},${y + dy} (Tile: ${tile.getType()})`,
-          );
-          return false;
+        const msg = `[World] Placement failed: ${reason} at ${tx},${ty} (Tile type: ${tile.getType()})`;
+        console.log(msg);
+        if (logFailures) {
+          useGameStore.getState().addDebugLog(msg);
         }
+        return false;
       }
     }
     return true;
@@ -231,25 +319,29 @@ export class World implements IWorld {
     return grid;
   }
 
+  /**
+   * Recompute which belts actually lead somewhere useful (`isResolved`).
+   *
+   * Walks BACKWARDS from every real sink (chest, hub, furnace, ...) and marks
+   * every belt whose output feeds an already-resolved tile. Mergers and
+   * splitters are pass-through: resolution flows across them so a belt feeding
+   * a splitter that feeds a chest is correctly resolved.
+   */
   public updateConveyorNetwork(): void {
-    // 1. Reset all conveyors to unresolved
-    this.buildings.forEach((_b) => {
-      // Reset logic here if needed
+    const uniqueBuildings = new Set(this.buildings.values());
+
+    // 1. Reset. Without this, belts stayed "resolved" forever after their
+    //    chest was removed.
+    uniqueBuildings.forEach((b) => {
+      if (b instanceof Conveyor) b.isResolved = false;
     });
 
-    // 2. Propagate resolution backwards from all sinks (buildings that can receive input)
+    // 2. Seed the queue with every tile of every real sink.
     const queue: { x: number; y: number }[] = [];
-    this.buildings.forEach((b) => {
-      if (b.getType() === "conveyor" || b.getType() === "conveyor_merger")
-        return; // Logistics are intermediate
-      if ("canInput" in b) {
-        // Add all tiles of the building as potential sink origins
-        for (let dx = 0; dx < b.width; dx++) {
-          for (let dy = 0; dy < b.height; dy++) {
-            queue.push({ x: b.x + dx, y: b.y + dy });
-          }
-        }
-      }
+    uniqueBuildings.forEach((b) => {
+      if (LOGISTIC_TYPES.includes(b.getType())) return; // intermediate, not a sink
+      if (!("canInput" in b)) return;
+      queue.push(...b.getOccupiedTiles());
     });
 
     const processed = new Set<string>();
@@ -259,35 +351,35 @@ export class World implements IWorld {
       if (processed.has(key)) continue;
       processed.add(key);
 
-      // Check all 4 directions for conveyors pointing at this cell
-      const dirs: { dx: number; dy: number; dir: Direction }[] = [
-        { dx: 0, dy: 1, dir: "north" },
-        { dx: 0, dy: -1, dir: "south" },
-        { dx: 1, dy: 0, dir: "west" },
-        { dx: -1, dy: 0, dir: "east" },
-      ];
+      const sinkBuilding = this.getBuilding(x, y);
+      if (!sinkBuilding) continue;
 
-      for (const d of dirs) {
-        const nx = x + d.dx;
-        const ny = y + d.dy;
+      // Look at the 4 neighbours and keep the ones whose OUTPUT targets us.
+      for (const offset of NEIGHBOR_OFFSETS) {
+        const nx = x + offset.dx;
+        const ny = y + offset.dy;
         const neighbor = this.getBuilding(nx, ny);
+        if (!neighbor || neighbor === sinkBuilding) continue;
 
-        if (neighbor && neighbor.getType() === "conveyor") {
-          // If the conveyor points at us (x, y), check if it's a valid connection
-          if (neighbor.direction === d.dir) {
-            // Validate that the sink building at (x, y) accepts input from (nx, ny)
-            const sinkBuilding = this.getBuilding(x, y);
-            if (
-              sinkBuilding &&
-              "canInput" in sinkBuilding &&
-              (sinkBuilding as unknown as IIOBuilding).canInput(nx, ny)
-            ) {
-              if (!(neighbor as unknown as Conveyor).isResolved) {
-                (neighbor as unknown as Conveyor).isResolved = true;
-                queue.push({ x: nx, y: ny });
-              }
-            }
-          }
+        if (!hasOutputPortAt(neighbor as BuildingEntity & IIOBuilding, x, y)) {
+          continue;
+        }
+
+        // The downstream tile must actually accept items from the neighbour.
+        if (
+          !("canInput" in sinkBuilding) ||
+          !(sinkBuilding as unknown as IIOBuilding).canInput(nx, ny)
+        ) {
+          continue;
+        }
+
+        if (neighbor instanceof Conveyor) {
+          if (neighbor.isResolved) continue;
+          neighbor.isResolved = true;
+          queue.push({ x: nx, y: ny });
+        } else if (LOGISTIC_TYPES.includes(neighbor.getType())) {
+          // Merger/splitter: pass-through, keep walking upstream through it.
+          queue.push({ x: nx, y: ny });
         }
       }
     }
@@ -297,6 +389,7 @@ export class World implements IWorld {
     this.buildings.clear();
     this.cables = [];
     this.grid = this.generateEmptyWorld();
+    this.markTopologyDirty();
   }
 
   public addCable(x1: number, y1: number, x2: number, y2: number): boolean {
@@ -316,13 +409,9 @@ export class World implements IWorld {
 
   public getBuildingConnectionsCount(building: BuildingEntity): number {
     let count = 0;
-    // Get all tiles occupied by building
-    const occupiedTiles = new Set<string>();
-    for (let dx = 0; dx < building.width; dx++) {
-      for (let dy = 0; dy < building.height; dy++) {
-        occupiedTiles.add(`${building.x + dx},${building.y + dy}`);
-      }
-    }
+    const occupiedTiles = new Set(
+      building.getOccupiedTiles().map((t) => `${t.x},${t.y}`),
+    );
 
     for (const c of this.cables) {
       if (
@@ -340,12 +429,8 @@ export class World implements IWorld {
     if (!building) return false;
 
     // Remove cables connected to ANY tile of this building
-    const occupiedTiles = new Set<string>();
-    for (let dx = 0; dx < building.width; dx++) {
-      for (let dy = 0; dy < building.height; dy++) {
-        occupiedTiles.add(`${building.x + dx},${building.y + dy}`);
-      }
-    }
+    const tiles = building.getOccupiedTiles();
+    const occupiedTiles = new Set(tiles.map((t) => `${t.x},${t.y}`));
 
     this.cables = this.cables.filter(
       (c) =>
@@ -354,17 +439,16 @@ export class World implements IWorld {
     );
 
     // Remove from all occupied tiles
-    for (let dx = 0; dx < building.width; dx++) {
-      for (let dy = 0; dy < building.height; dy++) {
-        this.buildings.delete(`${building.x + dx},${building.y + dy}`);
-      }
+    for (const key of occupiedTiles) {
+      this.buildings.delete(key);
     }
 
     // Update Store
     useGameStore.getState().updateBuildingCount(building.getType(), -1);
 
     // Update Network & Connectivity
-    this.updateNeighborConnectivity(x, y);
+    this.markTopologyDirty();
+    this.updateNeighborConnectivity(building.x, building.y, building);
     this.updateConveyorNetwork();
 
     return true;
@@ -406,9 +490,6 @@ export class World implements IWorld {
     direction: Direction = "north",
     skipValidation: boolean = false,
   ): boolean {
-    const key = `${x},${y}`;
-    if (this.buildings.has(key)) return false; // Already occupied
-
     if (!skipValidation) {
       // Validate first
       if (!this.canPlaceBuilding(x, y, type, direction)) return false;
@@ -420,42 +501,41 @@ export class World implements IWorld {
       return false;
     }
 
+    // Guard the whole footprint, not just the anchor: a 1x2 laid over a single
+    // occupied tile used to overwrite its neighbour's entry in the tile map.
+    const tiles = building.getOccupiedTiles();
+    if (tiles.some((t) => this.buildings.has(`${t.x},${t.y}`))) return false;
+
     // Register all tiles
-    for (let dx = 0; dx < building.width; dx++) {
-      for (let dy = 0; dy < building.height; dy++) {
-        this.buildings.set(`${x + dx},${y + dy}`, building);
-      }
+    for (const tile of tiles) {
+      this.buildings.set(`${tile.x},${tile.y}`, building);
     }
 
-    // Direction is now fixed at placement time via ConveyorPlacementHelper
-    // No runtime auto-orientation needed for conveyors
+    this.markTopologyDirty();
 
-    // For conveyors and mergers, compute visual state and connectivity
-    if (type === "conveyor" || type === "conveyor_merger") {
-      // 1. Update neighbors first (so they orient toward us)
-      this.updateNeighborConnectivity(x, y);
-
-      // 2. Now update ourselves (we can see neighbors pointing at us)
-      if (type === "conveyor") {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (building as any).updateVisualState(this);
-      }
-
-      if ("io" in building) {
-        updateBuildingConnectivity(
-          building as BuildingEntity & IIOBuilding,
-          this,
-        );
-      }
-    }
-
-    // Update conveyor network resolution (which conveyors lead to chests)
-    this.updateConveyorNetwork();
-
-    // Auto-orient other buildings (like Extractors) - NOT conveyors
+    // 1. Settle our own orientation first. Conveyors are excluded: their
+    //    direction is decided at placement time by ConveyorPlacementHelper.
     if (type !== "conveyor") {
       this.autoOrientBuilding(x, y);
     }
+
+    // 2. Refresh the neighbours, so they can orient/curve toward us.
+    this.updateNeighborConnectivity(x, y, building);
+
+    // 3. Then update ourselves (we can now see the neighbours pointing at us).
+    if (building instanceof Conveyor) {
+      building.invalidateTopology();
+      building.updateVisualState(this);
+    }
+    if ("io" in building) {
+      updateBuildingConnectivity(
+        building as BuildingEntity & IIOBuilding,
+        this,
+      );
+    }
+
+    // 4. Recompute which belts lead to a real sink.
+    this.updateConveyorNetwork();
 
     // Update Store Counts for UI
     useGameStore.getState().updateBuildingCount(type, 1);
@@ -471,26 +551,43 @@ export class World implements IWorld {
   }
 
   /**
-   * Update connectivity of all neighboring IO buildings at (x, y).
-   * Called when a new building is placed to update arrow visibility.
+   * Refresh connectivity/visuals of every building adjacent to (x, y).
+   * Called when a building is placed or removed so arrows and belt curves
+   * update immediately instead of waiting for a tick.
+   *
+   * @param subject - when given, every tile it occupies is used as an origin
+   *                  (multi-tile buildings touch more than 4 neighbours).
    */
-  public updateNeighborConnectivity(x: number, y: number): void {
-    const directions = [
-      { dx: 0, dy: -1 },
-      { dx: 0, dy: 1 },
-      { dx: 1, dy: 0 },
-      { dx: -1, dy: 0 },
-    ];
+  public updateNeighborConnectivity(
+    x: number,
+    y: number,
+    subject?: BuildingEntity,
+  ): void {
+    const origins = subject ? subject.getOccupiedTiles() : [{ x, y }];
 
-    for (const dir of directions) {
-      const neighborX = x + dir.dx;
-      const neighborY = y + dir.dy;
-      const neighbor = this.getBuilding(neighborX, neighborY);
+    const visited = new Set<BuildingEntity>();
 
-      if (neighbor) {
-        // Force non-conveyor neighbors to re-orient toward the new building
-        if (neighbor.getType() !== "conveyor") {
+    for (const origin of origins) {
+      for (const dir of NEIGHBOR_OFFSETS) {
+        const neighborX = origin.x + dir.dx;
+        const neighborY = origin.y + dir.dy;
+        const neighbor = this.getBuilding(neighborX, neighborY);
+
+        if (!neighbor || neighbor === subject) continue;
+        if (visited.has(neighbor)) continue;
+        visited.add(neighbor);
+
+        // Let idle machines snap toward the new building — but never steal a
+        // machine that is already feeding something: re-orienting a working
+        // extractor because the player dropped a chest next to it is worse
+        // than making them press R.
+        if (neighbor.getType() !== "conveyor" && !neighbor.isOutputConnected) {
           this.autoOrientBuilding(neighborX, neighborY);
+        }
+
+        if (neighbor instanceof Conveyor) {
+          neighbor.invalidateTopology();
+          neighbor.updateVisualState(this);
         }
 
         if ("io" in neighbor) {
@@ -498,11 +595,6 @@ export class World implements IWorld {
             neighbor as BuildingEntity & IIOBuilding,
             this,
           );
-        }
-
-        // Force visual update (straight/left/right) for neighboring conveyors
-        if (neighbor.getType() === "conveyor") {
-          (neighbor as unknown as Conveyor).updateVisualState(this);
         }
       }
     }
@@ -515,7 +607,8 @@ export class World implements IWorld {
   public propagateFlowFromSources(): void {
     // Find all extractors (sources)
     const extractors: BuildingEntity[] = [];
-    this.buildings.forEach((b) => {
+    const uniqueBuildings = new Set(this.buildings.values());
+    uniqueBuildings.forEach((b) => {
       if (b.getType() === "extractor") {
         extractors.push(b);
       }
@@ -571,6 +664,7 @@ export class World implements IWorld {
               // Can snap to anything that can receive input
               if (nType === "conveyor" || "canInput" in neighbor) {
                 conv.direction = dir;
+                conv.syncFootprint();
                 break;
               }
             }
@@ -601,8 +695,7 @@ export class World implements IWorld {
 
   public getDistanceToChest(startX: number, startY: number): number {
     const b = this.getBuilding(startX, startY);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (b?.getType() === "conveyor" && !(b as any).isResolved) return Infinity;
+    if (b instanceof Conveyor && !b.isResolved) return Infinity;
     return 0;
   }
 
@@ -618,7 +711,10 @@ export class World implements IWorld {
           type: tile.getType(),
           resourceAmount:
             tile instanceof ResourceTile ? tile.resourceAmount : 0,
-          variantId: tile instanceof ResourceTile ? tile.variantId : undefined,
+          variantId:
+            tile instanceof ResourceTile
+              ? (tile.variantId ?? undefined)
+              : undefined,
         })),
       ),
       buildings: uniqueBuildings.map((b) => {
@@ -629,7 +725,9 @@ export class World implements IWorld {
           direction: b.direction,
         };
 
-        console.log(`[World] Serializing building: ${b.getType()} at ${b.x},${b.y}`);
+        console.log(
+          `[World] Serializing building: ${b.getType()} at ${b.x},${b.y}`,
+        );
         return {
           ...base,
           ...b.serialize(),
@@ -691,7 +789,19 @@ export class World implements IWorld {
         }
       });
 
-      // Force massive update one last time
+      // Force a full refresh once every building exists: connectivity computed
+      // during the loop above saw a partially-built world.
+      this.markTopologyDirty();
+      const uniqueBuildings = new Set(this.buildings.values());
+      uniqueBuildings.forEach((b) => {
+        if (b instanceof Conveyor) {
+          b.invalidateTopology();
+          b.updateVisualState(this);
+        }
+        if ("io" in b) {
+          updateBuildingConnectivity(b as BuildingEntity & IIOBuilding, this);
+        }
+      });
       this.updateConveyorNetwork();
     }
   }

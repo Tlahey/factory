@@ -3,6 +3,7 @@
 import { useGameStore, InventorySlot } from "@/game/state/store";
 import { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
+import XStateInspector from "./XStateInspector";
 import { Chest } from "@/game/buildings/chest/Chest";
 import { Extractor } from "@/game/buildings/extractor/Extractor";
 import { Hub } from "@/game/buildings/hub/Hub";
@@ -254,8 +255,9 @@ export default function BuildingInfoPanel() {
 
   return (
     <div
-      className={`fixed right-6 top-24 bg-gray-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl text-white overflow-hidden z-panel animate-in slide-in-from-right-10 fade-in duration-200 transition-[width] ease-in-out flex flex-col max-h-[calc(100vh-8rem)] ${isChest ? "w-[440px]" : "w-80"
-        }`}
+      className={`fixed right-6 top-24 bg-gray-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl text-white overflow-hidden z-panel animate-in slide-in-from-right-10 fade-in duration-200 transition-[width] ease-in-out flex flex-col max-h-[calc(100vh-8rem)] ${
+        isChest ? "w-[440px]" : "w-80"
+      }`}
       onDragOver={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -380,6 +382,9 @@ export default function BuildingInfoPanel() {
               activeUpgrade={activeUpgrade}
             />
           )}
+
+          {/* XState Machine Inspector */}
+          <XStateInspector building={building} />
         </div>
       </div>
     </div>

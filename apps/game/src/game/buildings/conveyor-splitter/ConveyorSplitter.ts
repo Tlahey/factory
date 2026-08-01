@@ -2,17 +2,29 @@ import { BuildingEntity } from "../../entities/BuildingEntity";
 import { Direction, IWorld } from "../../entities/types";
 import { IIOBuilding, PowerConfig } from "../BuildingConfig";
 import { ConveyorSplitterConfigType } from "./ConveyorSplitterConfig";
-import { updateBuildingConnectivity } from "../BuildingIOHelper";
+import { ItemSink, createItemId, pushItem } from "../ItemTransfer";
 import {
-  getDirectionOffset,
-  getOppositeDirection,
-} from "../conveyor/ConveyorLogicSystem";
-import { Conveyor } from "../conveyor/Conveyor";
+  canInputFromConfig,
+  getConfiguredInputPosition,
+  getConfiguredInputPositions,
+  getConfiguredOutputPosition,
+  getConfiguredOutputPositions,
+} from "../BuildingIOHelper";
+import { getSidePorts } from "../BuildingFootprint";
+
+import { createActor } from "xstate";
+import { conveyorSplitterMachine } from "./ConveyorSplitterMachine";
 
 /** Possible output sides for the splitter */
 export type SplitterOutputSide = "front" | "left" | "right";
 
-export class ConveyorSplitter extends BuildingEntity implements IIOBuilding {
+/** Fixed round-robin order. */
+const OUTPUT_ORDER: SplitterOutputSide[] = ["front", "left", "right"];
+
+export class ConveyorSplitter
+  extends BuildingEntity
+  implements IIOBuilding, ItemSink
+{
   public currentItem: string | null = null;
   public itemId: number | null = null;
   public transportProgress: number = 0;
@@ -21,10 +33,14 @@ export class ConveyorSplitter extends BuildingEntity implements IIOBuilding {
    * Tracks the last side to which an item was sent for round-robin fairness.
    */
   private lastOutputSide: SplitterOutputSide | "none" = "none";
-  private lastWorld: IWorld | null = null;
+  public lastWorld: IWorld | null = null;
 
   constructor(x: number, y: number, direction: Direction = "north") {
     super(x, y, "conveyor_splitter", direction);
+    this.actor = createActor(conveyorSplitterMachine, {
+      input: { building: this },
+    });
+    this.actor.start();
   }
 
   public get transportSpeed(): number {
@@ -32,32 +48,27 @@ export class ConveyorSplitter extends BuildingEntity implements IIOBuilding {
   }
 
   public tick(delta: number, world: IWorld): void {
-    this.lastWorld = world;
-    updateBuildingConnectivity(this, world);
-
-    // Instant processing: Try to output immediately in every tick
-    if (this.currentItem) {
-      if (this.tryOutput(world)) {
-        // Item cleared in tryOutput
-      }
-    }
+    this.actor?.send({ type: "TICK", delta, world });
   }
 
+  /**
+   * Send the held item to the next output in round-robin order, skipping any
+   * side that is missing, blocked, or does not accept input from us.
+   */
   public tryOutput(world: IWorld): boolean {
-    const sidesOrder: SplitterOutputSide[] = ["front", "left", "right"];
+    const item = this.currentItem;
+    if (!item) return false;
 
-    // Find next indices to try in order
-    let startIndex = 0;
-    if (this.lastOutputSide !== "none") {
-      startIndex = (sidesOrder.indexOf(this.lastOutputSide) + 1) % 3;
-    }
+    const startIndex =
+      this.lastOutputSide === "none"
+        ? 0
+        : (OUTPUT_ORDER.indexOf(this.lastOutputSide) + 1) % OUTPUT_ORDER.length;
 
-    for (let i = 0; i < 3; i++) {
-      const idx = (startIndex + i) % 3;
-      const side = sidesOrder[idx];
+    for (let i = 0; i < OUTPUT_ORDER.length; i++) {
+      const side = OUTPUT_ORDER[(startIndex + i) % OUTPUT_ORDER.length];
       const pos = this.getPortPosition(side);
 
-      if (this.moveItemToPosition(world, pos.x, pos.y)) {
+      if (pushItem(world, this, pos.x, pos.y, item, 1)) {
         this.currentItem = null;
         this.itemId = null;
         this.transportProgress = 0;
@@ -69,45 +80,6 @@ export class ConveyorSplitter extends BuildingEntity implements IIOBuilding {
     return false;
   }
 
-  private moveItemToPosition(world: IWorld, x: number, y: number): boolean {
-    const target = world.getBuilding(x, y);
-    if (!target) return false;
-
-    // Check if target accepts input from this splitter's position
-    if (
-      target &&
-      "canInput" in target &&
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      typeof (target as any).canInput === "function"
-    ) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (!(target as any).canInput(this.x, this.y)) {
-        return false;
-      }
-    }
-
-    if (target instanceof Conveyor) {
-      if (!target.currentItem) {
-        target.currentItem = this.currentItem;
-        target.itemId = this.itemId;
-        // Optimization: Start exactly at 0 to avoid "double distance" delay
-        target.transportProgress = 0;
-        return true;
-      }
-    } else if (
-      target &&
-      "addItem" in target &&
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      typeof (target as any).addItem === "function"
-    ) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((target as any).addItem(this.currentItem!, 1, this.x, this.y)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   // --- IIOBuilding ---
 
   public get io() {
@@ -115,46 +87,35 @@ export class ConveyorSplitter extends BuildingEntity implements IIOBuilding {
   }
 
   public getInputPosition(): { x: number; y: number } | null {
-    const backDir = getOppositeDirection(this.direction);
-    const offset = getDirectionOffset(backDir);
-    return { x: this.x + offset.dx, y: this.y + offset.dy };
+    return getConfiguredInputPosition(this);
+  }
+
+  public getInputPositions(): { x: number; y: number }[] {
+    return getConfiguredInputPositions(this);
   }
 
   public getOutputPosition(): { x: number; y: number } | null {
-    // Canonical output is front
-    const offset = getDirectionOffset(this.direction);
-    return { x: this.x + offset.dx, y: this.y + offset.dy };
+    // Canonical output is front, first of the configured output sides.
+    return getConfiguredOutputPosition(this);
   }
 
   public getOutputPositions(): { x: number; y: number }[] {
-    const front = this.getPortPosition("front");
-    const left = this.getPortPosition("left");
-    const right = this.getPortPosition("right");
-    return [front, left, right];
+    return getConfiguredOutputPositions(this);
   }
 
   private getPortPosition(side: SplitterOutputSide): { x: number; y: number } {
-    let dir = this.direction;
-    if (side === "left") dir = this.getRotatedDirection(this.direction, -1);
-    else if (side === "right")
-      dir = this.getRotatedDirection(this.direction, 1);
-
-    const offset = getDirectionOffset(dir);
-    return { x: this.x + offset.dx, y: this.y + offset.dy };
+    const ports = getSidePorts(this.x, this.y, side, this.direction, 1, 1);
+    return ports[0].outer;
   }
 
-  private getRotatedDirection(dir: Direction, steps: number): Direction {
-    const order: Direction[] = ["north", "east", "south", "west"];
-    const index = order.indexOf(dir);
-    const newIndex = (index + steps + 4) % 4;
-    return order[newIndex] as Direction;
-  }
-
+  /** Structural check: the splitter only takes items through its back. */
   public canInput(fromX: number, fromY: number): boolean {
-    if (this.currentItem) return false;
+    return canInputFromConfig(this, fromX, fromY);
+  }
 
-    const inputPos = this.getInputPosition();
-    return inputPos !== null && inputPos.x === fromX && inputPos.y === fromY;
+  /** A splitter holds a single item at a time. */
+  public hasSpaceFor(): boolean {
+    return this.currentItem === null;
   }
 
   public addItem(
@@ -170,7 +131,7 @@ export class ConveyorSplitter extends BuildingEntity implements IIOBuilding {
     }
 
     this.currentItem = type;
-    this.itemId = Math.floor(Math.random() * 1000000);
+    this.itemId = createItemId();
     this.transportProgress = 0;
 
     // Immediate pass-through

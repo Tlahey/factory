@@ -3,9 +3,9 @@ import { localization } from "@/game/systems/LocalizationManager";
 
 export function useLocalization() {
   const [locale, setLocale] = useState(localization.getLocale());
-  // Force update trigger to ensure re-render when translations load
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [tick, setTick] = useState(0);
+  // Force update trigger to ensure re-render when translations load.
+  // Only the setter matters: the counter itself is never read.
+  const [_tick, setTick] = useState(0);
 
   useEffect(() => {
     const unsub = localization.subscribe(() => {

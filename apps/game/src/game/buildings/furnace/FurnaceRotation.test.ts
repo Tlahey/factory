@@ -69,4 +69,21 @@ describe("Furnace Rotation Repro", () => {
     const success = world.placeBuilding(x, y, "furnace", direction);
     expect(success).toBe(false);
   });
+
+  it("should allow placing up to the max count limit for non-square buildings without overcounting", () => {
+    // Set limit to 2
+    useGameStore.setState({ purchasedCounts: { furnace: 0 } });
+
+    // Place first furnace (occupies 10,10 and 10,11)
+    let success = world.placeBuilding(10, 10, "furnace", "north");
+    expect(success).toBe(true);
+
+    // Place second furnace (occupies 12,10 and 12,11)
+    success = world.placeBuilding(12, 10, "furnace", "north");
+    expect(success).toBe(true);
+
+    // Place third furnace (should fail because limit is 2)
+    success = world.placeBuilding(14, 10, "furnace", "north");
+    expect(success).toBe(false);
+  });
 });

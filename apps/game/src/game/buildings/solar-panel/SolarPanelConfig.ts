@@ -30,7 +30,8 @@ export const SOLAR_PANEL_CONFIG: SolarPanelConfigType = {
   hasMenu: true,
   width: 1,
   height: 1,
-  description: "Generates clean energy from sunlight. Efficiency depends on the time of day and cloud cover.",
+  description:
+    "Generates clean energy from sunlight. Efficiency depends on the time of day and cloud cover.",
   powerConfig: {
     type: "producer",
     rate: 5, // Peak generation reduced for 1x1 size
@@ -53,8 +54,8 @@ export const SOLAR_PANEL_CONFIG: SolarPanelConfigType = {
     },
   ],
   shop: {
-    baseCost: { copper_ingot: 100 },
+    baseCost: { stone: 25 },
     priceMultiplier: 1.5,
-    initialCount: 0,
-  }
+    initialCount: 3,
+  },
 };

@@ -108,9 +108,9 @@ export const FURNACE_CONFIG: FurnaceConfigType = {
     },
   ],
   shop: {
-    baseCost: { iron: 75, stone: 50 },
+    baseCost: { stone: 40 },
     priceMultiplier: 2.0,
-    initialCount: 0,
+    initialCount: 2,
   },
 };
 

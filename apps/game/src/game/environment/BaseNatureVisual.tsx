@@ -1,5 +1,6 @@
-import React, { useEffect, useState, ReactNode } from "react";
+import React, { useEffect, useState, ReactNode, useRef } from "react";
 import * as THREE from "three";
+import { useFrame } from "@react-three/fiber";
 import { GLTFEntityModel } from "../hooks/useAssetLoader";
 import { useGameContext } from "../providers/GameProvider";
 import { ResourceTile } from "./ResourceTile";
@@ -37,14 +38,15 @@ export function BaseNatureVisual({
       if (!active) return;
 
       const tile = world.getTile(x, y);
-      if (tile && tile instanceof ResourceTile) {
-        let vId = tile.variantId;
+      if (tile instanceof ResourceTile) {
+        const resourceTile = tile;
+        let vId = resourceTile.variantId;
 
         // Lazy Assignment if missing
         if (!vId) {
           vId = assetLibrary.getRandomVariantId(entityId);
           if (vId) {
-            tile.variantId = vId;
+            resourceTile.variantId = vId;
             if (onVariantAssigned) onVariantAssigned(vId);
           }
         }
@@ -62,17 +64,39 @@ export function BaseNatureVisual({
     };
   }, [x, y, world, entityId, onVariantAssigned]);
 
+  const groupRef = useRef<THREE.Group>(null!);
+
+  useFrame(() => {
+    const groupObj = groupRef.current;
+    if (!groupObj || !variantUrl) return;
+
+    const tile = world.getTile(x, y);
+    if (!tile || !tile.isResource()) {
+      groupObj.visible = false;
+      return;
+    }
+
+    if (tile && tile.isResource?.()) {
+      // getVisualScale/isVisualVisible are declared on Tile itself.
+      const targetScale = tile.getVisualScale();
+      groupObj.scale.set(targetScale, targetScale, targetScale);
+      groupObj.visible = tile.isVisualVisible();
+    }
+  });
+
   // 2. Render GLTF if available (with Error Boundary)
   if (variantUrl) {
     return (
       <AssetErrorBoundary fallback={proceduralFallback}>
-        <GLTFEntityModel
-          url={variantUrl}
-          position={[x, 0, y]}
-          onLoaded={(_scene: THREE.Group) => {
-            // Optional: Global setup for the scene if needed
-          }}
-        />
+        <group ref={groupRef}>
+          <GLTFEntityModel
+            url={variantUrl}
+            position={[x, 0, y]}
+            onLoaded={(_scene: THREE.Group) => {
+              // Optional: Global setup for the scene if needed
+            }}
+          />
+        </group>
       </AssetErrorBoundary>
     );
   }

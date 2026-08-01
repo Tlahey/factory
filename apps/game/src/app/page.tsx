@@ -13,6 +13,7 @@ import PendingUnlocksHUD from "@/components/ui/PendingUnlocksHUD";
 import { useGameStore } from "@/game/state/store";
 import DebugMenu from "@/components/ui/DebugMenu";
 import DebugOverlay from "@/components/ui/DebugOverlay";
+import DebugLogPanel from "@/components/ui/DebugLogPanel";
 import DialogueOverlay from "@/components/ui/DialogueOverlay";
 import HighlightOverlay from "@/components/ui/HighlightOverlay";
 import WorldTooltip from "@/components/ui/WorldTooltip";
@@ -25,12 +26,21 @@ const GameCanvas = dynamic(() => import("@/components/R3FCanvas"), {
 
 export default function Home() {
   const [isPaused, setIsPaused] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type?: "success" | "error" | "warning";
+  } | null>(null);
 
-  const showToast = useCallback((msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast((prev) => (prev === msg ? null : prev)), 2000);
-  }, []);
+  const showToast = useCallback(
+    (msg: string, type: "success" | "error" | "warning" = "success") => {
+      setToast({ message: msg, type });
+      setTimeout(
+        () => setToast((prev) => (prev && prev.message === msg ? null : prev)),
+        2000,
+      );
+    },
+    [],
+  );
 
   const togglePause = useCallback((force?: boolean) => {
     setIsPaused((prev) => {
@@ -127,16 +137,27 @@ export default function Home() {
       }
     };
 
+    const handleShowToast = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (typeof detail === "string") {
+        showToast(detail);
+      } else if (detail && typeof detail.message === "string") {
+        showToast(detail.message, detail.type || "success");
+      }
+    };
+
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("GAME_RESET_INVENTORY", handleResetInv);
     window.addEventListener("GAME_LOAD_INVENTORY", handleLoadInv);
+    window.addEventListener("GAME_SHOW_TOAST", handleShowToast);
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("GAME_RESET_INVENTORY", handleResetInv);
       window.removeEventListener("GAME_LOAD_INVENTORY", handleLoadInv);
+      window.removeEventListener("GAME_SHOW_TOAST", handleShowToast);
     };
-  }, [togglePause, handleSave, resetInventory, setInventory]);
+  }, [togglePause, handleSave, resetInventory, setInventory, showToast]);
 
   const handleGlobalDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -171,8 +192,16 @@ export default function Home() {
       </div>
 
       {toast && (
-        <div className="fixed top-12 left-1/2 -translate-x-1/2 z-toast bg-green-500 text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl animate-fade-in-up whitespace-nowrap border border-white/20">
-          {toast}
+        <div
+          className={`fixed top-12 left-1/2 -translate-x-1/2 z-toast text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl animate-fade-in-up whitespace-nowrap border border-white/20 ${
+            toast.type === "error"
+              ? "bg-red-500 border-red-400/20"
+              : toast.type === "warning"
+                ? "bg-amber-500 border-amber-400/20"
+                : "bg-green-500 border-green-400/20"
+          }`}
+        >
+          {toast.message}
         </div>
       )}
 
@@ -186,6 +215,7 @@ export default function Home() {
 
       <DebugMenu />
       <DebugOverlay />
+      <DebugLogPanel />
 
       <div
         className={`transition-opacity duration-300 ${isPaused ? "opacity-0 pointer-events-none" : "opacity-100"}`}

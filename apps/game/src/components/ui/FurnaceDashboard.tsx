@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import XStateInspector from "./XStateInspector";
 import {
   X,
   Zap,
@@ -424,6 +425,9 @@ export default function FurnaceDashboard({
                 ))}
               </div>
             </div>
+
+            {/* XState Machine Inspector */}
+            <XStateInspector building={furnace} />
           </div>
 
           {/* RIGHT COLUMN: Configuration & I/O */}

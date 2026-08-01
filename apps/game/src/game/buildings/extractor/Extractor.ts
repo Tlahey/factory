@@ -1,18 +1,21 @@
 import { BuildingEntity } from "../../entities/BuildingEntity";
 import { IWorld, Direction } from "../../entities/types";
-import { Conveyor } from "../conveyor/Conveyor";
-import { Chest } from "../chest/Chest";
-import { ResourceTile } from "../../environment/ResourceTile";
 import {
   IExtractable,
   IPowered,
   IIOBuilding,
   PowerConfig,
 } from "../BuildingConfig";
+import { canPushItemToOutput, pushItemToOutput } from "../ItemTransfer";
 import { ExtractorConfigType } from "./ExtractorConfig";
-import { updateBuildingConnectivity, getIOOffset } from "../BuildingIOHelper";
+import {
+  getConfiguredOutputPosition,
+  getConfiguredOutputPositions,
+  hasInputPortAt,
+} from "../BuildingIOHelper";
 import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
-import { gameEventManager } from "../../events/GameEventManager";
+import { createActor } from "xstate";
+import { extractorMachine } from "./ExtractorMachine";
 
 export class Extractor
   extends BuildingEntity
@@ -21,11 +24,7 @@ export class Extractor
   public active: boolean = false;
 
   public speedMultiplier: number = 1.0;
-  private accumTime: number = 0;
-
-  // Stability Timers
-  private blockStabilityTimer: number = 0;
-  private readonly STABILITY_THRESHOLD = 1.5; // Seconds to wait before switching to 'blocked'
+  public accumTime: number = 0;
 
   // Buffer System
   public slots: { type: string; count: number }[] = [];
@@ -33,118 +32,20 @@ export class Extractor
 
   constructor(x: number, y: number, direction: Direction = "north") {
     super(x, y, "extractor", direction);
+    this.actor = createActor(extractorMachine, {
+      input: { building: this },
+    });
+    this.actor.start();
   }
 
   public tick(delta: number, world?: IWorld): void {
     if (!world) return;
-
-    const tile = world.getTile(this.x, this.y);
-    const hasResources =
-      tile instanceof ResourceTile && tile.resourceAmount > 0;
-    const canOutput = this.canOutput(world);
-    const interval = this.getExtractionInterval();
-    // const _isReadyToOutput = this.accumTime >= interval; // Unused
-
-    // Update connectivity visuals
-    updateBuildingConnectivity(this, world);
-
-    // STABLE DEMAND: We demand power as long as we have resources to work on.
-    this.hasDemand = hasResources;
-
-    // Determine "Logical" Status
-    let logicalStatus: typeof this.operationStatus = "working";
-
-    // Check internal storage state
-    let currentStored = 0;
-    if (this.slots.length > 0) {
-      currentStored = this.slots[0].count;
-    }
-
-    const isBufferFull = currentStored >= this.BUFFER_CAPACITY;
-    const isBufferEmpty = currentStored <= 0;
-
-    if (!hasResources && isBufferEmpty) {
-      logicalStatus = "no_resources";
-    } else if (isBufferFull && !canOutput) {
-      logicalStatus = "blocked";
-    } else if (!this.hasPowerSource) {
-      logicalStatus = "no_power";
-    }
-
-    // Status Debouncing:
-    // We debounce both 'blocked' and 'no_power' to prevent rapid flickering
-    if (logicalStatus === "blocked" || logicalStatus === "no_power") {
-      this.blockStabilityTimer += delta;
-    } else {
-      this.blockStabilityTimer = 0;
-    }
-
-    const oldStatus = this.operationStatus;
-    if (
-      (logicalStatus !== "blocked" && logicalStatus !== "no_power") ||
-      this.blockStabilityTimer >= this.STABILITY_THRESHOLD
-    ) {
-      this.operationStatus = logicalStatus;
-    }
-
-    if (this.operationStatus !== oldStatus) {
-      console.log(
-        `[Extractor] machine at ${this.x},${this.y} status change: ${oldStatus} -> ${this.operationStatus} (Timer: ${this.blockStabilityTimer.toFixed(2)})`,
-      );
-    }
-
-    // 2. Check Power Status
-    const powerFactor = this.hasPowerSource ? this.powerSatisfaction : 0;
-    const oldActive = this.active;
-
-    // ACTIVE flag logic
-    // We consider it "active" (animating and light green) if it's in the working state
-    const canMine = hasResources && !isBufferFull;
-    const isWorking = canMine && powerFactor > 0;
-
-    if (isWorking) {
-      this.accumTime += delta * powerFactor;
-      this.active = true; // REVERT: Restore direct active state
-    } else {
-      this.active = false; // REVERT: Restore direct active state
-    }
-
-    if (this.active !== oldActive) {
-      console.log(
-        `[Extractor] machine at ${this.x},${this.y} active flag change: ${oldActive} -> ${this.active} (Factor: ${powerFactor.toFixed(3)}, Status: ${this.operationStatus})`,
-      );
-    }
-
-    // Mining Step
-    if (canMine && this.accumTime >= interval) {
-      if (tile instanceof ResourceTile) {
-        tile.deplete(1);
-        const resourceType = tile.getResourceType();
-
-        // Add to buffer
-        this.addToBuffer(resourceType, 1);
-
-        gameEventManager.emit("RESOURCE_MINED", {
-          resource: resourceType,
-          amount: 1,
-          position: { x: this.x, y: this.y },
-        });
-      }
-      this.accumTime -= interval;
-    }
-
-    // Output Step (Independent of mining interval, but dependent on checkOutputClear which we called earlier)
-    // We try to output every tick if we have items.
-    if (this.slots.length > 0 && this.slots[0].count > 0) {
-      if (this.tryOutput(world)) {
-        this.removeFromBuffer(1);
-      }
-    }
+    this.actor?.send({ type: "TICK", delta, world });
   }
 
   // --- Buffer Helpers ---
 
-  private addToBuffer(type: string, amount: number): void {
+  public addToBuffer(type: string, amount: number): void {
     if (this.slots.length === 0) {
       this.slots.push({ type, count: amount });
     } else if (this.slots[0].type === type) {
@@ -155,7 +56,7 @@ export class Extractor
     }
   }
 
-  private removeFromBuffer(amount: number): void {
+  public removeFromBuffer(amount: number): void {
     if (this.slots.length > 0) {
       this.slots[0].count -= amount;
       if (this.slots[0].count <= 0) {
@@ -243,9 +144,11 @@ export class Extractor
   }
 
   public getOutputPosition(): { x: number; y: number } | null {
-    if (!this.io.hasOutput) return null;
-    const offset = getIOOffset("front", this.direction);
-    return { x: this.x + offset.dx, y: this.y + offset.dy };
+    return getConfiguredOutputPosition(this);
+  }
+
+  public getOutputPositions(): { x: number; y: number }[] {
+    return getConfiguredOutputPositions(this);
   }
 
   public canInput(): boolean {
@@ -260,39 +163,26 @@ export class Extractor
     return this.tryOutputResource(world);
   }
 
-  private checkOutputClear(world: IWorld): boolean {
-    let tx = this.x;
-    let ty = this.y;
-
-    if (this.direction === "north") ty -= 1;
-    else if (this.direction === "south") ty += 1;
-    else if (this.direction === "east") tx += 1;
-    else if (this.direction === "west") tx -= 1;
-
-    const target = world.getBuilding(tx, ty);
-    if (!target) return false;
-
-    if (target instanceof Conveyor) {
-      // Conveyor has space if currentItem is null
-      return !target.currentItem;
-    } else if (target instanceof Chest) {
-      // Chest has space if not full
-      return !target.isFull();
-    }
-
-    return false;
+  /**
+   * Is the tile in front able to take our next item right now?
+   * Works for every sink (belt, chest, furnace, merger, splitter, ...).
+   */
+  public checkOutputClear(world: IWorld): boolean {
+    const itemToOutput = this.slots[0]?.type;
+    if (!itemToOutput) return false;
+    return canPushItemToOutput(world, this, itemToOutput);
   }
 
   public upgradeSpeed(): void {
     this.speedMultiplier += 0.5;
   }
 
+  /**
+   * Point the extractor at the first adjacent building that would actually
+   * accept items from this tile (belt, chest, furnace, merger, ...).
+   */
   public autoOrient(world: IWorld): void {
-    const dirs: {
-      dx: number;
-      dy: number;
-      dir: "north" | "south" | "east" | "west";
-    }[] = [
+    const dirs: { dx: number; dy: number; dir: Direction }[] = [
       { dx: 0, dy: -1, dir: "north" },
       { dx: 0, dy: 1, dir: "south" },
       { dx: 1, dy: 0, dir: "east" },
@@ -301,8 +191,10 @@ export class Extractor
 
     for (const d of dirs) {
       const nb = world.getBuilding(this.x + d.dx, this.y + d.dy);
-      if (nb && (nb.getType() === "conveyor" || nb.getType() === "chest")) {
+      if (!nb) continue;
+      if (hasInputPortAt(nb as BuildingEntity & IIOBuilding, this.x, this.y)) {
         this.direction = d.dir;
+        this.syncFootprint();
         return;
       }
     }
@@ -310,30 +202,7 @@ export class Extractor
 
   private tryOutputResource(world: IWorld): boolean {
     if (this.slots.length === 0) return false;
-    const itemToOutput = this.slots[0].type;
-
-    let tx = this.x;
-    let ty = this.y;
-
-    if (this.direction === "north") ty -= 1;
-    else if (this.direction === "south") ty += 1;
-    else if (this.direction === "east") tx += 1;
-    else if (this.direction === "west") tx -= 1;
-
-    const target = world.getBuilding(tx, ty);
-    if (target && target instanceof Conveyor) {
-      if (!target.currentItem) {
-        target.currentItem = itemToOutput;
-        // Generate unique ID for visual persistence
-        target.itemId = Math.floor(Math.random() * 1000000);
-        target.transportProgress = 0;
-        return true;
-      }
-    } else if (target && target instanceof Chest) {
-      // Return result of addItem (true if added, false if full)
-      return target.addItem(itemToOutput);
-    }
-    return false;
+    return pushItemToOutput(world, this, this.slots[0].type);
   }
 
   public getColor(): number {

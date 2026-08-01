@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { Hub } from "../../buildings/hub/Hub";
 import { createHubModel } from "../../buildings/hub/HubModel";
+import { getBuildingTransform } from "./BuildingTransform";
 
 interface HubViewProps {
   entity: Hub;
@@ -50,23 +51,7 @@ export function HubView({ entity }: HubViewProps) {
   });
 
   // 3. Position & Rotation
-  // 2x2 Support
-  const offsetX = (entity.width - 1) / 2;
-  const offsetY = (entity.height - 1) / 2;
-  const position: [number, number, number] = [
-    entity.x + offsetX,
-    0,
-    entity.y + offsetY,
-  ];
-
-  // Hub usually doesn't rotate, but it can.
-  const directionToRotation: Record<string, number> = {
-    north: 0,
-    east: -Math.PI / 2,
-    south: Math.PI,
-    west: Math.PI / 2,
-  };
-  const rotationY = directionToRotation[entity.direction] || 0;
+  const { position, rotationY } = getBuildingTransform(entity);
 
   return (
     <group ref={groupRef} position={position} rotation={[0, rotationY, 0]}>

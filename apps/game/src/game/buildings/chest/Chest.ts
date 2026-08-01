@@ -4,9 +4,17 @@ import { STACK_SIZE } from "../../constants";
 import { IWorld } from "../../entities/types";
 import { IIOBuilding, IStorage } from "../BuildingConfig";
 import { ChestConfigType } from "./ChestConfig";
-import { updateBuildingConnectivity } from "../BuildingIOHelper";
 import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
-import { Conveyor } from "../conveyor/Conveyor";
+import { pushItemToOutput } from "../ItemTransfer";
+import {
+  canInputFromConfig,
+  getConfiguredInputPosition,
+  getConfiguredInputPositions,
+  getConfiguredOutputPosition,
+  getConfiguredOutputPositions,
+} from "../BuildingIOHelper";
+import { createActor } from "xstate";
+import { chestMachine } from "./ChestMachine";
 
 export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   public slots: { type: string; count: number }[] = [];
@@ -14,16 +22,15 @@ export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
 
   constructor(x: number, y: number, direction: Direction = "north") {
     super(x, y, "chest", direction);
+    this.actor = createActor(chestMachine, {
+      input: { building: this },
+    });
+    this.actor.start();
   }
 
-  public tick(_delta: number, world?: IWorld): void {
-    if (world) {
-      updateBuildingConnectivity(this, world);
-      // Try to output items when output is connected
-      if (this.isOutputConnected && this.slots.length > 0) {
-        this.tryOutputResource(world);
-      }
-    }
+  public tick(delta: number, world?: IWorld): void {
+    if (!world) return;
+    this.actor?.send({ type: "TICK", delta, world });
   }
 
   public isFull(): boolean {
@@ -47,8 +54,33 @@ export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
     return undefined;
   }
 
-  // Returns true if item was accepted
-  public addItem(type: string, amount: number = 1): boolean {
+  /** Capacity check used by the shared transfer layer (ItemTransfer). */
+  public hasSpaceFor(type: string, amount: number = 1): boolean {
+    if (!this.isFull()) return true;
+    // Full on slots, but an existing stack may still have room.
+    return this.slots.some(
+      (slot) => slot.type === type && STACK_SIZE - slot.count >= amount,
+    );
+  }
+
+  /**
+   * Returns true if at least part of the stack was accepted.
+   *
+   * When called with source coordinates (i.e. pushed by a belt or a machine)
+   * the chest only accepts through its declared input port, so what the arrows
+   * show and what actually works stay in sync. Calls without coordinates are
+   * internal/UI transfers and bypass that check.
+   */
+  public addItem(
+    type: string,
+    amount: number = 1,
+    fromX?: number,
+    fromY?: number,
+  ): boolean {
+    if (fromX !== undefined && fromY !== undefined) {
+      if (!this.canInput(fromX, fromY)) return false;
+    }
+
     let remaining = amount;
 
     // 1. Try to stack
@@ -82,61 +114,27 @@ export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   }
 
   // --- IIOBuilding ---
+  // Ports come from ChestConfig.io (input front, output back) expanded over the
+  // footprint by the shared helper, so nothing here has to know about rotation.
   public getInputPosition(): { x: number; y: number } | null {
-    if (!this.io.hasInput) return null;
-    // Input is on front of chest (direction it faces)
-    const offset = this.getIOOffset("front");
-    return { x: this.x + offset.dx, y: this.y + offset.dy };
+    return getConfiguredInputPosition(this);
+  }
+
+  public getInputPositions(): { x: number; y: number }[] {
+    return getConfiguredInputPositions(this);
   }
 
   public getOutputPosition(): { x: number; y: number } | null {
-    if (!this.io.hasOutput) return null;
-    // Output is on back of chest (opposite of direction it faces)
-    const offset = this.getIOOffset("back");
-    return { x: this.x + offset.dx, y: this.y + offset.dy };
+    return getConfiguredOutputPosition(this);
   }
 
-  private getIOOffset(side: "front" | "back" | "left" | "right"): {
-    dx: number;
-    dy: number;
-  } {
-    const clockwiseOrder: Array<"north" | "east" | "south" | "west"> = [
-      "north",
-      "east",
-      "south",
-      "west",
-    ];
-    const currentIndex = clockwiseOrder.indexOf(this.direction);
-    let targetDir: "north" | "east" | "south" | "west";
-
-    switch (side) {
-      case "front":
-        targetDir = this.direction;
-        break;
-      case "back":
-        targetDir = clockwiseOrder[(currentIndex + 2) % 4];
-        break;
-      case "right":
-        targetDir = clockwiseOrder[(currentIndex + 1) % 4];
-        break;
-      case "left":
-        targetDir = clockwiseOrder[(currentIndex + 3) % 4];
-        break;
-    }
-
-    const offsets = {
-      north: { dx: 0, dy: -1 },
-      south: { dx: 0, dy: 1 },
-      east: { dx: 1, dy: 0 },
-      west: { dx: -1, dy: 0 },
-    };
-    return offsets[targetDir];
+  public getOutputPositions(): { x: number; y: number }[] {
+    return getConfiguredOutputPositions(this);
   }
 
   public canInput(fromX: number, fromY: number): boolean {
-    // Structural check: return true if the input position matches
-    const inputPos = this.getInputPosition();
-    return inputPos !== null && fromX === inputPos.x && fromY === inputPos.y;
+    // Structural check only; capacity is answered by hasSpaceFor().
+    return canInputFromConfig(this, fromX, fromY);
   }
 
   public canOutput(): boolean {
@@ -149,36 +147,20 @@ export class Chest extends BuildingEntity implements IIOBuilding, IStorage {
   }
 
   /**
-   * Try to push an item from the first slot to a conveyor at the output position.
-   * Similar to Extractor.tryOutputResource().
+   * Push one item from the first slot to whatever sits at the output port.
+   * Uses the shared transfer layer, so belts, mergers, splitters and machines
+   * are all valid targets.
    */
-  private tryOutputResource(world: IWorld): boolean {
+  public tryOutputResource(world: IWorld): boolean {
     if (this.slots.length === 0) return false;
 
-    const outputPos = this.getOutputPosition();
-    if (!outputPos) return false;
+    if (!pushItemToOutput(world, this, this.slots[0].type)) return false;
 
-    const target = world.getBuilding(outputPos.x, outputPos.y);
-    if (!target) return false;
-
-    if (target instanceof Conveyor) {
-      // Only push to conveyors with no current item
-      if (!target.currentItem) {
-        const itemToOutput = this.slots[0].type;
-        target.currentItem = itemToOutput;
-        target.itemId = Math.floor(Math.random() * 1000000);
-        target.transportProgress = 0;
-
-        // Decrement the slot count
-        this.slots[0].count -= 1;
-        if (this.slots[0].count <= 0) {
-          this.slots.splice(0, 1);
-        }
-        return true;
-      }
+    this.slots[0].count -= 1;
+    if (this.slots[0].count <= 0) {
+      this.slots.splice(0, 1);
     }
-
-    return false;
+    return true;
   }
 
   public removeSlot(index: number): void {

@@ -11,6 +11,8 @@ import {
 } from "../../visuals/helpers/IOArrowHelper";
 import { HoverProgressCard } from "../../../components/ui/HoverProgressCard";
 import { useState } from "react";
+import { getBuildingTransform } from "./BuildingTransform";
+import { getDirectionOffset } from "../../buildings/BuildingConfig";
 
 interface FurnaceViewProps {
   entity: Furnace;
@@ -99,40 +101,22 @@ export function FurnaceView({ entity, particleSystem }: FurnaceViewProps) {
       }
     }
 
-    // D. Particles (Smoke above lava)
+    // D. Particles (Smoke above the lava pool, which sits on the front half)
     if (isActive && Math.random() < 0.1) {
-      const dir = entity.direction;
-      let ox = 0,
-        oy = 0;
-
-      if (dir === "north") oy = 0.5;
-      else if (dir === "south") oy = -0.5;
-      else if (dir === "east") ox = 0.5;
-      else if (dir === "west") ox = -0.5;
-
-      particleSystem.spawn(entity.x + ox, 1.2, entity.y + oy);
+      const center = entity.getCenter();
+      const front = getDirectionOffset(entity.direction);
+      particleSystem.spawn(
+        center.x + front.dx * 0.5,
+        1.2,
+        center.y + front.dy * 0.5,
+      );
     }
 
     updateIOArrows(ioArrows, entity as Furnace);
   });
 
   // 3. Position & Rotation
-  // 1x2 Support
-  const offsetX = (entity.width - 1) / 2;
-  const offsetY = (entity.height - 1) / 2;
-  const position: [number, number, number] = [
-    entity.x + offsetX,
-    0,
-    entity.y + offsetY,
-  ];
-
-  const directionToRotation: Record<string, number> = {
-    north: 0,
-    east: -Math.PI / 2,
-    south: Math.PI,
-    west: Math.PI / 2,
-  };
-  const rotationY = directionToRotation[entity.direction] || 0;
+  const { position, rotationY } = getBuildingTransform(entity);
 
   const [hovered, setHovered] = useState(false);
 

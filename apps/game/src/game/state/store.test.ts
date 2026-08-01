@@ -229,4 +229,77 @@ describe("Game Store", () => {
       expect(togglePauseMock).toHaveBeenCalled();
     });
   });
+
+  describe("Manual Mining Limit", () => {
+    it("should allow mining initially", () => {
+      expect(useGameStore.getState().canMine()).toBe(true);
+    });
+
+    it("should block mining after 10 mines within a minute", () => {
+      // Register 10 mines
+      for (let i = 0; i < 10; i++) {
+        expect(useGameStore.getState().canMine()).toBe(true);
+        useGameStore.getState().registerMine();
+      }
+
+      // 11th mine should be blocked
+      expect(useGameStore.getState().canMine()).toBe(false);
+    });
+
+    it("should allow mining again after 1 minute", () => {
+      vi.useFakeTimers();
+      const now = Date.now();
+      vi.setSystemTime(now);
+
+      // Register 10 mines at current time
+      for (let i = 0; i < 10; i++) {
+        useGameStore.getState().registerMine();
+      }
+      expect(useGameStore.getState().canMine()).toBe(false);
+
+      // Advance time by 61 seconds
+      vi.setSystemTime(now + 61000);
+      expect(useGameStore.getState().canMine()).toBe(true);
+
+      vi.useRealTimers();
+    });
+
+    it("should reset mining timestamps on reset", () => {
+      useGameStore.getState().registerMine();
+      expect(useGameStore.getState().miningTimestamps).toHaveLength(1);
+
+      useGameStore.getState().reset();
+      expect(useGameStore.getState().miningTimestamps).toHaveLength(0);
+    });
+
+    it("should calculate correct remaining wait time in seconds", () => {
+      vi.useFakeTimers();
+      const now = Date.now();
+      vi.setSystemTime(now);
+
+      expect(useGameStore.getState().getMiningWaitTime()).toBe(0);
+
+      // Mine 10 blocks spaced 1 second apart
+      for (let i = 0; i < 10; i++) {
+        vi.setSystemTime(now + i * 1000);
+        useGameStore.getState().registerMine();
+      }
+
+      // Oldest mine is at 'now'. The rolling window requires us to wait until 'now + 60s'.
+      // Currently, it's 'now + 9s' (9 seconds later).
+      // Time remaining: (now + 60s) - (now + 9s) = 51s.
+      expect(useGameStore.getState().getMiningWaitTime()).toBe(51);
+
+      // Advance time by 20 seconds (now + 29s)
+      vi.setSystemTime(now + 29000);
+      expect(useGameStore.getState().getMiningWaitTime()).toBe(31);
+
+      // Advance time to now + 61 seconds. Oldest mine has expired.
+      // Now we have 9 active mines in window, so we can mine, wait time should be 0.
+      vi.setSystemTime(now + 61000);
+      expect(useGameStore.getState().getMiningWaitTime()).toBe(0);
+
+      vi.useRealTimers();
+    });
+  });
 });

@@ -3,7 +3,10 @@ import { useRef, useMemo, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { Conveyor } from "../../buildings/conveyor/Conveyor";
-import { createConveyorModel } from "../../buildings/conveyor/ConveyorGeometry";
+import {
+  BELT_SURFACE_Y,
+  createConveyorModel,
+} from "../../buildings/conveyor/ConveyorGeometry";
 import { createConveyorTexture } from "../../buildings/conveyor/ConveyorTexture";
 import {
   createItemModel,
@@ -15,10 +18,22 @@ import {
   updateIOArrows,
 } from "../../visuals/helpers/IOArrowHelper";
 import { IIOBuilding } from "../../buildings/BuildingConfig";
+import { Direction } from "../../entities/types";
 
 interface ConveyorViewProps {
   entity: Conveyor;
 }
+
+/** Rotation applied to a model authored facing north. */
+const DIRECTION_ROTATION: Record<Direction, number> = {
+  north: 0,
+  east: -Math.PI / 2,
+  south: Math.PI,
+  west: Math.PI / 2,
+};
+
+/** How high above the belt surface items ride. */
+const ITEM_HEIGHT = BELT_SURFACE_Y + 0.08;
 
 export function ConveyorView({ entity }: ConveyorViewProps) {
   const groupRef = useRef<THREE.Group>(null);
@@ -30,7 +45,7 @@ export function ConveyorView({ entity }: ConveyorViewProps) {
   });
 
   // 1. Model & Texture (Recreated only if visualType changes)
-  const { mesh, beltMaterial, itemContainerRef, ioArrows } = useMemo(() => {
+  const { mesh, beltMaterial, itemContainerRef } = useMemo(() => {
     const texture = createConveyorTexture();
     const mesh = createConveyorModel(visualState.type, texture);
     mesh.name = "conveyor";
@@ -42,55 +57,48 @@ export function ConveyorView({ entity }: ConveyorViewProps) {
       beltMat = belt.material as THREE.MeshLambertMaterial;
     }
 
-    // Create item container as CHILD of mesh
+    // Create item container as CHILD of mesh, so the curve maths below can stay
+    // in the model's local space.
     const itemContainer = new THREE.Group();
     itemContainer.name = "item_container";
     mesh.add(itemContainer);
 
-    // Counter-scale for Right turns
+    // Counter-scale so item models are not mirrored on right turns
+    // (the mesh itself is mirrored on X).
     if (visualState.type === "right") {
       itemContainer.scale.set(-1, 1, 1);
     } else {
       itemContainer.scale.set(1, 1, 1);
     }
 
-    // Create IO arrows as CHILD of mesh
-    const arrows = createIOArrows(entity as unknown as Conveyor & IIOBuilding);
-    mesh.add(arrows);
-
     return {
       mesh,
       beltMaterial: beltMat,
       itemContainerRef: { current: itemContainer },
-      ioArrows: arrows,
     };
-  }, [visualState.type, entity]);
+  }, [visualState.type]);
+
+  /**
+   * IO arrows live in their OWN group, deliberately NOT parented to the belt
+   * mesh: curved belts get an extra ±90° rotation and right turns are mirrored
+   * on X, which used to flip the green/red arrows to the wrong tiles.
+   * Here they are only rotated by the belt's logical direction.
+   */
+  const ioArrows = useMemo(
+    () => createIOArrows(entity as unknown as Conveyor & IIOBuilding),
+    [entity],
+  );
 
   // 2. Item Visuals - refs for tracking
   const itemRef = useRef<THREE.Group | null>(null);
   const lastItemTypeRef = useRef<string | null>(null);
 
-  // 3. Initial Orientation Setup
+  // 3. Orientation: base rotation from direction, plus the curve compensation.
   useMemo(() => {
-    const dir = visualState.direction;
+    const baseRotation = DIRECTION_ROTATION[visualState.direction];
     const type = visualState.type;
 
-    let rot = 0;
-    switch (dir) {
-      case "north":
-        rot = 0;
-        break;
-      case "west":
-        rot = Math.PI / 2;
-        break;
-      case "south":
-        rot = Math.PI;
-        break;
-      case "east":
-        rot = -Math.PI / 2;
-        break;
-    }
-
+    let rot = baseRotation;
     let scaleX = 1;
     if (type === "left") rot -= Math.PI / 2;
     else if (type === "right") {
@@ -102,7 +110,10 @@ export function ConveyorView({ entity }: ConveyorViewProps) {
       mesh.rotation.y = rot;
       mesh.scale.set(scaleX, 1, 1);
     }
-  }, [visualState.direction, visualState.type, mesh]);
+    if (ioArrows) {
+      ioArrows.rotation.y = baseRotation;
+    }
+  }, [visualState.direction, visualState.type, mesh, ioArrows]);
 
   // FRAME LOOP
   useFrame((_, delta) => {
@@ -119,15 +130,16 @@ export function ConveyorView({ entity }: ConveyorViewProps) {
       });
     }
 
-    // B. Animate Belt
+    // B. Animate belt. The scroll speed matches the actual transport speed and
+    // stops when the belt is blocked, so the animation reads as real feedback.
     if (beltMaterial && beltMaterial.map) {
-      beltMaterial.map.offset.y -= delta * 0.5;
-
-      if (entity.isResolved) {
-        beltMaterial.color.setHex(0xffffff);
-      } else {
-        beltMaterial.color.setHex(0xcccccc);
+      const isBlocked = entity.operationStatus === "blocked";
+      if (!isBlocked) {
+        beltMaterial.map.offset.y -= delta * entity.transportSpeed;
       }
+
+      // Unresolved belts (leading nowhere) are dimmed as a hint.
+      beltMaterial.color.setHex(entity.isResolved ? 0xffffff : 0xa8a8a8);
     }
 
     // C. Update IO Arrows
@@ -168,28 +180,24 @@ export function ConveyorView({ entity }: ConveyorViewProps) {
       updateItemVisuals(currentItem, itemRef.current, entity.itemId || 0);
 
       // Position (in mesh-local space, which is already rotated)
-      const progress = entity.transportProgress;
+      const progress = THREE.MathUtils.clamp(entity.transportProgress, 0, 1);
 
       if (visualState.type === "straight") {
-        itemContainer.position.set(0, 0.2, 0.5 - progress);
+        itemContainer.position.set(0, ITEM_HEIGHT, 0.5 - progress);
         itemContainer.rotation.y = 0;
       } else {
-        // Curve
+        // Quarter arc centred on (-0.5, 0.5) with radius 0.5 (see ConveyorGeometry)
         const angle = (-Math.PI / 2) * progress;
         const radius = 0.5;
         const cx = -0.5;
         const cz = 0.5;
 
-        const x = cx + radius * Math.cos(angle);
-        const z = cz + radius * Math.sin(angle);
-
-        itemContainer.position.set(x, 0.2, z);
-
-        if (visualState.type === "right") {
-          itemContainer.rotation.y = -angle;
-        } else {
-          itemContainer.rotation.y = -angle;
-        }
+        itemContainer.position.set(
+          cx + radius * Math.cos(angle),
+          ITEM_HEIGHT,
+          cz + radius * Math.sin(angle),
+        );
+        itemContainer.rotation.y = -angle;
       }
     } else if (itemRef.current) {
       itemRef.current.visible = false;
@@ -198,8 +206,10 @@ export function ConveyorView({ entity }: ConveyorViewProps) {
 
   return (
     <group ref={groupRef} position={[entity.x, 0, entity.y]}>
-      {/* The Conveyor Model (with item container and IO arrows as children) */}
+      {/* The Conveyor Model (with the item container as child) */}
       <primitive object={mesh} />
+      {/* IO arrows, kept out of the mirrored/curved model space */}
+      <primitive object={ioArrows} />
     </group>
   );
 }

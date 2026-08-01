@@ -2,8 +2,12 @@ import { BuildingEntity } from "../../entities/BuildingEntity";
 import { IWorld, Direction } from "../../entities/types";
 import { BATTERY_CONFIG, BatteryConfigType, IBattery } from "./BatteryConfig";
 import { IPowered, IIOBuilding } from "../BuildingConfig";
-import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
-import { updateBuildingConnectivity, getIOOffset } from "../BuildingIOHelper";
+import {
+  getConfiguredInputPosition,
+  getConfiguredOutputPosition,
+} from "../BuildingIOHelper";
+import { createActor } from "xstate";
+import { batteryMachine } from "./BatteryMachine";
 
 export class Battery
   extends BuildingEntity
@@ -17,7 +21,7 @@ export class Battery
   // Breaker functionality
   public isEnabled: boolean = true;
   public active: boolean = false;
-  private currentFlow: number = 0;
+  public currentFlow: number = 0;
 
   /**
    * The current power flow rate (kW).
@@ -28,7 +32,7 @@ export class Battery
 
   /** Flow history for graph display (positive=charge, negative=discharge) */
   public flowHistory: { time: number; flow: number }[] = [];
-  private flowHistoryTimer: number = 0;
+  public flowHistoryTimer: number = 0;
 
   constructor(x: number, y: number, direction: Direction = "north") {
     super(x, y, "battery", direction);
@@ -37,6 +41,10 @@ export class Battery
     this.maxDischargeRate = BATTERY_CONFIG.maxDischargeRate;
     this.width = BATTERY_CONFIG.width || 1;
     this.height = BATTERY_CONFIG.height || 1;
+    this.actor = createActor(batteryMachine, {
+      input: { building: this },
+    });
+    this.actor.start();
   }
 
   public getConfig(): BatteryConfigType {
@@ -70,60 +78,7 @@ export class Battery
   }
 
   public override tick(delta: number, world?: IWorld): void {
-    super.tick(delta, world);
-
-    // Calculate flow rate from accumulated flow (flow is energy, rate is power)
-    // currentFlow is energy (kWh in this frame), divide by delta to get rate (kW)
-    if (delta > 0) {
-      this.lastFlowRate = this.currentFlow / delta;
-    }
-
-    // Determine active state based on previous frame flow
-    this.active = Math.abs(this.currentFlow) > 0.001;
-    this.currentFlow = 0; // Reset for next accumulated frame
-
-    if (world) {
-      updateBuildingConnectivity(this, world);
-    }
-
-    // Update flow history (every 1 second)
-    this.flowHistoryTimer += delta;
-    if (this.flowHistoryTimer >= 1.0) {
-      this.flowHistoryTimer = 0;
-      this.flowHistory.push({
-        time: Date.now(),
-        flow: this.lastFlowRate, // Positive = charging, Negative = discharging
-      });
-      // Keep last 60 seconds
-      if (this.flowHistory.length > 60) {
-        this.flowHistory.shift();
-      }
-    }
-
-    // Apply upgrades
-    const upgradeLevel = skillTreeManager.getBuildingUpgradeLevel("battery");
-    if (upgradeLevel > 0) {
-      let cap = BATTERY_CONFIG.capacity;
-      let cRate = BATTERY_CONFIG.maxChargeRate;
-      let dRate = BATTERY_CONFIG.maxDischargeRate;
-
-      const config = this.getConfig();
-      config.upgrades.forEach((u) => {
-        if (u.level <= upgradeLevel) {
-          u.effects.forEach((e) => {
-            if (e.type === "multiplier") {
-              if (e.stat === "capacity") cap *= e.value;
-              if (e.stat === "maxChargeRate") cRate *= e.value;
-              if (e.stat === "maxDischargeRate") dRate *= e.value;
-            }
-          });
-        }
-      });
-
-      this.capacity = cap;
-      this.maxChargeRate = cRate;
-      this.maxDischargeRate = dRate;
-    }
+    this.actor?.send({ type: "TICK", delta, world });
   }
 
   public toggleBreaker(): void {
@@ -168,21 +123,14 @@ export class Battery
   }
 
   // --- IIOBuilding ---
+  // Power-only ports; positions come from BatteryConfig.io like every other
+  // building, so no rotation maths lives here.
   public getInputPosition(): { x: number; y: number } | null {
-    if (!this.io.hasInput) return null;
-    const offset = getIOOffset("left", this.direction, this.width, this.height);
-    return { x: this.x + offset.dx, y: this.y + offset.dy };
+    return getConfiguredInputPosition(this);
   }
 
   public getOutputPosition(): { x: number; y: number } | null {
-    if (!this.io.hasOutput) return null;
-    const offset = getIOOffset(
-      "right",
-      this.direction,
-      this.width,
-      this.height,
-    );
-    return { x: this.x + offset.dx, y: this.y + offset.dy };
+    return getConfiguredOutputPosition(this);
   }
 
   public canInput(_fromX: number, _fromY: number): boolean {

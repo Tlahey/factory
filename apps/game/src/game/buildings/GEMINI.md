@@ -60,25 +60,72 @@ Common Interfaces:
 
 **Rule**: If multiple buildings share complex logic, extract that logic into a **Game System** or a **Utility**, do not copy-paste or cross-import.
 
-## 🏗 Multi-Tile Buildings & Connectivity
+## 📐 Footprint, Anchor & Placement (`BuildingFootprint.ts`)
 
-Buildings larger than 1x1 (e.g., the 1x2 Furnace) require specific handling for their Input/Output (I/O) ports.
+`BuildingFootprint.ts` is the **single source of truth** for grid geometry. Never re-derive
+this maths locally — that is exactly how 1x2 buildings drifted off the grid.
 
-- **Dimension Source of Truth**: When calculating I/O offsets (using `getIOOffset`), always use the **base dimensions from the configuration** (un-rotated). The `BuildingEntity` instance's `width` and `height` properties are already swapped based on rotation, and using them in offset calculations would lead to a "double-swap" bug.
-- **Port Detection**:
-  - **Input**: A building is considered "connected" if an adjacent building's output points to **any tile** occupied by the building.
-  - **Output (Strict)**: A building is considered "connected" if there is a building at the calculated output tile AND that neighbor **accepts input** from our position (validated via `neighbor.canInput(sourceX, sourceY)`). Simply being adjacent is not enough to hide the output arrow.
-- **Multi-Tile Coordinates**: When calling `canInput` for a neighbor, use the coordinates of our tile that is **actually adjacent** to the neighbor, not our anchor (0,0) position.
-- **Self-Connection**: A building must **not** consider itself as a neighbor. This is particularly important for multi-tile buildings during rotation to avoid false connectivity locks.
+Three coordinate frames, and mixing them is always a bug:
+
+| Frame      | Meaning                                                                                                                            |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **Base**   | `config.width` x `config.height`, as authored facing north. The 3D model and the I/O arrows live here.                             |
+| **World**  | Base rotated by `direction`; width/height swap for east/west. `BuildingEntity.width/height` are already in this frame.             |
+| **Anchor** | `building.x / building.y`, the min-x / min-y tile of the world footprint. `World` keys its tile map on it and save files store it. |
+
+Key helpers:
+
+- `getFootprintSizeForConfig(config, direction)` — the only place the east/west swap happens.
+  `BuildingEntity.syncFootprint()` calls it; **any direct write to `entity.direction` must be
+  followed by `syncFootprint()`**, or the footprint drifts from the tiles `World` registered.
+- `getOccupiedTiles(x, y, size)` / `entity.getOccupiedTiles()` — iterate tiles; never write
+  nested `for (dx…) for (dy…)` loops again.
+- `getFootprintCenter(x, y, size)` / `entity.getCenter()` — models are authored centred on
+  their footprint, so views position the group **on the centre, not on the anchor**. Use
+  `getBuildingTransform(entity)` (`components/buildings/BuildingTransform.ts`) in every view
+  and `getFootprintTransform(...)` for the placement ghost.
+- `getPlacementAnchor(hoverX, hoverY, baseW, baseH, direction)` — converts the **hovered tile**
+  into the anchor. Multi-tile buildings pivot around the cursor, so pressing `R` rotates the
+  ghost in place instead of flinging it to the other side of the cursor. `GameInput` must call
+  this before `canPlaceBuilding` / `placeBuilding`; those two always take the **anchor**.
+
+## 🔌 I/O Ports & Connectivity
+
+Ports are derived from `config.io` plus the footprint, in `BuildingIOHelper.ts`. A declared
+side expands to **one port per tile along that side** (`getSidePorts`), each carrying:
+
+- `inner` — the tile of _this_ building holding the port,
+- `outer` — the external tile it exchanges items with,
+- `side` + `index` — index in the **base** frame, so port `i` is the same physical port at
+  every rotation (which is what lets arrow meshes map one-to-one onto ports).
+
+Rules:
+
+- **Don't hand-roll ports.** Buildings implement `getInputPosition` / `getOutputPosition` /
+  `canInput` by delegating to `getConfiguredInputPosition(this)`, `getConfiguredOutputPositions(this)`,
+  `canInputFromConfig(this, x, y)`. Override only when ports are genuinely dynamic (belts curving).
+- **Announce the touching tile, not the anchor.** Sinks validate "are you adjacent to me?".
+  `ItemTransfer.getSourcePortTile()` resolves the occupied tile that touches the receiver — a
+  1x2 furnace facing south outputs from its _second_ tile, and sending the anchor made every
+  belt reject the item.
+- **Output (strict)**: connected only if a building sits on the port's `outer` tile AND it
+  declares an input port on our `inner` tile. Mere adjacency is not enough.
+- **Input**: connected when a neighbour's output points at the port's `inner` tile.
+- **Self-connection**: a building must never treat itself as a neighbour (multi-tile buildings
+  are their own neighbours on the tile map).
 
 ## 🏹 Arrow Visibility Rules
 
-Visual indicators (Arrows) follow specific logic to avoid clutter and provide accurate feedback:
-
-- **Output Arrow (Red)**: Hidden only if `isOutputConnected` is true (Strict check passed).
-- **Input Arrow (Green)**: Hidden if `isInputConnected` is true.
-- **Conveyor Special Rule (1x1)**: A standard conveyor has one input arrow at the back, but accepts input from **Back, Left, and Right**. The back arrow must be hidden if ANY of these three sides receives a connection.
-- **Centralized State**: All connectivity flags (`isInputConnected`, `connectedInputSides`, etc.) are defined in the `BuildingEntity` base class. Always use `updateBuildingConnectivity()` to refresh these flags.
+- **Output Arrow (Red)**: hidden once that port is connected.
+- **Input Arrow (Green)**: hidden once that port is fed.
+- **Per-port granularity**: a wide side draws one arrow per tile; `connectedInputPorts` /
+  `connectedOutputPorts` (keys `side#index`) drive them, so one edge tile can go quiet while
+  the neighbouring tile keeps advertising. `connectedInputSides` / `connectedOutputSides` are
+  the coarser aggregate, kept for side-level checks.
+- **Conveyor Special Rule (1x1)**: a belt draws a single back arrow but accepts Back, Left and
+  Right. That arrow hides as soon as **any** of the three is fed.
+- **Centralized State**: all connectivity flags live on `BuildingEntity`; always refresh them
+  through `updateBuildingConnectivity()`.
 
 ## 🏭 The Building Factory
 

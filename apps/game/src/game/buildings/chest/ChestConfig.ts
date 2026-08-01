@@ -33,9 +33,9 @@ export const CHEST_CONFIG: ChestConfigType = {
   },
   maxSlots: 5,
   shop: {
-    baseCost: { wood: 30 },
+    baseCost: { stone: 30 },
     priceMultiplier: 2.0,
-    initialCount: 0,
+    initialCount: 2,
   },
   upgrades: [
     {

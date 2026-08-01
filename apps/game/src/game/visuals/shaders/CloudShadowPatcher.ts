@@ -1,13 +1,19 @@
-import * as THREE from "three";
-import { CloudParsGLSL, CloudUniforms } from "./ShaderUtils";
+import type { Material, WebGLProgramParametersWithUniforms } from "three";
+import { CloudUniforms } from "./ShaderUtils";
 
 /**
  * Patches a MeshStandardMaterial to include cloud shadows.
  * This injects the cloud logic into the fragment shader before lighting calculations.
+ *
+ * Signature matches `Material.onBeforeCompile`, which is how it is installed.
  */
-export function injectCloudShadows(shader: THREE.Shader): void {
-  // Add Uniforms
-  shader.uniforms.uTime = CloudUniforms.uTime || { value: 0 };
+export function injectCloudShadows(
+  this: Material,
+  shader: WebGLProgramParametersWithUniforms,
+): void {
+  // Add Uniforms. uTime is per-material: the owning view advances it every
+  // frame (see SolarPanelView), unlike the wind uniforms which are shared.
+  shader.uniforms.uTime = { value: 0 };
   shader.uniforms.uWindSpeed = CloudUniforms.uWindSpeed;
   shader.uniforms.uWindDirection = CloudUniforms.uWindDirection;
 
@@ -15,17 +21,17 @@ export function injectCloudShadows(shader: THREE.Shader): void {
   // We need SimplexNoiseGLSL + CloudParsGLSL
   // SimplexNoise is quite long to inline, but we can import it or minimize it.
   // Actually ShaderUtils exports SimplexNoiseGLSL string.
-  
+
   // We need to inject noise + getCloudFactor at the top of fragment shader
   // But standard material is complex.
   // Easiest is to inject at '#include <common>'
-  
-  // Note: We need SimplexNoiseGLSL logic. 
+
+  // Note: We need SimplexNoiseGLSL logic.
   // Let's rely on the fact that we can prepend it.
-  
+
   // We need the FULL logic string because we can't import JS into GLSL string easily here without templating.
   // Let's reconstruct the GLSL block needed.
-  
+
   const cloudLogic = `
     uniform float uTime;
     uniform float uWindSpeed;
@@ -69,11 +75,11 @@ export function injectCloudShadows(shader: THREE.Shader): void {
     varying vec3 vWorldPosition;
     ${shader.vertexShader}
   `.replace(
-    '#include <worldpos_vertex>',
+    "#include <worldpos_vertex>",
     `
     #include <worldpos_vertex>
     vWorldPosition = (modelMatrix * vec4(transformed, 1.0)).xyz;
-    `
+    `,
   );
 
   shader.fragmentShader = `
@@ -81,7 +87,7 @@ export function injectCloudShadows(shader: THREE.Shader): void {
     varying vec3 vWorldPosition;
     ${shader.fragmentShader}
   `.replace(
-    '#include <dithering_fragment>',
+    "#include <dithering_fragment>",
     `
     #include <dithering_fragment>
     
@@ -89,10 +95,10 @@ export function injectCloudShadows(shader: THREE.Shader): void {
     float cloudFactor = getCloudFactor(vWorldPosition.xz, uTime);
     // Darken by 50%
     gl_FragColor.rgb = mix(gl_FragColor.rgb, gl_FragColor.rgb * 0.5, cloudFactor);
-    `
+    `,
   );
-  
-  // Save reference for Uniform Updates
-  // @ts-ignore
+
+  // Save reference for Uniform Updates. `this` is the material the engine
+  // invoked onBeforeCompile on, hence the typed `this` parameter above.
   this.userData.shader = shader;
 }

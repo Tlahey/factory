@@ -26,7 +26,7 @@ export const EXTRACTOR_CONFIG: ExtractorConfigType = {
   name: "Extractor",
   type: "extractor",
   category: "production",
-  cost: { iron: 10 },
+  cost: { stone: 10 },
   locked: true,
   hasMenu: true,
   description: "Extracts resources from the ground. Requires Energy.",
@@ -53,9 +53,9 @@ export const EXTRACTOR_CONFIG: ExtractorConfigType = {
   },
   maxConnections: 1,
   shop: {
-    baseCost: { iron: 50 },
+    baseCost: { stone: 20 },
     priceMultiplier: 2.5,
-    initialCount: 0,
+    initialCount: 2,
   },
   upgrades: [
     {

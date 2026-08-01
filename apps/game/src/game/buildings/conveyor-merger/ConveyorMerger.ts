@@ -2,31 +2,53 @@ import { BuildingEntity } from "../../entities/BuildingEntity";
 import { Direction, IWorld } from "../../entities/types";
 import { IIOBuilding, PowerConfig } from "../BuildingConfig";
 import { ConveyorMergerConfigType } from "./ConveyorMergerConfig";
-import { updateBuildingConnectivity } from "../BuildingIOHelper";
 import {
-  getDirectionOffset,
-  getOppositeDirection,
+  getConfiguredInputPositions,
+  getConfiguredOutputPosition,
+  getConfiguredOutputPositions,
   hasOutputPortAt,
-} from "../conveyor/ConveyorLogicSystem";
+} from "../BuildingIOHelper";
+import { getSidePorts } from "../BuildingFootprint";
 import { Conveyor } from "../conveyor/Conveyor";
+import { ItemSink, createItemId, pushItemToOutput } from "../ItemTransfer";
+
+import { createActor } from "xstate";
+import { conveyorMergerMachine } from "./ConveyorMergerMachine";
 
 /** Possible input sides for the merger */
 export type MergerInputSide = "back" | "left" | "right";
 
-export class ConveyorMerger extends BuildingEntity implements IIOBuilding {
+/** Fixed round-robin order. */
+const INPUT_ORDER: MergerInputSide[] = ["back", "left", "right"];
+
+export class ConveyorMerger
+  extends BuildingEntity
+  implements IIOBuilding, ItemSink
+{
   public currentItem: string | null = null;
   public itemId: number | null = null;
   public transportProgress: number = 0;
 
   /**
-   * Tracks the last side from which an item was taken for round-robin fairness.
-   * Using explicit sides instead of indices for better readability.
+   * Last side an item was taken from, for round-robin fairness.
+   * Explicit sides instead of indices so the intent stays readable.
    */
   private lastInputSide: MergerInputSide | "none" = "none";
-  private lastWorld: IWorld | null = null;
+
+  /**
+   * World reference captured on tick. Used by `canInput` (which has no world
+   * parameter in IIOBuilding) to answer the fairness question. Everything
+   * reading it must tolerate `null`: `canInput` can be called by a neighbour
+   * before this merger has ever ticked.
+   */
+  public lastWorld: IWorld | null = null;
 
   constructor(x: number, y: number, direction: Direction = "north") {
     super(x, y, "conveyor_merger", direction);
+    this.actor = createActor(conveyorMergerMachine, {
+      input: { building: this },
+    });
+    this.actor.start();
   }
 
   public get transportSpeed(): number {
@@ -34,100 +56,57 @@ export class ConveyorMerger extends BuildingEntity implements IIOBuilding {
   }
 
   public tick(delta: number, world: IWorld): void {
-    this.lastWorld = world;
-    updateBuildingConnectivity(this, world);
-
-    // 1. Try to output existing item
-    if (this.currentItem) {
-      this.tryOutputInternal(world);
-    }
-
-    // 2. If empty, try to pull
-    if (!this.currentItem) {
-      if (this.tryPull(world)) {
-        // 3. If we just pulled an item, try to output it IMMEDIATELY (Zero-latency)
-        this.tryOutputInternal(world);
-      }
-    }
+    this.actor?.send({ type: "TICK", delta, world });
   }
 
-  // Extracted output logic for reuse
-  private tryOutputInternal(world: IWorld): boolean {
-    if (this.moveItem(world)) {
-      this.currentItem = null;
-      this.itemId = null;
-      this.transportProgress = 0;
-      return true;
-    }
-    return false;
+  // --- Item flow ---
+
+  /** Push the held item to the output tile. */
+  public tryOutputInternal(world: IWorld): boolean {
+    const item = this.currentItem;
+    if (!item) return false;
+    if (!pushItemToOutput(world, this, item)) return false;
+
+    this.currentItem = null;
+    this.itemId = null;
+    this.transportProgress = 0;
+    return true;
   }
 
-  private tryPull(world: IWorld): boolean {
+  /**
+   * Actively take the item waiting at the end of an input belt.
+   * Pulling (rather than waiting to be pushed) is what lets the merger run at
+   * full belt speed instead of losing a tick per hand-off.
+   */
+  public tryPull(world: IWorld): boolean {
+    if (this.currentItem) return false;
+
     const ports = this.getPortPositions();
-    const sidesOrder: MergerInputSide[] = ["back", "left", "right"];
+    const startIndex =
+      this.lastInputSide === "none"
+        ? 0
+        : (INPUT_ORDER.indexOf(this.lastInputSide) + 1) % INPUT_ORDER.length;
 
-    let startIndex = 0;
-    if (this.lastInputSide !== "none") {
-      startIndex =
-        (sidesOrder.indexOf(this.lastInputSide as MergerInputSide) + 1) % 3;
-    }
-
-    for (let i = 0; i < 3; i++) {
-      const idx = (startIndex + i) % 3;
-      const side = sidesOrder[idx];
+    for (let i = 0; i < INPUT_ORDER.length; i++) {
+      const side = INPUT_ORDER[(startIndex + i) % INPUT_ORDER.length];
       const pos = ports[side];
       const neighbor = world.getBuilding(pos.x, pos.y);
+      if (!neighbor || !(neighbor instanceof Conveyor)) continue;
+      if (!this.isNeighborReadyToOutput(neighbor, world)) continue;
 
-      if (neighbor && this.isNeighborReadyToOutput(neighbor)) {
-        if (neighbor instanceof Conveyor) {
-          // Pull from Conveyor
-          this.currentItem = neighbor.currentItem;
-          this.itemId = neighbor.itemId;
-          this.transportProgress = 0;
-          this.lastInputSide = side;
+      this.currentItem = neighbor.currentItem;
+      this.itemId = neighbor.itemId;
+      this.transportProgress = 0;
+      this.lastInputSide = side;
 
-          // Clear Conveyor
-          neighbor.currentItem = null;
-          neighbor.itemId = null;
-          neighbor.transportProgress = 0;
-          return true;
-        }
-      }
+      neighbor.removeItem();
+      return true;
     }
     return false;
   }
 
   public tryOutput(world: IWorld): boolean {
     return this.tryOutputInternal(world);
-  }
-
-  private moveItem(world: IWorld): boolean {
-    const outputPos = this.getOutputPosition();
-    if (!outputPos) return false;
-
-    const target = world.getBuilding(outputPos.x, outputPos.y);
-    if (!target) return false;
-
-    if (target instanceof Conveyor) {
-      if (!target.currentItem) {
-        target.currentItem = this.currentItem;
-        target.itemId = this.itemId;
-        // Optimization: Start exactly at 0 to avoid "double distance" delay (was starting at -1)
-        target.transportProgress = 0;
-        return true;
-      }
-    } else if (
-      target &&
-      "addItem" in target &&
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      typeof (target as any).addItem === "function"
-    ) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((target as any).addItem(this.currentItem!, 1, this.x, this.y)) {
-        return true;
-      }
-    }
-    return false;
   }
 
   // --- IIOBuilding ---
@@ -137,10 +116,8 @@ export class ConveyorMerger extends BuildingEntity implements IIOBuilding {
   }
 
   public getInputPosition(): { x: number; y: number } | null {
-    // Return back position as canonical input
-    const backDir = getOppositeDirection(this.direction);
-    const offset = getDirectionOffset(backDir);
-    return { x: this.x + offset.dx, y: this.y + offset.dy };
+    // Back is the canonical input; getInputPositions() exposes all three.
+    return this.getPortPositions().back;
   }
 
   /**
@@ -150,69 +127,58 @@ export class ConveyorMerger extends BuildingEntity implements IIOBuilding {
     MergerInputSide,
     { x: number; y: number }
   > {
-    const backDir = getOppositeDirection(this.direction);
-    const leftDir = this.getRotatedDirection(this.direction, -1);
-    const rightDir = this.getRotatedDirection(this.direction, 1);
-
-    const backOffset = getDirectionOffset(backDir);
-    const leftOffset = getDirectionOffset(leftDir);
-    const rightOffset = getDirectionOffset(rightDir);
+    const outerFor = (side: MergerInputSide) =>
+      getSidePorts(this.x, this.y, side, this.direction, 1, 1)[0].outer;
 
     return {
-      back: { x: this.x + backOffset.dx, y: this.y + backOffset.dy },
-      left: { x: this.x + leftOffset.dx, y: this.y + leftOffset.dy },
-      right: { x: this.x + rightOffset.dx, y: this.y + rightOffset.dy },
+      back: outerFor("back"),
+      left: outerFor("left"),
+      right: outerFor("right"),
     };
   }
 
   public getInputPositions(): { x: number; y: number }[] {
-    const ports = this.getPortPositions();
-    return [ports.back, ports.left, ports.right];
+    return getConfiguredInputPositions(this);
   }
 
   public getOutputPosition(): { x: number; y: number } | null {
-    const offset = getDirectionOffset(this.direction);
-    return { x: this.x + offset.dx, y: this.y + offset.dy };
+    return getConfiguredOutputPosition(this);
   }
 
-  private getRotatedDirection(dir: Direction, steps: number): Direction {
-    const order: Direction[] = ["north", "east", "south", "west"];
-    const index = order.indexOf(dir);
-    const newIndex = (index + steps + 4) % 4;
-    return order[newIndex] as Direction;
+  public getOutputPositions(): { x: number; y: number }[] {
+    return getConfiguredOutputPositions(this);
+  }
+
+  /** Which side does (fromX, fromY) correspond to, if any? */
+  private getSideFor(fromX: number, fromY: number): MergerInputSide | null {
+    const ports = this.getPortPositions();
+    for (const side of INPUT_ORDER) {
+      if (ports[side].x === fromX && ports[side].y === fromY) return side;
+    }
+    return null;
   }
 
   public canInput(fromX: number, fromY: number): boolean {
-    if (this.currentItem) return false;
-
-    const ports = this.getPortPositions();
-    let mySide: MergerInputSide | null = null;
-    if (ports.back.x === fromX && ports.back.y === fromY) mySide = "back";
-    else if (ports.left.x === fromX && ports.left.y === fromY) mySide = "left";
-    else if (ports.right.x === fromX && ports.right.y === fromY)
-      mySide = "right";
-
+    const mySide = this.getSideFor(fromX, fromY);
     if (!mySide) return false;
 
-    // FAIRNESS CHECK:
-    // If we have access to the world, check if any input that is "next" in order has an item.
-    // Order: BACK -> LEFT -> RIGHT -> BACK
-    if (this.lastWorld && this.lastInputSide !== "none") {
-      const sidesOrder: MergerInputSide[] = ["back", "left", "right"];
-      const lastIdx = sidesOrder.indexOf(this.lastInputSide as MergerInputSide);
-      const myIdx = sidesOrder.indexOf(mySide);
+    // FAIRNESS: yield to a side that comes earlier in the round-robin and
+    // already has an item waiting, so one saturated belt cannot starve the
+    // other two. Skipped when we have no world reference yet.
+    const world = this.lastWorld;
+    if (world && this.lastInputSide !== "none") {
+      const ports = this.getPortPositions();
+      const lastIdx = INPUT_ORDER.indexOf(this.lastInputSide);
+      const myIdx = INPUT_ORDER.indexOf(mySide);
 
-      for (let i = 1; i < 3; i++) {
-        const checkIdx = (lastIdx + i) % 3;
-        if (checkIdx === myIdx) break; // We are the next most prioritized with an item
+      for (let i = 1; i < INPUT_ORDER.length; i++) {
+        const checkIdx = (lastIdx + i) % INPUT_ORDER.length;
+        if (checkIdx === myIdx) break; // We are the most prioritized waiting side
 
-        const checkSide = sidesOrder[checkIdx];
-        const pos = ports[checkSide];
-        const neighbor = this.lastWorld.getBuilding(pos.x, pos.y);
-
-        if (neighbor && this.isNeighborReadyToOutput(neighbor)) {
-          // A more prioritized neighbor is ready! We should wait.
-          return false;
+        const pos = ports[INPUT_ORDER[checkIdx]];
+        const neighbor = world.getBuilding(pos.x, pos.y);
+        if (neighbor && this.isNeighborReadyToOutput(neighbor, world)) {
+          return false; // A higher-priority neighbour is ready: wait our turn.
         }
       }
     }
@@ -220,22 +186,35 @@ export class ConveyorMerger extends BuildingEntity implements IIOBuilding {
     return true;
   }
 
-  private isNeighborReadyToOutput(neighbor: BuildingEntity): boolean {
-    // Check if neighbor has an output port pointing to us
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (!hasOutputPortAt(neighbor as any, this.x, this.y)) return false;
+  private isNeighborReadyToOutput(
+    neighbor: BuildingEntity,
+    world: IWorld,
+  ): boolean {
+    // Only neighbours whose output port targets this merger count.
+    if (
+      !hasOutputPortAt(neighbor as BuildingEntity & IIOBuilding, this.x, this.y)
+    )
+      return false;
 
-    // If it's a conveyor, check if it has an item at the end
+    // A belt is "ready" once its item reached the end of the tile.
     if (neighbor instanceof Conveyor) {
       return neighbor.currentItem !== null && neighbor.transportProgress >= 1;
     }
 
-    // For other buildings like Extractor or Furnace, they usually try to push when ready.
-    if ("canOutput" in neighbor && typeof neighbor.canOutput === "function") {
-      return neighbor.canOutput(this.lastWorld!);
+    // Other buildings (extractor, furnace, ...) push when they are ready.
+    const producer = neighbor as BuildingEntity & Partial<IIOBuilding>;
+    if (typeof producer.canOutput === "function") {
+      return producer.canOutput(world);
     }
 
     return false;
+  }
+
+  // --- ItemSink ---
+
+  /** A merger holds a single item at a time. */
+  public hasSpaceFor(): boolean {
+    return this.currentItem === null;
   }
 
   public addItem(
@@ -246,38 +225,20 @@ export class ConveyorMerger extends BuildingEntity implements IIOBuilding {
   ): boolean {
     if (this.currentItem) return false;
 
+    let side: MergerInputSide | null = null;
     if (fromX !== undefined && fromY !== undefined) {
-      const ports = this.getPortPositions();
-      let mySide: MergerInputSide | null = null;
-      if (ports.back.x === fromX && ports.back.y === fromY) mySide = "back";
-      else if (ports.left.x === fromX && ports.left.y === fromY)
-        mySide = "left";
-      else if (ports.right.x === fromX && ports.right.y === fromY)
-        mySide = "right";
-
-      if (mySide) {
-        // Double check fairness in case canInput wasn't called or state changed
-        if (!this.canInput(fromX, fromY)) return false;
-
-        this.currentItem = type;
-        this.itemId = Math.floor(Math.random() * 1000000);
-        this.transportProgress = 0;
-        this.lastInputSide = mySide;
-
-        // Immediate pass-through if possible
-        if (this.lastWorld) {
-          this.tryOutputInternal(this.lastWorld);
-        }
-        return true;
-      }
+      side = this.getSideFor(fromX, fromY);
+      if (!side) return false;
+      // Re-check fairness in case canInput was skipped or state changed.
+      if (!this.canInput(fromX, fromY)) return false;
     }
 
-    // Fallback if no coordinates
     this.currentItem = type;
-    this.itemId = Math.floor(Math.random() * 1000000);
-    this.transportProgress = 0; // Not used but good to reset
+    this.itemId = createItemId();
+    this.transportProgress = 0;
+    if (side) this.lastInputSide = side;
 
-    // Immediate pass-through
+    // Immediate pass-through keeps the merger latency-free.
     if (this.lastWorld) {
       this.tryOutputInternal(this.lastWorld);
     }
@@ -307,6 +268,7 @@ export class ConveyorMerger extends BuildingEntity implements IIOBuilding {
       currentItem: this.currentItem,
       itemId: this.itemId,
       transportProgress: this.transportProgress,
+      lastInputSide: this.lastInputSide,
     };
   }
 
@@ -315,5 +277,6 @@ export class ConveyorMerger extends BuildingEntity implements IIOBuilding {
     this.currentItem = data.currentItem || null;
     this.itemId = data.itemId || null;
     this.transportProgress = data.transportProgress || 0;
+    this.lastInputSide = data.lastInputSide || "none";
   }
 }

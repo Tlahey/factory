@@ -71,7 +71,9 @@ describe("Extractor - Container Full Reproduction", () => {
     extractor.hasPowerSource = true;
     extractor.powerSatisfaction = 1.0;
 
-    chest = new Chest(1, 0); // At (1,0)
+    // Facing west, so the chest's input port is (0,0) — the extractor's tile.
+    // Chests only accept items through their declared input port.
+    chest = new Chest(1, 0, "west");
     chest.bonusSlots = -4; // Base is 5, so 5-4 = 1 slot total
 
     tile = new MockStoneTile(100);

@@ -12,17 +12,18 @@
     "build:game": "npm run build -w apps/game",
     "build:tools": "npm run build -w apps/tools",
     "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix",
     "prettier": "prettier --write .",
     "test": "npm run test -w apps/game",
     "prepare": "husky"
   },
   "lint-staged": {
     "apps/game/**/*.{js,ts,jsx,tsx}": [
-      "eslint --max-warnings=0",
+      "eslint --fix --max-warnings=0",
       "prettier --write"
     ],
     "apps/tools/**/*.{js,ts,jsx,tsx}": [
-      "eslint --max-warnings=0",
+      "eslint --fix --max-warnings=0",
       "prettier --write"
     ],
     "*.{json,css,md}": "prettier --write"
@@ -30,6 +31,7 @@
   "devDependencies": {
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
+    "eslint-plugin-unused-imports": "^4.4.1",
     "husky": "^9.0.11",
     "lint-staged": "^15.2.2",
     "prettier": "^3.7.4",

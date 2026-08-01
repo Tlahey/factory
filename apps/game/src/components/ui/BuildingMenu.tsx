@@ -7,6 +7,7 @@ import { BUILDINGS, BuildingId } from "@/game/buildings/BuildingConfig";
 import { useEffect } from "react";
 import BuildingHoverCard from "./BuildingHoverCard";
 import { useTranslation } from "@/hooks/useTranslation";
+import { getAllowedCount } from "@/game/buildings/hub/shop/ShopConfig";
 import clsx from "clsx";
 
 export default function BuildingMenu() {
@@ -14,6 +15,7 @@ export default function BuildingMenu() {
   const isBuildingMenuOpen = useGameStore((state) => state.isBuildingMenuOpen);
   const toggleBuildingMenu = useGameStore((state) => state.toggleBuildingMenu);
   const buildingCounts = useGameStore((state) => state.buildingCounts);
+  const purchasedCounts = useGameStore((state) => state.purchasedCounts);
   const setSelectedBuilding = useGameStore(
     (state) => state.setSelectedBuilding,
   );
@@ -111,17 +113,24 @@ export default function BuildingMenu() {
                 {(() => {
                   const b = BUILDINGS[hoveredBarBuilding as BuildingId];
                   const currentCount = buildingCounts[b.type] || 0;
-                  const isLimitReached = b.maxCount
-                    ? currentCount >= b.maxCount
-                    : false;
+                  const maxCount = getAllowedCount(
+                    b.type,
+                    purchasedCounts[b.type] || 0,
+                  );
+                  const isLimitReached = currentCount >= maxCount;
 
                   if (!isLimitReached) return null;
 
                   return (
-                    <div className="bg-slate-800/60 border border-slate-700/50 rounded-lg p-3 flex items-center gap-3">
-                      <Ban className="w-5 h-5 text-slate-400 shrink-0" />
-                      <span className="text-xs font-medium text-slate-300">
-                        Max limit reached ({currentCount}/{b.maxCount})
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 flex flex-col gap-2">
+                      <div className="flex items-center gap-3">
+                        <Ban className="w-5 h-5 text-red-400 shrink-0" />
+                        <span className="text-xs font-medium text-red-200">
+                          Max limit reached ({currentCount}/{maxCount})
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-gray-400">
+                        Purchase more building licenses in the HUB Shop.
                       </span>
                     </div>
                   );
@@ -174,9 +183,11 @@ export default function BuildingMenu() {
                 })
                 .map((b) => {
                   const currentCount = buildingCounts[b.type] || 0;
-                  const isLimitReached = b.maxCount
-                    ? currentCount >= b.maxCount
-                    : false;
+                  const maxCount = getAllowedCount(
+                    b.type,
+                    purchasedCounts[b.type] || 0,
+                  );
+                  const isLimitReached = currentCount >= maxCount;
 
                   const isLocked =
                     b.locked && !unlockedBuildings.includes(b.type);
@@ -213,20 +224,42 @@ export default function BuildingMenu() {
                         } else {
                           // Feedback for disabled state
                           if (isLocked) {
-                            alert(t("building_menu.locked_alert"));
+                            window.dispatchEvent(
+                              new CustomEvent("GAME_SHOW_TOAST", {
+                                detail: {
+                                  message: t("building_menu.locked_alert"),
+                                  type: "error",
+                                },
+                              }),
+                            );
                           } else if (isLimitReached) {
-                            alert(t("building_menu.limit_reached_alert"));
+                            window.dispatchEvent(
+                              new CustomEvent("GAME_SHOW_TOAST", {
+                                detail: {
+                                  message: t(
+                                    "building_menu.limit_reached_alert",
+                                  ),
+                                  type: "error",
+                                },
+                              }),
+                            );
                           } else if (!canAfford) {
-                            // Should be caught by !canAfford logic visually, but good to have
-                            alert(
-                              t("building_menu.insufficient_resources_alert"),
+                            window.dispatchEvent(
+                              new CustomEvent("GAME_SHOW_TOAST", {
+                                detail: {
+                                  message: t(
+                                    "building_menu.insufficient_resources_alert",
+                                  ),
+                                  type: "error",
+                                },
+                              }),
                             );
                           }
                         }
                       }}
                     >
                       {/* Count Badge */}
-                      {b.maxCount && (
+                      {maxCount !== Infinity && (
                         <div
                           className={clsx(
                             "absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md border shadow-sm z-sub-content",
@@ -235,7 +268,7 @@ export default function BuildingMenu() {
                               : "bg-gray-800/90 text-gray-300 border-white/10",
                           )}
                         >
-                          {currentCount}/{b.maxCount}
+                          {currentCount}/{maxCount}
                         </div>
                       )}
 

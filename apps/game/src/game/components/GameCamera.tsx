@@ -17,15 +17,31 @@ export function GameCamera() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const controlsRef = useRef<any>(null);
 
-  // Sync from Store -> Camera (Initial Load / External Changes)
-  useEffect(() => {
-    const state = useGameStore.getState();
-    if (controlsRef.current) {
-      controlsRef.current.setAzimuthalAngle(state.cameraAzimuth);
-      controlsRef.current.setPolarAngle(state.cameraElevation);
-      controlsRef.current.update();
-    }
+  // Subscribe to store values for azimuth and elevation
+  const cameraAzimuth = useGameStore((state) => state.cameraAzimuth);
+  const cameraElevation = useGameStore((state) => state.cameraElevation);
+  const setCameraAngles = useGameStore((state) => state.setCameraAngles);
 
+  // Sync from Store -> Camera (Initial Load & External Changes like UI buttons)
+  useEffect(() => {
+    if (controlsRef.current) {
+      const currentAzimuth = controlsRef.current.getAzimuthalAngle();
+      const currentElevation = controlsRef.current.getPolarAngle();
+
+      // Update camera only if store values are significantly different from controls
+      if (
+        Math.abs(currentAzimuth - cameraAzimuth) > 0.01 ||
+        Math.abs(currentElevation - cameraElevation) > 0.01
+      ) {
+        controlsRef.current.setAzimuthalAngle(cameraAzimuth);
+        controlsRef.current.setPolarAngle(cameraElevation);
+        controlsRef.current.update();
+      }
+    }
+  }, [cameraAzimuth, cameraElevation]);
+
+  // Event handlers and key listeners
+  useEffect(() => {
     // Ctrl Key Listener for "Rotate on Ctrl + Left Click"
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Control" || e.key === "Meta") {
@@ -43,14 +59,59 @@ export function GameCamera() {
       }
     };
 
+    // Custom wheel listener to rotate using Command (Meta) + 2-finger scroll
+    const handleWheel = (e: WheelEvent) => {
+      if (e.metaKey) {
+        e.preventDefault(); // Stop MapControls zoom / browser page zoom
+
+        if (controlsRef.current) {
+          const factor = 0.003; // Rotation sensitivity factor
+          const newAzimuth =
+            controlsRef.current.getAzimuthalAngle() + e.deltaX * factor;
+          const newElevation = THREE.MathUtils.clamp(
+            controlsRef.current.getPolarAngle() + e.deltaY * factor,
+            0.1, // min polar angle
+            Math.PI / 2 - 0.1, // max polar angle (not below ground)
+          );
+
+          controlsRef.current.setAzimuthalAngle(newAzimuth);
+          controlsRef.current.setPolarAngle(newElevation);
+          controlsRef.current.update();
+
+          // Propagate manual wheel rotation directly back to the store
+          setCameraAngles(newAzimuth, newElevation);
+        }
+      }
+    };
+
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
+
+    const domElement = _three.gl.domElement;
+    domElement.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
+      domElement.removeEventListener("wheel", handleWheel);
     };
-  }, []);
+  }, [_three.gl.domElement, setCameraAngles]);
+
+  // Sync Camera -> Store on manual controls interaction (drag / pan / etc)
+  const handleControlsChange = () => {
+    if (!controlsRef.current) return;
+    const azimuth = controlsRef.current.getAzimuthalAngle();
+    const elevation = controlsRef.current.getPolarAngle();
+    const state = useGameStore.getState();
+
+    // Only update if difference is noticeable to prevent loop fires
+    if (
+      Math.abs(state.cameraAzimuth - azimuth) > 0.01 ||
+      Math.abs(state.cameraElevation - elevation) > 0.01
+    ) {
+      state.setCameraAngles(azimuth, elevation);
+    }
+  };
 
   // Dynamic Control Locking based on Game State
   // If a tool is selected (Cable/Conveyor/Building) -> Left Click = Action (No Pan)
@@ -62,7 +123,6 @@ export function GameCamera() {
     const { selectedBuilding, hoveredEntityKey } = useGameStore.getState();
     const isToolActive = selectedBuilding && selectedBuilding !== "select";
     const isHoveringInteractable = !!hoveredEntityKey;
-    // const isCtrlPressed = controlsRef.current.mouseButtons.LEFT === THREE.MOUSE.ROTATE;
 
     // Determine desired Left Button Function
     let targetLeftFunc: THREE.MOUSE | null = THREE.MOUSE.PAN;
@@ -71,16 +131,12 @@ export function GameCamera() {
       targetLeftFunc = null; // Disable Pan
     }
 
-    // If Ctrl is held, we want Rotate overrides everything (handled by key listeners, but we need to respect it)
-    // Actually, key listeners set LEFT to ROTATE.
-    // We shouldn't overwrite if it's ROTATE.
+    // If Ctrl/Meta is held, we want Rotate override (handled by key listeners)
     if (controlsRef.current.mouseButtons.LEFT === THREE.MOUSE.ROTATE) {
       return;
     }
 
     // Apply
-    // Note: MapControls types might be strict, usually null/undefined disables it.
-    // Casting to any or ignoring TS might be needed if types don't allow null.
     if (controlsRef.current.mouseButtons.LEFT !== targetLeftFunc) {
       controlsRef.current.mouseButtons.LEFT = targetLeftFunc;
     }
@@ -89,14 +145,15 @@ export function GameCamera() {
   return (
     <MapControls
       ref={controlsRef}
+      onChange={handleControlsChange}
       // MOUSE Button Mapping
       // Left (0) = PAN
       // Middle (1) = ROTATE (Orbit)
-      // Right (2) = DOLLY (Zoom) - Standard Three.js, but we rely on Wheel primarily.
+      // Right (2) = ROTATE (Orbit) - Enables trackpad 2-finger click & drag to rotate
       mouseButtons={{
         LEFT: THREE.MOUSE.PAN,
         MIDDLE: THREE.MOUSE.ROTATE,
-        RIGHT: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.ROTATE,
       }}
       enableDamping={true}
       dampingFactor={0.05}

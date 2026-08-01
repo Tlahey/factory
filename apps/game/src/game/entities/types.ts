@@ -24,6 +24,13 @@ export interface IBuilding extends IEntity {
 }
 
 export interface IWorld {
+  /**
+   * Incremented every time buildings are added/removed/rotated.
+   * Lets per-tick systems (belt turn visuals, IO arrows) skip recomputation
+   * when nothing structural changed. Optional so test doubles can omit it —
+   * an undefined version simply means "always recompute".
+   */
+  topologyVersion?: number;
   getBuilding(x: number, y: number): BuildingEntity | undefined;
   getConnectionsCount(x: number, y: number): number;
   getBuildingConnectionsCount(building: BuildingEntity): number;

@@ -50,9 +50,9 @@ export const BATTERY_CONFIG: BatteryConfigType = {
   maxChargeRate: 50, // 50 kW
   maxDischargeRate: 50, // 50 kW
   shop: {
-    baseCost: { copper: 50 },
+    baseCost: { stone: 55 },
     priceMultiplier: 2.0,
-    initialCount: 0,
+    initialCount: 2,
   },
   upgrades: [
     {

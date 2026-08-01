@@ -14,8 +14,15 @@ Merges up to three input conveyor lines into a single output line.
 ## ⚙️ Functionality
 
 - **Merging**: Takes inputs from Back, Left, and Right.
-- **Round-Robin Fairness**: Cycles through inputs to ensure equal throughput from all sources.
-- **Output**: Single output at the Front.
+- **Round-Robin Fairness**: Cycles through inputs to ensure equal throughput from
+  all sources. A side whose turn has not come refuses input (`canInput`) while a
+  higher-priority side has an item waiting, so one saturated belt cannot starve
+  the other two.
+- **Pull + push**: it pulls the item waiting at the end of an input belt _and_
+  accepts pushes, so it runs at full belt speed without losing a tick per
+  hand-off. Both paths forward the item immediately (zero latency).
+- **Output**: Single output at the Front, to any `ItemSink`
+  (belt, chest, furnace, splitter...).
 
 ## 🏗️ Placement
 

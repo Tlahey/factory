@@ -2,12 +2,20 @@ import { describe, test, expect, beforeEach } from "vitest";
 import { Conveyor } from "./Conveyor";
 import { IWorld } from "../../entities/types";
 
+/**
+ * Stand-in sink. It must honour the full {@link ItemSink} contract — `addItem`
+ * AND `canInput` — because `asItemSink()` rejects anything that cannot answer
+ * "is that tile one of my input ports?". Without `canInput` the mock is not a
+ * sink at all and every push is silently refused.
+ */
 class MockEntity {
   x: number;
   y: number;
   type: string;
   isResolved: boolean = true;
   inputs: string[] = [];
+  /** Tiles the senders announced themselves from. */
+  inputSources: { x: number; y: number }[] = [];
 
   constructor(type: string, x: number, y: number) {
     this.type = type;
@@ -15,7 +23,20 @@ class MockEntity {
     this.y = y;
   }
 
-  addItem(item: string): boolean {
+  canInput(fromX: number, fromY: number): boolean {
+    return Math.abs(fromX - this.x) + Math.abs(fromY - this.y) === 1;
+  }
+
+  addItem(
+    item: string,
+    _amount: number = 1,
+    fromX?: number,
+    fromY?: number,
+  ): boolean {
+    if (fromX !== undefined && fromY !== undefined) {
+      if (!this.canInput(fromX, fromY)) return false;
+      this.inputSources.push({ x: fromX, y: fromY });
+    }
     this.inputs.push(item);
     return true;
   }
@@ -127,6 +148,9 @@ describe("Conveyor Item Transport", () => {
 
     expect(c1.currentItem).toBeNull();
     expect(chest.inputs).toContain("iron_ore");
+    // The belt announces the tile it actually occupies, so the sink's
+    // adjacency check passes.
+    expect(chest.inputSources).toEqual([{ x: 0, y: 0 }]);
   });
 
   test("Moves item to next conveyor even if NOT resolved", () => {

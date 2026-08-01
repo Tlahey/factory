@@ -13,10 +13,15 @@ Splits a single input conveyor line into up to three output lines.
 
 ## ⚙️ Functionality
 
-- **Input**: Single input at the Back.
-- **Splitting**: Distributes items to Front, Left, and Right outputs.
-- **Round-Robin Fairness**: Cycles through available outputs to ensure equal distribution among connected lines.
+- **Input**: Single input at the Back. Anything arriving from another side is
+  refused, which is exactly what the green arrow shows.
+- **Splitting**: Distributes items to Front, Left, and Right outputs — to any
+  `ItemSink` (belt, chest, furnace, merger...).
+- **Round-Robin Fairness**: Cycles through available outputs to ensure equal
+  distribution among connected lines. Sides that are missing, blocked, or that
+  refuse input from us are skipped without losing the turn.
 - **Buffer**: Holds one item while waiting for an output to become available.
+  While holding, it reports `operationStatus = "blocked"`.
 
 ## 🏗️ Placement
 

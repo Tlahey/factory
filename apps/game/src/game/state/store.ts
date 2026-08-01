@@ -99,6 +99,13 @@ interface GameState {
     textures: number;
   }) => void;
 
+  // Debug Logs Panel
+  debugLogs: string[];
+  isDebugLogsVisible: boolean;
+  addDebugLog: (msg: string) => void;
+  clearDebugLogs: () => void;
+  toggleDebugLogs: () => void;
+
   // Settings
   fpsLimit: number; // 0 = Unlimited, 30, 60
   setFpsLimit: (limit: number) => void;
@@ -128,6 +135,12 @@ interface GameState {
   // Loading State
   isSceneReady: boolean;
   setSceneReady: (ready: boolean) => void;
+
+  // Manual Mining Limit System
+  miningTimestamps: number[];
+  canMine: () => boolean;
+  registerMine: () => void;
+  getMiningWaitTime: () => number;
 }
 
 const INVENTORY_SIZE = 10;
@@ -334,6 +347,7 @@ export const useGameStore = create<GameState>()(
           unlockedRecipes: [],
           purchasedCounts: {},
           hoveredBarBuilding: null,
+          miningTimestamps: [],
         }),
 
       // Skill Tree
@@ -471,6 +485,23 @@ export const useGameStore = create<GameState>()(
       renderStats: { drawCalls: 0, triangles: 0, textures: 0, geometries: 0 },
       setRenderStats: (stats) => set({ renderStats: stats }),
 
+      // Debug Logs Panel
+      debugLogs: [],
+      isDebugLogsVisible: false,
+      addDebugLog: (msg) => {
+        const time = new Date().toLocaleTimeString();
+        const formattedLog = `[${time}] ${msg}`;
+        console.log(formattedLog);
+        set((state) => ({
+          debugLogs: [formattedLog, ...state.debugLogs].slice(0, 100),
+        }));
+      },
+      clearDebugLogs: () => set({ debugLogs: [] }),
+      toggleDebugLogs: () =>
+        set((state) => ({
+          isDebugLogsVisible: !state.isDebugLogsVisible,
+        })),
+
       // Dialogue
       activeDialogueId: null,
       seenDialogues: [],
@@ -538,6 +569,37 @@ export const useGameStore = create<GameState>()(
 
       isSceneReady: false,
       setSceneReady: (ready) => set({ isSceneReady: ready }),
+
+      miningTimestamps: [],
+      canMine: () => {
+        const now = Date.now();
+        const oneMinuteAgo = now - 60000;
+        const recentMines = get().miningTimestamps.filter(
+          (t) => t > oneMinuteAgo,
+        );
+        return recentMines.length < 10;
+      },
+      registerMine: () => {
+        const now = Date.now();
+        const oneMinuteAgo = now - 60000;
+        const recentMines = get().miningTimestamps.filter(
+          (t) => t > oneMinuteAgo,
+        );
+        set({ miningTimestamps: [...recentMines, now] });
+      },
+      getMiningWaitTime: () => {
+        const now = Date.now();
+        const oneMinuteAgo = now - 60000;
+        const recentMines = get().miningTimestamps.filter(
+          (t) => t > oneMinuteAgo,
+        );
+        if (recentMines.length < 10) return 0;
+
+        const oldestMine = recentMines[0];
+        const nextAvailableTime = oldestMine + 60000;
+        const remainingMs = nextAvailableTime - now;
+        return Math.max(0, Math.ceil(remainingMs / 1000));
+      },
     }),
     {
       name: "factory-game-storage", // name of the item in the storage (must be unique)

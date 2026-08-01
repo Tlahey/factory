@@ -1,3 +1,4 @@
+import type { AnyActorRef } from "xstate";
 import { Entity } from "./Entity";
 import { Tile } from "../environment/Tile";
 import { ResourceTile } from "../environment/ResourceTile";
@@ -9,10 +10,26 @@ import {
   IOSide,
 } from "../buildings/BuildingConfig";
 import { Direction, IWorld } from "./types";
+import {
+  FootprintSize,
+  TilePos,
+  footprintContains,
+  getBaseSize,
+  getFootprintCenter,
+  getFootprintSizeForConfig,
+  getOccupiedTiles,
+} from "../buildings/BuildingFootprint";
 
 export abstract class BuildingEntity extends Entity {
   public buildingType: BuildingId;
   public direction: Direction = "north";
+  /**
+   * XState actor driving this building's logic. Assigned by every subclass
+   * constructor, hence the definite assignment: typing it optional would force
+   * a null-check on every `building.actor.getSnapshot()` call site.
+   */
+  public actor!: AnyActorRef;
+  public active: boolean = false;
 
   public width: number = 1;
   public height: number = 1;
@@ -21,6 +38,13 @@ export abstract class BuildingEntity extends Entity {
   public isOutputConnected: boolean = false;
   public connectedInputSides: IOSide[] = [];
   public connectedOutputSides: IOSide[] = [];
+  /**
+   * Per-port connectivity, keyed `side#index` (see `getPortKey`). A wide
+   * building can have one edge tile fed and the other still free, which the
+   * side-level flags above cannot express.
+   */
+  public connectedInputPorts: string[] = [];
+  public connectedOutputPorts: string[] = [];
 
   public abstract get powerConfig(): PowerConfig | undefined;
   public powerStatus: "active" | "warn" | "idle" = "idle"; // 'warn' = no power
@@ -51,12 +75,19 @@ export abstract class BuildingEntity extends Entity {
     this.buildingType = buildingType;
     this.direction = direction;
 
-    const config = this.getConfig();
-    if (config) {
-      const isRotated = direction === "east" || direction === "west";
-      this.width = isRotated ? (config.height ?? 1) : (config.width ?? 1);
-      this.height = isRotated ? (config.width ?? 1) : (config.height ?? 1);
-    }
+    this.syncFootprint();
+  }
+
+  /**
+   * Re-derive the world-frame footprint from the config and the current
+   * direction. Must be called after any direct write to `direction`, otherwise
+   * a multi-tile building's dimensions drift out of sync with the tiles the
+   * world has it registered on.
+   */
+  public syncFootprint(): void {
+    const size = getFootprintSizeForConfig(this.getConfig(), this.direction);
+    this.width = size.width;
+    this.height = size.height;
   }
 
   public rotate(): void {
@@ -66,18 +97,33 @@ export abstract class BuildingEntity extends Entity {
       south: "west",
       west: "north",
     };
-    const oldDir = this.direction;
     this.direction = clockwise[this.direction];
+    this.syncFootprint();
+  }
 
-    // Swap dimensions if orientation changes (Vertical <-> Horizontal)
-    const wasHorizontal = oldDir === "east" || oldDir === "west";
-    const isHorizontal = this.direction === "east" || this.direction === "west";
+  /** Base (un-rotated) dimensions, as authored in the config. */
+  public getBaseSize(): FootprintSize {
+    return getBaseSize(this.getConfig());
+  }
 
-    if (wasHorizontal !== isHorizontal) {
-      const tmp = this.width;
-      this.width = this.height;
-      this.height = tmp;
-    }
+  /** World-frame dimensions, already rotated. */
+  public getFootprintSize(): FootprintSize {
+    return { width: this.width, height: this.height };
+  }
+
+  /** Every tile this building occupies. */
+  public getOccupiedTiles(): TilePos[] {
+    return getOccupiedTiles(this.x, this.y, this.getFootprintSize());
+  }
+
+  /** Geometric centre of the footprint, in world units (for rendering). */
+  public getCenter(): TilePos {
+    return getFootprintCenter(this.x, this.y, this.getFootprintSize());
+  }
+
+  /** Is (x, y) one of the tiles this building occupies? */
+  public occupies(x: number, y: number): boolean {
+    return footprintContains(this.x, this.y, this.getFootprintSize(), x, y);
   }
 
   public update(delta: number): void {
@@ -152,10 +198,11 @@ export abstract class BuildingEntity extends Entity {
           config.requiredResourceIds &&
           config.requiredResourceIds.length > 0
         ) {
+          // `isResource()` implies ResourceTile; narrow instead of casting so
+          // getResourceType() is type-checked.
           if (tile instanceof ResourceTile) {
             return config.requiredResourceIds.includes(tile.getResourceType());
           }
-          // Should be unreachable if isResource() implies ResourceTile
           return false;
         }
         // If no specific IDs required, but allowed on resources -> OK

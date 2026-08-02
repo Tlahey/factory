@@ -11,7 +11,7 @@ Each task file carries a `closed: true|false` frontmatter field: `true` once the
 | 001 | [Drag-and-drop lacks a shared, typed interface](001-drag-drop-typed-interface.md)                | Done                                       |
 | 002 | [Resources can enter through a building's output side](002-conveyor-io-direction-enforcement.md) | Done                                       |
 | 003 | [Construction menu dialogue popup reopens every time](003-construction-menu-dialogue-repeats.md) | Done                                       |
-| 004 | [Battery's stored energy is not saved](004-battery-energy-not-persisted.md)                      | Needs verification (partially implemented) |
+| 004 | [Battery's stored energy is not saved](004-battery-energy-not-persisted.md)                      | Done                                       |
 | 005 | [Sawmill doesn't show power consumption in HUD](005-sawmill-hud-consumption-missing.md)          | Needs verification (partially implemented) |
 
 ## Features

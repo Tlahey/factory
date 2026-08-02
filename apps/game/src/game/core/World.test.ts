@@ -164,6 +164,25 @@ describe("World", () => {
       expect(restored.speedMultiplier).toBe(2.5);
     });
 
+    it("should persist battery stored charge and breaker state", () => {
+      const x = 20,
+        y = 20;
+      world.setTile(x, y, TileFactory.createTile(TileType.GRASS));
+      world.placeBuilding(x, y, "battery");
+
+      const battery = world.getBuilding(x, y) as any;
+      battery.charge(40); // Below maxChargeRate (50), so it applies in full
+      battery.toggleBreaker(); // isEnabled: true -> false
+
+      const data = world.serialize();
+      const newWorld = new World();
+      newWorld.deserialize(data);
+
+      const restored = newWorld.getBuilding(x, y) as any;
+      expect(restored.currentCharge).toBe(40);
+      expect(restored.isEnabled).toBe(false);
+    });
+
     it("should persist nature asset variantId", () => {
       const x = 5,
         y = 5;

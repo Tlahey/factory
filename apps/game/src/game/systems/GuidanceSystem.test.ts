@@ -123,12 +123,11 @@ describe("GuidanceSystem", () => {
       expect(useGameStore.getState().activeDialogueId).not.toBe("welcome");
     });
 
-    it("should show 'building_menu_intro' when menu is opened and hub not placed", () => {
+    it("should show 'building_menu_intro' the first time the menu is opened", () => {
       // Ensure no active dialogue
       useGameStore.setState({
         activeDialogueId: null,
         isBuildingMenuOpen: true,
-        buildingCounts: { hub: 0 },
       });
 
       guidanceSystem.update(0.1);
@@ -138,11 +137,11 @@ describe("GuidanceSystem", () => {
       );
     });
 
-    it("should NOT show 'building_menu_intro' if hub IS placed", () => {
+    it("should NOT show 'building_menu_intro' if already seen", () => {
       useGameStore.setState({
         activeDialogueId: null,
         isBuildingMenuOpen: true,
-        buildingCounts: { hub: 1 },
+        seenDialogues: ["building_menu_intro"],
       });
 
       guidanceSystem.update(0.1);
@@ -161,11 +160,10 @@ describe("GuidanceSystem", () => {
       expect(useGameStore.getState().activeDialogueId).toBeNull();
     });
 
-    it("should NOT show 'building_menu_intro' twice in the same session", () => {
+    it("should NOT show 'building_menu_intro' again after being dismissed, even after reopening the menu", () => {
       useGameStore.setState({
         activeDialogueId: null,
         isBuildingMenuOpen: true,
-        buildingCounts: { hub: 0 },
       });
 
       // First update: Show
@@ -174,26 +172,22 @@ describe("GuidanceSystem", () => {
         "building_menu_intro",
       );
 
-      // Hide it manually (user ack)
+      // Hide it manually (user ack) — this persists it into seenDialogues
       useGameStore.getState().hideDialogue();
       expect(useGameStore.getState().activeDialogueId).toBeNull();
+      expect(useGameStore.getState().seenDialogues).toContain(
+        "building_menu_intro",
+      );
 
-      // Second update: Should NOT show again
-      guidanceSystem.update(0.1);
-      expect(useGameStore.getState().activeDialogueId).toBeNull();
-
-      // Close Menu (Reset session)
+      // Close Menu
       useGameStore.setState({ isBuildingMenuOpen: false });
       guidanceSystem.update(0.1);
 
-      // Open Menu Again
+      // Open Menu Again — should NOT show again
       useGameStore.setState({ isBuildingMenuOpen: true });
       guidanceSystem.update(0.1);
 
-      // Should show again
-      expect(useGameStore.getState().activeDialogueId).toBe(
-        "building_menu_intro",
-      );
+      expect(useGameStore.getState().activeDialogueId).toBeNull();
     });
   });
 });

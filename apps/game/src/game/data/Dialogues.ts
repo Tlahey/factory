@@ -86,7 +86,6 @@ export const DIALOGUES: Record<string, DialogueConfig> = {
       "hub-card",
     ],
     blocking: false,
-    repeatable: true,
   },
   hub_shop_intro: {
     id: "hub_shop_intro",

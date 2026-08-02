@@ -10,33 +10,21 @@ export class GuidanceSystem {
     this.setupListeners();
   }
 
-  private hasShownIntroThisSession = false;
-  private lastMenuState = false;
-
   public update(_dt: number) {
     const state = useGameStore.getState();
-
-    // Reset session flag if menu closes
-    if (!state.isBuildingMenuOpen && this.lastMenuState) {
-      this.hasShownIntroThisSession = false;
-    }
-    this.lastMenuState = state.isBuildingMenuOpen;
 
     // 1. Welcome Task Completion
     if (state.activeDialogueId === "welcome" && state.isBuildingMenuOpen) {
       state.hideDialogue();
     }
 
-    // 2. Building Menu Intro Trigger (Repeatable until Hub is placed)
-    const hubCount = state.buildingCounts["hub"] || 0;
+    // 2. Building Menu Intro Trigger (shown only once, ever)
     if (
       state.isBuildingMenuOpen &&
-      hubCount === 0 &&
       !state.activeDialogueId &&
-      !this.hasShownIntroThisSession
+      !state.seenDialogues.includes("building_menu_intro")
     ) {
       state.showDialogue("building_menu_intro");
-      this.hasShownIntroThisSession = true;
     }
 
     // 3. Auto-close Building Menu Intro if Menu Closed

@@ -1,6 +1,6 @@
 # Bug: Construction menu dialogue popup reopens every time
 
-**Status:** Not started
+**Status:** Done
 
 ## Description
 

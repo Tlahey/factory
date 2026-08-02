@@ -36,11 +36,7 @@ import { IWorld, Direction } from "../entities/types";
  * Building Categories for Visual Grouping
  */
 export type BuildingCategory =
-  | "production"
-  | "logistics"
-  | "storage"
-  | "power"
-  | "special";
+  "production" | "logistics" | "storage" | "power" | "special";
 
 // --- REPOSITORY TYPES ---
 
@@ -360,3 +356,5 @@ export const getBuildingConfig = (
 ): BuildingConfig | undefined => {
   return BUILDINGS[type];
 };
+
+export const isBuildingId = (id: string): id is BuildingId => id in BUILDINGS;

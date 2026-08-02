@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { Package, X, ArrowUpDown } from "lucide-react";
 import ModelPreview from "./ModelPreview";
 import { TrashZone } from "./TrashZone";
+import { readItemDragPayload, writeItemDragPayload } from "./dnd";
 
 import { useDraggable } from "@/hooks/useDraggable";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -48,10 +49,12 @@ export default function HUD() {
     }
     console.log("[HUD] Drag Start", { index, slot });
 
-    e.dataTransfer.setData("source", "inventory");
-    e.dataTransfer.setData("index", index.toString());
-    e.dataTransfer.setData("type", slot.type);
-    e.dataTransfer.setData("count", slot.count.toString());
+    writeItemDragPayload(e, {
+      source: "inventory",
+      index,
+      value: slot.type,
+      count: slot.count,
+    });
     draggedIndexRef.current = index;
     setIsDraggingItem(true);
   };
@@ -94,10 +97,9 @@ export default function HUD() {
   const handleDrop = (e: React.DragEvent, targetIndex: number) => {
     e.preventDefault();
     e.stopPropagation();
-    const source = e.dataTransfer.getData("source");
-    const sourceIndex = parseInt(e.dataTransfer.getData("index"));
-    const type = e.dataTransfer.getData("type");
-    const count = parseInt(e.dataTransfer.getData("count"));
+    const payload = readItemDragPayload(e);
+    if (!payload) return;
+    const { source, index: sourceIndex, value: type, count } = payload;
 
     if (source === "inventory") {
       // Reorder logic (swap) - Optional enhancement

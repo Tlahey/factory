@@ -4,18 +4,13 @@ import { Conveyor } from "@/game/buildings/conveyor/Conveyor";
 import { Zap, FastForward } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
-import { InventorySlot } from "@/game/state/store";
 import ModelPreview from "../ModelPreview";
+import type { DragEndHandler, DragStartHandler, ItemDragSource } from "../dnd";
 
 interface ConveyorPanelProps {
   building: Conveyor;
-  onDragStart: (
-    e: React.DragEvent,
-    source: string,
-    index: number,
-    slot: InventorySlot,
-  ) => void;
-  onDragEnd: (e: React.DragEvent) => void;
+  onDragStart: DragStartHandler<ItemDragSource, string>;
+  onDragEnd: DragEndHandler;
 }
 
 export function ConveyorPanel({

@@ -1,19 +1,19 @@
 "use client";
 
 import { Sawmill } from "@/game/buildings/sawmill/Sawmill";
-import { InventorySlot } from "@/game/state/store";
 import { ResourceProducerPanel } from "./ResourceProducerPanel";
+import type {
+  DragEndHandler,
+  DragOverHandler,
+  DragStartHandler,
+  ItemDragSource,
+} from "../dnd";
 
 interface SawmillPanelProps {
   building: Sawmill;
-  onDragStart: (
-    e: React.DragEvent,
-    source: string,
-    index: number,
-    slot: InventorySlot,
-  ) => void;
-  onDragEnd: (e: React.DragEvent) => void;
-  onDragOver: (e: React.DragEvent) => void;
+  onDragStart: DragStartHandler<ItemDragSource, string>;
+  onDragEnd: DragEndHandler;
+  onDragOver: DragOverHandler;
 }
 
 /**

@@ -1,22 +1,22 @@
 "use client";
 
 import { Extractor } from "@/game/buildings/extractor/Extractor";
-import { InventorySlot } from "@/game/state/store";
 import {
   ResourceProducerPanel,
   getResourceProducerStatusInfo,
 } from "./ResourceProducerPanel";
+import type {
+  DragEndHandler,
+  DragOverHandler,
+  DragStartHandler,
+  ItemDragSource,
+} from "../dnd";
 
 interface ExtractorPanelProps {
   building: Extractor;
-  onDragStart: (
-    e: React.DragEvent,
-    source: string,
-    index: number,
-    slot: InventorySlot,
-  ) => void;
-  onDragEnd: (e: React.DragEvent) => void;
-  onDragOver: (e: React.DragEvent) => void;
+  onDragStart: DragStartHandler<ItemDragSource, string>;
+  onDragEnd: DragEndHandler;
+  onDragOver: DragOverHandler;
 }
 
 // Re-export for backward compatibility

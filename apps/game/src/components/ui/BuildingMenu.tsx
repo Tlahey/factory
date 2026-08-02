@@ -9,6 +9,7 @@ import BuildingHoverCard from "./BuildingHoverCard";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getAllowedCount } from "@/game/buildings/hub/shop/ShopConfig";
 import clsx from "clsx";
+import { readBuildingDragPayload, writeBuildingDragPayload } from "./dnd";
 
 export default function BuildingMenu() {
   const { t } = useTranslation();
@@ -38,8 +39,12 @@ export default function BuildingMenu() {
     }
   }, [isBuildingMenuOpen, setHoveredBarBuilding]);
 
-  const handleDragStart = (e: React.DragEvent, id: string) => {
-    e.dataTransfer.setData("buildingId", id);
+  const handleDragStart = (e: React.DragEvent, id: BuildingId) => {
+    writeBuildingDragPayload(e, {
+      source: "building_menu",
+      index: -1,
+      value: id,
+    });
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -48,12 +53,9 @@ export default function BuildingMenu() {
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    const source = e.dataTransfer.getData("source");
-    if (source === "hotbar") {
-      const index = parseInt(e.dataTransfer.getData("index"));
-      if (!isNaN(index)) {
-        setHotbarSlot(index, null);
-      }
+    const payload = readBuildingDragPayload(e);
+    if (payload?.source === "hotbar") {
+      setHotbarSlot(payload.index, null);
     }
   };
 

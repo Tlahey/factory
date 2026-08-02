@@ -9,6 +9,7 @@
  */
 
 import { useGameStore } from "../../../state/store";
+import type { ResourceType } from "../../../data/Items";
 import {
   SKILL_TREE,
   SkillNode,
@@ -215,7 +216,7 @@ export class SkillTreeManager {
     // Deduct resources
     const removeItem = useGameStore.getState().removeItem;
     for (const [resource, amount] of Object.entries(cost)) {
-      removeItem(resource, amount);
+      removeItem(resource as ResourceType, amount);
     }
 
     // Start unlock (instant if duration is 0)

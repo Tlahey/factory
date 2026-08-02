@@ -6,16 +6,12 @@ import ModelPreview from "../ModelPreview";
 import { ChevronRight, ChevronDown, Flame, ChevronUp } from "lucide-react";
 import { ItemBufferPanel } from "./ItemBufferPanel";
 import { Recipe } from "@/game/buildings/BuildingConfig";
+import type { DragOverHandler, DragStartHandler, ItemDragSource } from "../dnd";
 
 interface FurnacePanelProps {
   building: Furnace;
-  onDragStart?: (
-    e: React.DragEvent,
-    source: string,
-    index: number,
-    slot: { type: string; count: number },
-  ) => void;
-  onDragOver?: (e: React.DragEvent) => void;
+  onDragStart?: DragStartHandler<ItemDragSource, string>;
+  onDragOver?: DragOverHandler;
 }
 
 export function FurnacePanel({
@@ -278,7 +274,7 @@ export function FurnacePanel({
           draggable={!!building.outputSlot && !!onDragStart}
           onDragStart={(e) => {
             if (building.outputSlot && onDragStart) {
-              onDragStart(e, "chest", 0, building.outputSlot); // Using 'chest' source ID for output
+              onDragStart(e, "furnace_output", 0, building.outputSlot);
             }
           }}
         >

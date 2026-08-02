@@ -18,6 +18,15 @@ import { FURNACE_CONFIG } from "@/game/buildings/furnace/FurnaceConfig";
 import { ItemBufferPanel } from "./panels/ItemBufferPanel";
 import { useGameStore } from "@/game/state/store";
 import { Recipe } from "@/game/buildings/BuildingConfig";
+import type { ResourceType } from "@/game/data/Items";
+import {
+  readItemDragPayload,
+  writeItemDragPayload,
+  type DragEndHandler,
+  type DragStartHandler,
+  type ItemDragPayload,
+  type ItemDragSource,
+} from "./dnd";
 
 interface FurnaceDashboardProps {
   furnace: Furnace;
@@ -61,12 +70,7 @@ export default function FurnaceDashboard({
   };
 
   // Track which item is being dragged
-  const draggedItemRef = useRef<{
-    source: string;
-    index: number;
-    type: string;
-    count: number;
-  } | null>(null);
+  const draggedItemRef = useRef<ItemDragPayload | null>(null);
 
   // Track successful transfer explicitly
   const transferSuccessRef = useRef(false);
@@ -95,24 +99,16 @@ export default function FurnaceDashboard({
     };
   }, []);
 
-  const handleDragStart = (
-    e: React.DragEvent,
-    source: string,
-    index: number,
-    slot: { type: string; count: number },
+  const handleDragStart: DragStartHandler<ItemDragSource, string> = (
+    e,
+    source,
+    index,
+    slot,
   ) => {
-    e.dataTransfer.setData("source", source);
-    e.dataTransfer.setData("index", index.toString());
-    e.dataTransfer.setData("type", slot.type);
-    e.dataTransfer.setData("count", slot.count.toString());
-    e.dataTransfer.effectAllowed = "move";
+    const value = slot.type as ResourceType;
+    writeItemDragPayload(e, { source, index, value, count: slot.count });
 
-    draggedItemRef.current = {
-      source,
-      index,
-      type: slot.type,
-      count: slot.count,
-    };
+    draggedItemRef.current = { source, index, value, count: slot.count };
 
     // IMMEDIATELY REMOVE TO PREVENT DUPLICATION
     if (source === "furnace_input") {
@@ -132,7 +128,7 @@ export default function FurnaceDashboard({
     setIsDraggingItem(true);
   };
 
-  const handleDragEnd = (_e: React.DragEvent) => {
+  const handleDragEnd: DragEndHandler = () => {
     setIsDraggingItem(false);
 
     // If we received an explicit success event
@@ -142,7 +138,7 @@ export default function FurnaceDashboard({
 
     // If NOT a move (cancelled), restore items
     if (!isSuccess && draggedItemRef.current) {
-      const { source, type, count } = draggedItemRef.current;
+      const { source, value: type, count } = draggedItemRef.current;
       if (source === "furnace_input") {
         furnace.addItem(type, count);
       } else if (source === "furnace_output") {
@@ -157,14 +153,9 @@ export default function FurnaceDashboard({
   // Handle drop from inventory to furnace input
   const handleInputDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    const source = e.dataTransfer.getData("source");
-    if (source !== "inventory") return;
-
-    const sourceIndex = parseInt(e.dataTransfer.getData("index"));
-    const itemType = e.dataTransfer.getData("type");
-    const itemCount = parseInt(e.dataTransfer.getData("count"));
-
-    if (!itemType || isNaN(sourceIndex) || isNaN(itemCount)) return;
+    const payload = readItemDragPayload(e);
+    if (!payload || payload.source !== "inventory") return;
+    const { index: sourceIndex, value: itemType, count: itemCount } = payload;
 
     if (!furnace.selectedRecipeId) {
       return;
@@ -207,14 +198,9 @@ export default function FurnaceDashboard({
   // Handle drop from inventory to furnace output
   const handleOutputDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    const source = e.dataTransfer.getData("source");
-    if (source !== "inventory") return;
-
-    const sourceIndex = parseInt(e.dataTransfer.getData("index"));
-    const itemType = e.dataTransfer.getData("type");
-    const itemCount = parseInt(e.dataTransfer.getData("count"));
-
-    if (!itemType || isNaN(sourceIndex) || isNaN(itemCount)) return;
+    const payload = readItemDragPayload(e);
+    if (!payload || payload.source !== "inventory") return;
+    const { index: sourceIndex, value: itemType, count: itemCount } = payload;
 
     if (furnace.addItemsToOutput(itemType, itemCount)) {
       clearInventorySlot(sourceIndex);
@@ -226,7 +212,7 @@ export default function FurnaceDashboard({
   const handleCollectOutput = () => {
     if (!furnace.outputSlot) return;
     const { type, count } = furnace.outputSlot;
-    addItem(type, count);
+    addItem(type as ResourceType, count);
     furnace.removeItemsFromOutput(count);
     forceUpdate((n) => n + 1);
   };

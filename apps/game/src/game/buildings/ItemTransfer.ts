@@ -1,6 +1,7 @@
 import type { BuildingEntity } from "../entities/BuildingEntity";
 import type { IWorld } from "../entities/types";
 import { getAdjacentInnerTile, TilePos } from "./BuildingFootprint";
+import { hasOutputPortAt } from "./BuildingIOHelper";
 
 /**
  * ITEM TRANSFER
@@ -10,14 +11,18 @@ import { getAdjacentInnerTile, TilePos } from "./BuildingFootprint";
  * building (conveyor, splitter, merger) goes through here, so a new sink only
  * has to implement {@link ItemSink} once to be reachable from all of them.
  *
- * Two questions are deliberately kept separate:
- * - `canInput(from)`   STRUCTURAL: "is that tile one of my input ports?".
- *                      Used by connectivity/arrows, independent of capacity.
+ * Three questions are deliberately kept separate:
+ * - `hasOutputPortAt(source, to)` STRUCTURAL: "is that tile one of *my*
+ *                      declared output ports?". Guards against pushing out
+ *                      through a tile that was never actually an exit.
+ * - `canInput(from)`   STRUCTURAL: "is that tile one of the sink's input
+ *                      ports?". Used by connectivity/arrows, independent of
+ *                      capacity.
  * - `hasSpaceFor(...)` DYNAMIC: "do I have room right now?".
  *
- * A transfer only happens when both are true. Mixing the two is what made
- * belts accept items through their output face and made producers ignore
- * mergers/splitters entirely.
+ * A transfer only happens when all three are true. Mixing these up is what
+ * made belts accept items through their output face and made producers
+ * ignore mergers/splitters entirely.
  */
 
 export interface ItemSink {
@@ -110,6 +115,7 @@ export function canPushItem(
 ): boolean {
   const sink = getItemSinkAt(world, toX, toY, source);
   if (!sink) return false;
+  if (!hasOutputPortAt(source, toX, toY)) return false;
   const from = getSourcePortTile(source, toX, toY);
   if (!sink.canInput(from.x, from.y)) return false;
   if (typeof sink.hasSpaceFor === "function") {
@@ -132,6 +138,7 @@ export function pushItem(
 ): boolean {
   const sink = getItemSinkAt(world, toX, toY, source);
   if (!sink) return false;
+  if (!hasOutputPortAt(source, toX, toY)) return false;
   const from = getSourcePortTile(source, toX, toY);
   if (!sink.canInput(from.x, from.y)) return false;
   if (typeof sink.hasSpaceFor === "function" && !sink.hasSpaceFor(type, amount))

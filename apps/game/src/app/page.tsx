@@ -18,6 +18,10 @@ import DialogueOverlay from "@/components/ui/DialogueOverlay";
 import HighlightOverlay from "@/components/ui/HighlightOverlay";
 import WorldTooltip from "@/components/ui/WorldTooltip";
 import { PlacementCostHUD } from "@/components/ui/PlacementCostHUD";
+import {
+  readBuildingDragPayload,
+  readItemDragPayload,
+} from "@/components/ui/dnd";
 
 // R3F Canvas - Migrated from legacy GameCanvas
 const GameCanvas = dynamic(() => import("@/components/R3FCanvas"), {
@@ -161,23 +165,23 @@ export default function Home() {
 
   const handleGlobalDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    const source = e.dataTransfer.getData("source");
     // If dropped on the map (global), and source is chest/extractor, we delete it.
-    if (source === "chest") {
-      const sourceIndex = parseInt(e.dataTransfer.getData("index"));
+    const itemPayload = readItemDragPayload(e);
+    if (itemPayload?.source === "chest") {
       window.dispatchEvent(
         new CustomEvent("GAME_ITEM_DELETE", {
           detail: {
             source: "chest",
-            sourceIndex: sourceIndex,
+            sourceIndex: itemPayload.index,
           },
         }),
       );
-    } else if (source === "hotbar") {
-      const sourceIndex = parseInt(e.dataTransfer.getData("index"));
-      if (!isNaN(sourceIndex)) {
-        useGameStore.getState().setHotbarSlot(sourceIndex, null);
-      }
+      return;
+    }
+
+    const buildingPayload = readBuildingDragPayload(e);
+    if (buildingPayload?.source === "hotbar") {
+      useGameStore.getState().setHotbarSlot(buildingPayload.index, null);
     }
   };
 

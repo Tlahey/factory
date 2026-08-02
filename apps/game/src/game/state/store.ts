@@ -11,17 +11,18 @@ import {
   DEFAULT_CAMERA_DISTANCE,
   DEFAULT_CAMERA_POLAR,
 } from "../camera/CameraConfig";
+import type { ResourceType } from "../data/Items";
 
 export interface InventorySlot {
-  type: string | null;
+  type: ResourceType | null;
   count: number;
 }
 
 interface GameState {
   inventory: InventorySlot[];
   selectedBuilding: BuildingId | "select" | "delete" | null;
-  addItem: (item: string, amount: number) => void;
-  removeItem: (item: string, amount: number) => void;
+  addItem: (item: ResourceType, amount: number) => void;
+  removeItem: (item: ResourceType, amount: number) => void;
   setSelectedBuilding: (
     building: BuildingId | "select" | "delete" | null,
   ) => void;

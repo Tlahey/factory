@@ -7,6 +7,7 @@ import { BuildingId, getBuildingConfig } from "@/game/buildings/BuildingConfig";
 import BuildingHoverCard from "./BuildingHoverCard";
 import { getAllowedCount } from "@/game/buildings/hub/shop/ShopConfig";
 import { useTranslation } from "@/hooks/useTranslation";
+import { readBuildingDragPayload, writeBuildingDragPayload } from "./dnd";
 
 export default function BuildingSidebar() {
   const { t } = useTranslation();
@@ -32,12 +33,12 @@ export default function BuildingSidebar() {
   const handleDrop = (e: React.DragEvent, index: number) => {
     e.preventDefault();
     e.stopPropagation();
-    const source = e.dataTransfer.getData("source");
-    console.log("Drop source:", source);
+    const payload = readBuildingDragPayload(e);
+    if (!payload) return;
 
-    if (source === "hotbar") {
-      const sourceIndex = parseInt(e.dataTransfer.getData("index"));
-      if (!isNaN(sourceIndex) && sourceIndex !== index) {
+    if (payload.source === "hotbar") {
+      const sourceIndex = payload.index;
+      if (sourceIndex !== index) {
         // Swap logic
         const sourceId = hotbar[sourceIndex];
         const targetId = hotbar[index];
@@ -48,12 +49,8 @@ export default function BuildingSidebar() {
         setHotbarSlot(sourceIndex, targetId);
         setHotbarSlot(index, sourceId);
       }
-    } else {
-      // From Building Menu
-      const buildingId = e.dataTransfer.getData("buildingId");
-      if (buildingId) {
-        setHotbarSlot(index, buildingId as BuildingId);
-      }
+    } else if (payload.source === "building_menu") {
+      setHotbarSlot(index, payload.value);
     }
   };
 
@@ -131,9 +128,11 @@ export default function BuildingSidebar() {
               onMouseLeave={() => setHoveredBarBuilding(null)}
               onDragStart={(e) => {
                 if (buildingId) {
-                  e.dataTransfer.setData("source", "hotbar");
-                  e.dataTransfer.setData("index", index.toString());
-                  e.dataTransfer.setData("buildingId", buildingId);
+                  writeBuildingDragPayload(e, {
+                    source: "hotbar",
+                    index,
+                    value: buildingId,
+                  });
                 }
               }}
               onClick={() =>

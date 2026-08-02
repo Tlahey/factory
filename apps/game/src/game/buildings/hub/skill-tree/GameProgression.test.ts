@@ -17,28 +17,28 @@ describe("Game Progression System", () => {
   it("should enforce resource costs", () => {
     const { hasResources, addItem } = useGameStore.getState();
 
-    // Extractor costs 10 iron (from config update)
-    const cost = { iron: 10 };
+    // Extractor costs 10 iron ore (from config update)
+    const cost = { iron_ore: 10 };
 
     expect(hasResources(cost)).toBe(false);
 
-    addItem("iron", 5);
+    addItem("iron_ore", 5);
     expect(hasResources(cost)).toBe(false);
 
-    addItem("iron", 5); // Total 10
+    addItem("iron_ore", 5); // Total 10
     expect(hasResources(cost)).toBe(true);
   });
 
   it("should deduct resources correctly", () => {
     const { addItem, removeResources } = useGameStore.getState();
-    const cost = { iron: 10 };
+    const cost = { iron_ore: 10 };
 
-    addItem("iron", 15);
+    addItem("iron_ore", 15);
     removeResources(cost);
 
     const ironSlot = useGameStore
       .getState()
-      .inventory.find((s) => s.type === "iron");
+      .inventory.find((s) => s.type === "iron_ore");
     expect(ironSlot?.count).toBe(5);
   });
 

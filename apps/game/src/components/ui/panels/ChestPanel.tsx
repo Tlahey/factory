@@ -1,26 +1,24 @@
 "use client";
 
 import { Chest } from "@/game/buildings/chest/Chest";
-import { InventorySlot } from "@/game/state/store";
 import ModelPreview from "../ModelPreview";
 
 import { useTranslation } from "@/hooks/useTranslation";
+import type {
+  DragEndHandler,
+  DragOverHandler,
+  DragStartHandler,
+  DropHandler,
+  ItemDragSource,
+  ItemDropTarget,
+} from "../dnd";
 
 interface ChestPanelProps {
   building: Chest;
-  onDragStart: (
-    e: React.DragEvent,
-    source: string,
-    index: number,
-    slot: InventorySlot,
-  ) => void;
-  onDrop: (
-    e: React.DragEvent,
-    target: "chest" | "inventory",
-    targetIndex: number,
-  ) => void;
-  onDragEnd: (e: React.DragEvent) => void;
-  onDragOver: (e: React.DragEvent) => void;
+  onDragStart: DragStartHandler<ItemDragSource, string>;
+  onDrop: DropHandler<ItemDropTarget>;
+  onDragEnd: DragEndHandler;
+  onDragOver: DragOverHandler;
 }
 
 export function ChestPanel({

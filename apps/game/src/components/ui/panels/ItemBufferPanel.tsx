@@ -3,22 +3,23 @@
 import { Box } from "lucide-react";
 import ModelPreview from "../ModelPreview";
 import { useTranslation } from "@/hooks/useTranslation";
+import type {
+  DragEndHandler,
+  DragOverHandler,
+  DragStartHandler,
+  ItemDragSource,
+} from "../dnd";
 
 interface ItemBufferPanelProps {
   title: string;
   items: { type: string; count: number }[];
   capacity: number;
   color?: string; // Default to "orange"
-  onDragStart?: (
-    e: React.DragEvent,
-    source: string, // Was "chest" | "inventory", now generic string
-    index: number,
-    slot: { type: string; count: number },
-  ) => void;
-  onDragOver?: (e: React.DragEvent) => void;
+  onDragStart?: DragStartHandler<ItemDragSource, string>;
+  onDragOver?: DragOverHandler;
   onDrop?: (e: React.DragEvent) => void;
-  onDragEnd?: (e: React.DragEvent) => void;
-  sourceId?: string; // Identifier for drag source
+  onDragEnd?: DragEndHandler;
+  sourceId?: ItemDragSource;
   /** Called when the main item is double-clicked, to instantly collect it into the inventory */
   onCollect?: () => void;
 }

@@ -1,7 +1,19 @@
 "use client";
 
-import { useGameStore, InventorySlot } from "@/game/state/store";
+import { useGameStore } from "@/game/state/store";
 import { useState, useEffect, useRef } from "react";
+import type { ResourceType } from "@/game/data/Items";
+import {
+  readItemDragPayload,
+  writeItemDragPayload,
+  type DragEndHandler,
+  type DragOverHandler,
+  type DragStartHandler,
+  type DropHandler,
+  type ItemDragPayload,
+  type ItemDragSource,
+  type ItemDropTarget,
+} from "./dnd";
 import { X } from "lucide-react";
 import XStateInspector from "./XStateInspector";
 import { Chest } from "@/game/buildings/chest/Chest";
@@ -44,12 +56,7 @@ export default function BuildingInfoPanel() {
   const [, forceUpdate] = useState(0);
 
   // Track the source of the drag for deletion on successful drop
-  const draggedItemRef = useRef<{
-    source: string;
-    index: number;
-    type: string | null;
-    count: number;
-  } | null>(null);
+  const draggedItemRef = useRef<ItemDragPayload | null>(null);
 
   // Track if a transfer was explicitly successful (robust cross-component confirmation)
   const transferSuccessRef = useRef(false);
@@ -132,27 +139,20 @@ export default function BuildingInfoPanel() {
   const upgradeLevel = skillTreeManager.getBuildingUpgradeLevel(buildingType);
   const activeUpgrade = skillTreeManager.getActiveUpgrade(buildingType);
 
-  const handleDragStart = (
-    e: React.DragEvent,
-    source: string,
-    index: number,
-    slot: InventorySlot,
+  const handleDragStart: DragStartHandler<ItemDragSource, string> = (
+    e,
+    source,
+    index,
+    slot,
   ) => {
     if (!slot || !slot.type) {
       e.preventDefault();
       return;
     }
-    e.dataTransfer.setData("source", source);
-    e.dataTransfer.setData("index", index.toString());
-    e.dataTransfer.setData("type", slot.type);
-    e.dataTransfer.setData("count", slot.count.toString());
+    const value = slot.type as ResourceType;
+    writeItemDragPayload(e, { source, index, value, count: slot.count });
 
-    draggedItemRef.current = {
-      source,
-      index,
-      type: slot.type,
-      count: slot.count,
-    };
+    draggedItemRef.current = { source, index, value, count: slot.count };
 
     // IMMEDIATELY REMOVE TO PREVENT DUPLICATION (e.g. chest outputting to conveyor while dragging)
     if (source === "chest" && (isChest || isExtractor || isSawmill)) {
@@ -173,7 +173,7 @@ export default function BuildingInfoPanel() {
     setIsDraggingItem(true);
   };
 
-  const handleDragEnd = (_e: React.DragEvent) => {
+  const handleDragEnd: DragEndHandler = () => {
     setIsDraggingItem(false);
 
     // If we received an explicit success event, consider it done.
@@ -182,7 +182,7 @@ export default function BuildingInfoPanel() {
 
     // If NOT a success (drag cancelled or dropped on invalid target), restore the item
     if (!isSuccess && draggedItemRef.current) {
-      const { source, type, count } = draggedItemRef.current;
+      const { source, value: type, count } = draggedItemRef.current;
       if (source === "chest" && (isChest || isExtractor || isSawmill) && type) {
         if (isChest) {
           (building as Chest).addItem(type, count);
@@ -197,25 +197,17 @@ export default function BuildingInfoPanel() {
     transferSuccessRef.current = false;
   };
 
-  const handleDrop = (
-    e: React.DragEvent,
-    target: "chest" | "inventory",
-    targetIndex: number,
-  ) => {
+  const handleDrop: DropHandler<ItemDropTarget> = (e, target, targetIndex) => {
     e.preventDefault();
-    const source = e.dataTransfer.getData("source") as "chest" | "inventory";
-    const sourceIndex = parseInt(e.dataTransfer.getData("index"));
+    const payload = readItemDragPayload(e);
+    if (!payload) return;
+    const { source, index: sourceIndex, value: type, count } = payload;
 
     if (source === target) return;
 
     // Check if target is 'chest' or general building drop via sub-component bubbling
     // If targetIndex is undefined, we might just be dropping "on the panel" generally, but ChestPanel slots provide index.
     if (target === "chest" && isChest && targetIndex !== undefined) {
-      const type = e.dataTransfer.getData("type");
-      const count = parseInt(e.dataTransfer.getData("count"));
-
-      if (!type || isNaN(count)) return;
-
       const success = (building as Chest).addItem(type, count);
 
       if (success) {
@@ -239,9 +231,8 @@ export default function BuildingInfoPanel() {
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver: DragOverHandler = (e) => {
     e.preventDefault();
-    void e; // Mark as used
   };
 
   // For Hub buildings, show the HubDashboard instead

@@ -1,10 +1,17 @@
 "use client";
 
 import { BuildingEntity } from "@/game/entities/BuildingEntity";
-import { InventorySlot, useGameStore } from "@/game/state/store";
+import { useGameStore } from "@/game/state/store";
+import type { ResourceType } from "@/game/data/Items";
 import { Zap, Box } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ItemBufferPanel } from "./ItemBufferPanel";
+import type {
+  DragEndHandler,
+  DragOverHandler,
+  DragStartHandler,
+  ItemDragSource,
+} from "../dnd";
 
 /**
  * Props for buildings that extract/produce resources
@@ -28,14 +35,9 @@ interface ResourceProducerPanelProps {
   /** Rate unit label */
   rateLabel?: string;
   /** Drag handlers */
-  onDragStart: (
-    e: React.DragEvent,
-    source: string,
-    index: number,
-    slot: InventorySlot,
-  ) => void;
-  onDragEnd: (e: React.DragEvent) => void;
-  onDragOver: (e: React.DragEvent) => void;
+  onDragStart: DragStartHandler<ItemDragSource, string>;
+  onDragEnd: DragEndHandler;
+  onDragOver: DragOverHandler;
 }
 
 /**
@@ -117,7 +119,7 @@ export function ResourceProducerPanel({
   const handleCollect = () => {
     const item = building.slots[0];
     if (!item) return;
-    useGameStore.getState().addItem(item.type, item.count);
+    useGameStore.getState().addItem(item.type as ResourceType, item.count);
     if (building.removeSlot) {
       building.removeSlot(0);
     } else {

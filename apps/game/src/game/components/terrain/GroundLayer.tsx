@@ -10,12 +10,14 @@ interface GroundLayerProps {
   grassMesh?: THREE.Mesh | null;
   sandMesh?: THREE.Mesh | null;
   sandController?: SandShaderController | null;
+  fogMesh?: THREE.Mesh | null;
 }
 
 export function GroundLayer({
   grassMesh,
   sandMesh,
   sandController,
+  fogMesh,
 }: GroundLayerProps) {
   const grassMatRef = useRef<THREE.Material | null>(null);
 
@@ -58,6 +60,7 @@ export function GroundLayer({
     <group>
       {grassMesh && <primitive object={grassMesh} receiveShadow />}
       {sandMesh && <primitive object={sandMesh} receiveShadow />}
+      {fogMesh && <primitive object={fogMesh} receiveShadow />}
     </group>
   );
 }

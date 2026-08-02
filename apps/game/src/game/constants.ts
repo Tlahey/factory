@@ -4,6 +4,13 @@ export const WORLD_HEIGHT = 50;
 export const STACK_SIZE = 100;
 
 /**
+ * Radius (in tiles) revealed around the world center when a new world is
+ * generated. Deliberately smaller than the playable interior so there's
+ * still fog left for the future Exploration Tower to push back.
+ */
+export const HUB_STARTER_RADIUS = 14;
+
+/**
  * Represents the rarity level of resource tiles.
  * Used for balancing resource distribution.
  */

@@ -1,4 +1,9 @@
-import { TileType, WORLD_HEIGHT, WORLD_WIDTH } from "../constants";
+import {
+  HUB_STARTER_RADIUS,
+  TileType,
+  WORLD_HEIGHT,
+  WORLD_WIDTH,
+} from "../constants";
 import { useGameStore } from "../state/store";
 import { BuildingEntity } from "../entities/BuildingEntity";
 import { Direction } from "../entities/types";
@@ -59,14 +64,65 @@ export class World implements IWorld {
    */
   public topologyVersion: number = 0;
 
+  /**
+   * Fog-of-war: [y][x], parallel to `grid` but intentionally NOT a `Tile`
+   * field — resource tiles (Rock/Tree) get replaced with a brand-new `Grass`
+   * instance on depletion (see `tick()`), which would silently reset any
+   * per-tile fog flag.
+   */
+  public discovered: boolean[][];
+
   constructor() {
     this.grid = this.generateEmptyWorld();
     this.buildings = new Map();
+    this.discovered = this.createFogGrid();
+    this.revealArea(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, HUB_STARTER_RADIUS);
   }
 
   /** Signal that the building topology changed. */
   public markTopologyDirty(): void {
     this.topologyVersion++;
+  }
+
+  private createFogGrid(): boolean[][] {
+    return Array.from({ length: WORLD_HEIGHT }, () =>
+      Array.from({ length: WORLD_WIDTH }, () => false),
+    );
+  }
+
+  /**
+   * Circular reveal, clamped to grid bounds.
+   * Returns true iff at least one new tile was revealed, so callers can skip
+   * a rebatch/event-emit when nothing actually changed.
+   */
+  public revealArea(cx: number, cy: number, radius: number): boolean {
+    let changed = false;
+    const minX = Math.max(0, Math.floor(cx - radius));
+    const maxX = Math.min(WORLD_WIDTH - 1, Math.ceil(cx + radius));
+    const minY = Math.max(0, Math.floor(cy - radius));
+    const maxY = Math.min(WORLD_HEIGHT - 1, Math.ceil(cy + radius));
+    const radiusSq = radius * radius;
+
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = minX; x <= maxX; x++) {
+        const dx = x - cx;
+        const dy = y - cy;
+        if (dx * dx + dy * dy <= radiusSq && !this.discovered[y][x]) {
+          this.discovered[y][x] = true;
+          changed = true;
+        }
+      }
+    }
+    return changed;
+  }
+
+  /** Dev/test helper: reveals the whole map in one call. */
+  public revealAll(): void {
+    for (let y = 0; y < WORLD_HEIGHT; y++) {
+      for (let x = 0; x < WORLD_WIDTH; x++) {
+        this.discovered[y][x] = true;
+      }
+    }
   }
   // ...
   public getBuilding(x: number, y: number): BuildingEntity | undefined {
@@ -239,6 +295,15 @@ export class World implements IWorld {
         return false;
       }
 
+      if (!this.discovered[ty][tx]) {
+        const msg = `[World] Placement failed: Tile not yet discovered at ${tx},${ty}`;
+        console.log(msg);
+        if (logFailures) {
+          useGameStore.getState().addDebugLog(msg);
+        }
+        return false;
+      }
+
       // Tile validity
       const tile = this.getTile(tx, ty);
 
@@ -389,6 +454,8 @@ export class World implements IWorld {
     this.buildings.clear();
     this.cables = [];
     this.grid = this.generateEmptyWorld();
+    this.discovered = this.createFogGrid();
+    this.revealArea(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, HUB_STARTER_RADIUS);
     this.markTopologyDirty();
   }
 
@@ -717,6 +784,7 @@ export class World implements IWorld {
               : undefined,
         })),
       ),
+      discovered: this.discovered,
       buildings: uniqueBuildings.map((b) => {
         const base = {
           x: b.x,
@@ -762,7 +830,17 @@ export class World implements IWorld {
       }
     }
 
-    // 2. Restore Buildings
+    // 2. Restore fog-of-war. Missing/old saves (no `discovered` field)
+    // default every tile to already-revealed rather than re-fogging an
+    // existing player's built-out world.
+    this.discovered = Array.from({ length: WORLD_HEIGHT }, (_, y) =>
+      Array.from(
+        { length: WORLD_WIDTH },
+        (_, x) => worldData.discovered?.[y]?.[x] ?? true,
+      ),
+    );
+
+    // 3. Restore Buildings
     this.cables = (worldData.cables || []).map((c) => ({ ...c }));
     this.buildings.clear();
 

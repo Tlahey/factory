@@ -9,18 +9,22 @@ import { WORLD_HEIGHT, WORLD_WIDTH } from "../../constants";
  */
 export function createBatchedTerrain(
   grid: Tile[][],
+  discovered: boolean[][],
   grassMaterial: THREE.Material,
   sandMaterial: THREE.Material,
   waterMaterial: THREE.Material,
+  fogMaterial: THREE.Material,
 ): {
   grassMesh: THREE.Mesh | null;
   sandMesh: THREE.Mesh | null;
   waterMesh: THREE.Mesh | null;
+  fogMesh: THREE.Mesh | null;
   natureAssets: { x: number; y: number; type: "tree" | "rock" }[];
 } {
   const grassGeometries: THREE.BufferGeometry[] = [];
   const sandGeometries: THREE.BufferGeometry[] = [];
   const waterGeometries: THREE.BufferGeometry[] = [];
+  const fogGeometries: THREE.BufferGeometry[] = [];
   const natureAssets: { x: number; y: number; type: "tree" | "rock" }[] = [];
 
   // Helper to get height based on distance from edge (for sand slope)
@@ -80,6 +84,11 @@ export function createBatchedTerrain(
 
   for (let y = 0; y < WORLD_HEIGHT; y++) {
     for (let x = 0; x < WORLD_WIDTH; x++) {
+      if (!discovered[y][x]) {
+        addFlatTile(x, y, 0.05, fogGeometries);
+        continue;
+      }
+
       const tile = grid[y][x];
 
       if (tile.isWater()) {
@@ -105,8 +114,9 @@ export function createBatchedTerrain(
   const grassMesh = mergeAndCreateMesh(grassGeometries, grassMaterial);
   const sandMesh = mergeAndCreateMesh(sandGeometries, sandMaterial);
   const waterMesh = mergeAndCreateMesh(waterGeometries, waterMaterial);
+  const fogMesh = mergeAndCreateMesh(fogGeometries, fogMaterial);
 
-  return { grassMesh, sandMesh, waterMesh, natureAssets };
+  return { grassMesh, sandMesh, waterMesh, fogMesh, natureAssets };
 }
 
 function mergeAndCreateMesh(

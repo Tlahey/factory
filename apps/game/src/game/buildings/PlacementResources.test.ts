@@ -31,6 +31,7 @@ describe("Resource Placement Rules", () => {
     });
 
     world = new World();
+    world.revealAll();
   });
 
   it("should prevent Conveyor placement on a Tree (Resource)", () => {

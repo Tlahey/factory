@@ -27,6 +27,7 @@ describe("Battery Placement Logic", () => {
       }
       world.grid.push(row);
     }
+    world.revealAll();
 
     mockStore = {
       purchasedCounts: { battery: 5 },

@@ -9,6 +9,12 @@ vi.mock("three/examples/jsm/utils/BufferGeometryUtils.js", () => ({
   mergeGeometries: vi.fn().mockImplementation(() => new THREE.BufferGeometry()),
 }));
 
+function buildAllDiscovered(): boolean[][] {
+  return Array.from({ length: WORLD_HEIGHT }, () =>
+    Array.from({ length: WORLD_WIDTH }, () => true),
+  );
+}
+
 describe("TerrainBatcher", () => {
   it("should extract nature asset positions from the grid", () => {
     // Create a mock grid based on constants
@@ -33,7 +39,14 @@ describe("TerrainBatcher", () => {
     // Materials mocks
     const mat = new THREE.MeshLambertMaterial();
 
-    const result = createBatchedTerrain(grid, mat, mat, mat);
+    const result = createBatchedTerrain(
+      grid,
+      buildAllDiscovered(),
+      mat,
+      mat,
+      mat,
+      mat,
+    );
 
     expect(result.natureAssets).toHaveLength(2);
 
@@ -42,5 +55,33 @@ describe("TerrainBatcher", () => {
 
     const tree = result.natureAssets.find((a) => a.type === "tree");
     expect(tree).toEqual({ x: 5, y: 7, type: "tree" });
+  });
+
+  it("should exclude undiscovered tiles from nature assets and route them to the fog mesh", () => {
+    const grid: Tile[][] = [];
+    for (let y = 0; y < WORLD_HEIGHT; y++) {
+      const row: Tile[] = [];
+      for (let x = 0; x < WORLD_WIDTH; x++) {
+        const isRockIdx = x === 2 && y === 3;
+        const t = {
+          isWater: () => false,
+          isSand: () => false,
+          isStone: () => isRockIdx,
+          isTree: () => false,
+          getType: () => TileType.GRASS,
+        };
+        row.push(t as unknown as Tile);
+      }
+      grid.push(row);
+    }
+
+    const discovered = buildAllDiscovered();
+    discovered[3][2] = false; // hide the rock tile at (2,3)
+
+    const mat = new THREE.MeshLambertMaterial();
+    const result = createBatchedTerrain(grid, discovered, mat, mat, mat, mat);
+
+    expect(result.natureAssets).toHaveLength(0);
+    expect(result.fogMesh).not.toBeNull();
   });
 });

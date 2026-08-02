@@ -13,6 +13,7 @@ describe("Hub Connection Logic", () => {
     store.reset();
     store.buyBuilding("hub");
     world = new World();
+    world.revealAll();
   });
 
   it("should count connections correctly for a 2x2 Hub", () => {

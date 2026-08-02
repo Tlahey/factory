@@ -33,6 +33,7 @@ describe("World", () => {
       },
     });
     world = new World();
+    world.revealAll();
   });
 
   describe("Placement Rules & Limits", () => {

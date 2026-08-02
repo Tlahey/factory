@@ -12,6 +12,7 @@ describe("Furnace Rotation Repro", () => {
     useGameStore.getState().unlockBuilding("furnace");
     useGameStore.setState({ purchasedCounts: { furnace: 10 } }); // Allow placement
     world = new World();
+    world.revealAll();
     // Ensure valid terrain for placement (random generation might spawn Stone which could block)
     // Set area to Grass
     for (let dx = 0; dx < 5; dx++) {

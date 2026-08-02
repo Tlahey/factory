@@ -63,4 +63,5 @@ export interface WorldData {
   grid: { type: TileType; resourceAmount: number }[][];
   buildings: SerializedBuilding[];
   cables: { x1: number; y1: number; x2: number; y2: number }[];
+  discovered?: boolean[][];
 }

@@ -26,6 +26,9 @@ vi.mock("../core/World", () => {
     reset() {}
     placeBuilding() {}
     removeBuilding() {}
+    revealArea() {
+      return false;
+    }
   }
   return { World: MockWorld };
 });

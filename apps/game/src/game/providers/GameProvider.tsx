@@ -119,6 +119,18 @@ export function GameContextProvider({ children }: GameContextProviderProps) {
       return res;
     };
 
+    // Intercept revealArea so fog reveals actually trigger a terrain rebatch
+    // (Terrain.tsx's useMemo depends on worldRevision, not on world mutating
+    // in place).
+    const originalReveal = world.revealArea.bind(world);
+    world.revealArea = (cx, cy, radius) => {
+      const changed = originalReveal(cx, cy, radius);
+      if (changed) {
+        setWorldRevision((prev) => prev + 1);
+      }
+      return changed;
+    };
+
     return () => {
       // Restore original methods if needed?
       // Since world is destroyed on unmount, it maps 1:1 to provider lifecycle.

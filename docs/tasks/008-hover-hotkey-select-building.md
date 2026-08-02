@@ -1,10 +1,10 @@
 ---
-closed: false
+closed: true
 ---
 
 # Feature: Hover + "c" hotkey to select a building
 
-**Status:** Not started
+**Status:** Done
 
 ## Description
 

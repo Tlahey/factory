@@ -20,7 +20,7 @@ Each task file carries a `closed: true|false` frontmatter field: `true` once the
 | --- | ------------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | 006 | [Scripted intro to bootstrap starting rock](006-scripted-intro-resource-bootstrap.md)             | Not started                                |
 | 007 | [Per-resource extraction yield ratio](007-resource-extraction-yield-ratio.md)                     | Not started                                |
-| 008 | [Hover + "c" hotkey to select a building](008-hover-hotkey-select-building.md)                    | Not started                                |
+| 008 | [Hover + "c" hotkey to select a building](008-hover-hotkey-select-building.md)                    | Done                                       |
 | 009 | [Minimap](009-minimap.md)                                                                         | Not started                                |
 | 010 | [Building input/output system](010-building-io-system.md)                                         | Needs verification (partially implemented) |
 | 011 | [Restrict initial Container placement to next to the Hub](011-container-placement-restriction.md) | Not started                                |

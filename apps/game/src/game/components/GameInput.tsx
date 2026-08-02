@@ -634,6 +634,15 @@ export function GameInput() {
       if (e.key === "r") {
         rotateSelection();
       }
+      if (e.key === "c") {
+        // Pick the hovered building as the active placement selection, same
+        // as choosing it from the construction menu.
+        const { x, y } = lastHoverRef.current;
+        const building = x !== -1 ? world.getBuilding(x, y) : undefined;
+        if (building) {
+          useGameStore.getState().setSelectedBuilding(building.getType());
+        }
+      }
       if (e.key === "Escape") {
         isDraggingRef.current = false;
         setDragState({
@@ -665,7 +674,7 @@ export function GameInput() {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("pointerup", handleGlobalPointerUp);
     };
-  }, [rotateSelection]);
+  }, [rotateSelection, world]);
 
   // Periodically force re-render when mining limit is active to update pickaxe greyed-out status and prohibition sign
   const [, setTick] = useState(0);

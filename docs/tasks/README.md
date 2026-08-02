@@ -33,7 +33,7 @@ Task backlog converted from the repo's root `TODO.md` on 2026-08-02. Each entry 
 | 020 | [Solar panel building](020-solar-panel-building.md)                                               | Needs verification (partially implemented) |
 | 021 | [Monster attacks and base defenses](021-monster-attacks-and-defenses.md)                          | Not started                                |
 | 022 | [Underground conveyor](022-underground-conveyor.md)                                               | Not started                                |
-| 023 | [Watchtower building for map discovery](023-watchtower-building.md)                               | Not started                                |
+| 023 | [Watchtower building for map discovery](023-watchtower-building.md)                               | Superseded by 037                          |
 | 024 | [Hidden rare minerals inside rock tiles](024-hidden-rare-minerals-in-rock.md)                     | Not started                                |
 | 025 | [Trade system and Market building](025-trade-system-market.md)                                    | Not started                                |
 | 026 | [Building construction time](026-building-construction-time.md)                                   | Not started                                |
@@ -46,4 +46,5 @@ Task backlog converted from the repo's root `TODO.md` on 2026-08-02. Each entry 
 | 033 | [Image-based asset preview alongside 3D models](033-model-preview-asset-system.md)                | Not started                                |
 | 034 | [Constructor building](034-constructor-building.md)                                               | Not started                                |
 | 035 | [Grinder building](035-grinder-building.md)                                                       | Not started                                |
-| 036 | [Tower building for vision and resource generation](036-tower-vision-resource-generation.md)      | Not started                                |
+| 036 | [Tower building for vision and resource generation](036-tower-vision-resource-generation.md)      | Superseded by 037                          |
+| 037 | [Multi-island exploration & progression](037-multi-island-exploration-progression.md)             | Design complete                            |

@@ -45,6 +45,13 @@
     "drag_to_remove": "Glisser pour retirer l'objet",
     "waiting_items": "En attente d'objets..."
   },
+  "conveyor_splitter": {
+    "output_filter": "Filtre de sortie",
+    "front": "Avant",
+    "left": "Gauche",
+    "right": "Droite",
+    "any_resource": "Tout"
+  },
   "common": {
     "stone": "Roche",
     "iron": "Fer",

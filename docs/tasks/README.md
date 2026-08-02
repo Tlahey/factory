@@ -27,7 +27,7 @@ Each task file carries a `closed: true|false` frontmatter field: `true` once the
 | 012 | [Hub starting conditions](012-hub-starting-conditions.md)                                         | Not started                                |
 | 013 | [Furnace building](013-furnace-building.md)                                                       | Needs verification (partially implemented) |
 | 014 | [Conveyor merger](014-conveyor-merger.md)                                                         | Needs verification (partially implemented) |
-| 015 | [Conveyor splitter](015-conveyor-splitter.md)                                                     | Needs verification (partially implemented) |
+| 015 | [Conveyor splitter](015-conveyor-splitter.md)                                                     | Done                                       |
 | 016 | [Starting iron ore and coal deposits](016-starting-ore-coal-deposits.md)                          | Not started                                |
 | 017 | [Hub upgrade for solar panel output](017-hub-solar-upgrade.md)                                    | Not started                                |
 | 018 | [Wind turbine building](018-wind-turbine-building.md)                                             | Not started                                |

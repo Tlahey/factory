@@ -11,3 +11,4 @@ export * from "./BreakerSwitch";
 export * from "./SawmillPanel";
 export * from "./ResourceProducerPanel";
 export * from "./SolarPanelPanel";
+export * from "./ConveyorSplitterPanel";

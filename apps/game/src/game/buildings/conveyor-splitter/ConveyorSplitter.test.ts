@@ -138,4 +138,70 @@ describe("ConveyorSplitter", () => {
     expect(leftConv.currentItem).toBe("item1");
     expect(frontConv.currentItem).toBe("blocked");
   });
+
+  test("should skip a port whose filter doesn't match the held item", () => {
+    const frontConv = new Conveyor(2, 1, "north");
+    const leftConv = new Conveyor(1, 2, "west");
+    const rightConv = new Conveyor(3, 2, "east");
+
+    world.setBuilding(2, 1, frontConv);
+    world.setBuilding(1, 2, leftConv);
+    world.setBuilding(3, 2, rightConv);
+
+    splitter.setOutputFilter("front", "copper_ore");
+
+    splitter.addItem("iron_ore");
+
+    // FRONT is filtered to copper_ore, so an iron_ore item skips to LEFT.
+    expect(splitter.tryOutput(world as any)).toBe(true);
+    expect(leftConv.currentItem).toBe("iron_ore");
+    expect(frontConv.currentItem).toBeNull();
+  });
+
+  test("should stay blocked when every output's filter mismatches", () => {
+    const frontConv = new Conveyor(2, 1, "north");
+    const leftConv = new Conveyor(1, 2, "west");
+    const rightConv = new Conveyor(3, 2, "east");
+
+    world.setBuilding(2, 1, frontConv);
+    world.setBuilding(1, 2, leftConv);
+    world.setBuilding(3, 2, rightConv);
+
+    splitter.setOutputFilter("front", "copper_ore");
+    splitter.setOutputFilter("left", "copper_ore");
+    splitter.setOutputFilter("right", "copper_ore");
+
+    splitter.addItem("iron_ore");
+
+    expect(splitter.tryOutput(world as any)).toBe(false);
+    expect(splitter.currentItem).toBe("iron_ore");
+    expect(frontConv.currentItem).toBeNull();
+    expect(leftConv.currentItem).toBeNull();
+    expect(rightConv.currentItem).toBeNull();
+  });
+
+  test("should accept any resource on an unfiltered port (default)", () => {
+    const frontConv = new Conveyor(2, 1, "north");
+    world.setBuilding(2, 1, frontConv);
+
+    splitter.addItem("gold_ore");
+
+    expect(splitter.tryOutput(world as any)).toBe(true);
+    expect(frontConv.currentItem).toBe("gold_ore");
+  });
+
+  test("should persist output filters through serialize/deserialize", () => {
+    splitter.setOutputFilter("front", "iron_ore");
+    splitter.setOutputFilter("right", "copper_ore");
+
+    const data = splitter.serialize();
+    const restored = new ConveyorSplitter(2, 2, "north");
+    restored.deserialize(data);
+
+    expect(restored.outputFilters).toEqual({
+      front: "iron_ore",
+      left: null,
+      right: "copper_ore",
+    });
+  });
 });

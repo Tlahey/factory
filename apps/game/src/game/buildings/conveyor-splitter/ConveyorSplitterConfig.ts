@@ -15,7 +15,7 @@ export const CONVEYOR_SPLITTER_CONFIG: ConveyorSplitterConfigType = {
   cost: { iron_plate: 4, copper_wire: 4 },
   locked: true,
   description: "Splits one input belt into three output belts.",
-  hasMenu: false,
+  hasMenu: true,
   io: {
     hasInput: true,
     hasOutput: true,

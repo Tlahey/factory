@@ -45,6 +45,13 @@
     "drag_to_remove": "Drag to remove item",
     "waiting_items": "Waiting for items..."
   },
+  "conveyor_splitter": {
+    "output_filter": "Output Filter",
+    "front": "Front",
+    "left": "Left",
+    "right": "Right",
+    "any_resource": "Any"
+  },
   "common": {
     "stone": "Stone",
     "iron": "Iron",

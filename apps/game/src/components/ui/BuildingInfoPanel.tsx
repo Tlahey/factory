@@ -24,6 +24,7 @@ import { Furnace } from "@/game/buildings/furnace/Furnace";
 import { Conveyor } from "@/game/buildings/conveyor/Conveyor";
 import { BiomassPlant } from "@/game/buildings/biomass-plant/BiomassPlant";
 import { Sawmill } from "@/game/buildings/sawmill/Sawmill";
+import { ConveyorSplitter } from "@/game/buildings/conveyor-splitter/ConveyorSplitter";
 import { BuildingEntity } from "@/game/entities/BuildingEntity";
 import { IWorld } from "@/game/entities/types";
 import ModelPreview from "./ModelPreview";
@@ -41,6 +42,7 @@ import {
   BiomassPlantPanel,
   SawmillPanel,
   SolarPanelPanel,
+  ConveyorSplitterPanel,
 } from "./panels";
 import { SolarPanel } from "@/game/buildings/solar-panel/SolarPanel";
 import FurnaceDashboard from "./FurnaceDashboard";
@@ -133,6 +135,7 @@ export default function BuildingInfoPanel() {
   const isConveyor = building instanceof Conveyor;
   const isBiomassPlant = building instanceof BiomassPlant;
   const isSawmill = building instanceof Sawmill;
+  const isConveyorSplitter = building instanceof ConveyorSplitter;
 
   // Get current upgrade level for buildings
   const buildingType = building.getType();
@@ -354,6 +357,8 @@ export default function BuildingInfoPanel() {
             <SolarPanelPanel building={building} />
           )}
 
+          {isConveyorSplitter && <ConveyorSplitterPanel building={building} />}
+
           {!isChest &&
             !isExtractor &&
             !isBattery &&
@@ -361,6 +366,7 @@ export default function BuildingInfoPanel() {
             !isConveyor &&
             !isBiomassPlant &&
             !isSawmill &&
+            !isConveyorSplitter &&
             !(building instanceof SolarPanel) &&
             building.getType() !== "electric_pole" && (
               <div className="flex items-center justify-center h-full text-gray-500 text-sm italic py-8 text-center uppercase tracking-widest opacity-50">

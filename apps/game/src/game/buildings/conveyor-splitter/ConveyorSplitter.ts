@@ -2,6 +2,7 @@ import { BuildingEntity } from "../../entities/BuildingEntity";
 import { Direction, IWorld } from "../../entities/types";
 import { IIOBuilding, PowerConfig } from "../BuildingConfig";
 import { ConveyorSplitterConfigType } from "./ConveyorSplitterConfig";
+import type { ResourceType } from "../../data/Items";
 import { ItemSink, createItemId, pushItem } from "../ItemTransfer";
 import {
   canInputFromConfig,
@@ -35,6 +36,23 @@ export class ConveyorSplitter
   private lastOutputSide: SplitterOutputSide | "none" = "none";
   public lastWorld: IWorld | null = null;
 
+  /**
+   * Per-port resource-type filter, configured by the player. `null` means
+   * "any resource" (today's unfiltered round-robin behavior).
+   */
+  public outputFilters: Record<SplitterOutputSide, ResourceType | null> = {
+    front: null,
+    left: null,
+    right: null,
+  };
+
+  public setOutputFilter(
+    side: SplitterOutputSide,
+    type: ResourceType | null,
+  ): void {
+    this.outputFilters[side] = type;
+  }
+
   constructor(x: number, y: number, direction: Direction = "north") {
     super(x, y, "conveyor_splitter", direction);
     this.actor = createActor(conveyorSplitterMachine, {
@@ -66,6 +84,9 @@ export class ConveyorSplitter
 
     for (let i = 0; i < OUTPUT_ORDER.length; i++) {
       const side = OUTPUT_ORDER[(startIndex + i) % OUTPUT_ORDER.length];
+      const filter = this.outputFilters[side];
+      if (filter && filter !== item) continue; // Wrong resource for this port
+
       const pos = this.getPortPosition(side);
 
       if (pushItem(world, this, pos.x, pos.y, item, 1)) {
@@ -161,6 +182,7 @@ export class ConveyorSplitter
       itemId: this.itemId,
       transportProgress: this.transportProgress,
       lastOutputSide: this.lastOutputSide,
+      outputFilters: this.outputFilters,
     };
   }
 
@@ -170,5 +192,10 @@ export class ConveyorSplitter
     this.itemId = data.itemId || null;
     this.transportProgress = data.transportProgress || 0;
     this.lastOutputSide = data.lastOutputSide || "none";
+    this.outputFilters = data.outputFilters || {
+      front: null,
+      left: null,
+      right: null,
+    };
   }
 }

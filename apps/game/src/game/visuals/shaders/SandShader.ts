@@ -1,313 +1,199 @@
 import * as THREE from "three";
-import { CloudParsGLSL, CloudUniforms, SimplexNoiseGLSL } from "./ShaderUtils";
+import {
+  CloudParsGLSL,
+  CloudUniforms,
+  SimplexNoiseGLSL,
+  getShaderUniforms,
+} from "./ShaderUtils";
 
 /**
- * Sand Shader - Version Dégradé Fixé
- * * Correctif : La transition est maintenant calculée avec une zone "tampon" plus large
- * pour garantir que le passage du sable à l'herbe est progressif (flou).
+ * Sand ground material — shoreline tile, blends into grass at its edges.
+ *
+ * Same `MeshStandardMaterial` + `onBeforeCompile` approach as `GrassShader.ts`
+ * (see that file for the rationale). The dune height-field that used to drive
+ * a hand-rolled specular hack now perturbs the real geometric normal, so
+ * highlights come from THREE's own GGX lighting/env-map reflection instead of
+ * a fake `NdotH` sparkle.
  */
-export const SandShader = {
-  uniforms: {
-    uTime: { value: 0 },
-
-    // --- COULEURS ---
-    uColorBase: { value: new THREE.Color("#e8d9a0") }, // Sable
-    uColorDark: { value: new THREE.Color("#c9b87a") }, // Sable mouillé
-    uColorGrass: { value: new THREE.Color("#7baa5e") }, // Herbe
-
-    // --- REGLAGES TEXTURE ---
-    uGrainScale: { value: 3.0 },
-    uReliefStrength: { value: 0.15 },
-    uSparkleIntensity: { value: 0.5 },
-
-    // --- NUAGES (intégrés) ---
-    ...CloudUniforms,
-    // NOTE: uColorCloud is defined in CloudUniforms?
-    // Actually my shared CloudUniforms (Step 218) ONLY has uWindSpeed/Direction.
-    // So I need to keep uColorCloud here if it's specific to Sand.
-    // Wait, I didn't add uCloudColor to CloudUniforms in Step 218.
-    // I specifically commented: "We might need separate colors per shader"
-    // So I should keep uColorCloud here.
-    uColorCloud: { value: new THREE.Color("#b09560") }, // Sable ombragé (Plus sombre/marqué)
-
-    // --- REGLAGES TRANSITION ---
-    // uEdgeSize : À quelle distance du bord commence le sable ?
-    uEdgeSize: { value: 1.0 },
-
-    // uTransitionRange : La largeur du flou (plus c'est grand, plus le dégradé est long)
-    uTransitionRange: { value: 0.1 },
-
-    uWorldSize: { value: new THREE.Vector2(50, 50) },
-  },
-
-  vertexShader: /* glsl */ `
-    #include <common>
-    #include <shadowmap_pars_vertex>
-    #include <fog_pars_vertex>
-
-    varying vec2 vUv;
-    varying vec3 vWorldPosition;
-    varying vec3 vViewPosition;
-    varying vec3 vNormal;
-
-    void main() {
-      vUv = uv;
-      #include <beginnormal_vertex>
-      #include <defaultnormal_vertex>
-      vNormal = normalize(transformedNormal);
-      #include <begin_vertex>
-      #include <project_vertex>
-      vec4 worldPosition = modelMatrix * vec4( transformed, 1.0 );
-      vWorldPosition = worldPosition.xyz;
-      vViewPosition = - mvPosition.xyz; 
-      #include <shadowmap_vertex>
-      #include <fog_vertex>
-    }
-  `,
-
-  fragmentShader: /* glsl */ `
-    uniform float uTime;
-    uniform vec3 uColorBase;
-    uniform vec3 uColorDark;
-    uniform vec3 uColorGrass;
-    
-    uniform float uGrainScale;
-    uniform float uReliefStrength;
-    uniform float uSparkleIntensity;
-    
-    uniform float uEdgeSize;
-    uniform float uTransitionRange;
-    uniform vec2 uWorldSize;
-
-    // Cloud uniforms
-    // uWindSpeed/Direction come from CloudParsGLSL
-    uniform vec3 uColorCloud;
-
-    varying vec2 vUv;
-    varying vec3 vWorldPosition;
-    varying vec3 vViewPosition;
-    varying vec3 vNormal;
-
-    #include <common>
-    #include <packing>
-    #include <lights_pars_begin>
-    #include <shadowmap_pars_fragment>
-    #include <fog_pars_fragment>
-    
-    // --- SHARED UTILS ---
-    ${SimplexNoiseGLSL}
-    ${CloudParsGLSL}
-
-    // --- BRUIT (LOCAL) ---
-    float hash(vec2 p) {
-        p = fract(p * vec2(123.34, 456.21));
-        p += dot(p, p + 45.32);
-        return fract(p.x * p.y);
-    }
-    // REMOVED: texture/permute functions (now in SimplexNoiseGLSL)
-    
-    // Helper local wrapper if needed or just use snoise directly
-    
-    float getSandHeight(vec2 pos) {
-        float dunes = snoise(pos * 0.08) * 0.5;
-        float grain = hash(pos * uGrainScale * 10.0) * 0.05;
-        float fineGrain = hash(pos * uGrainScale * 30.0) * 0.02;
-        return dunes + grain + fineGrain;
-    }
-
-    vec3 perturbNormalArb( vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection ) {
-        vec3 vSigmaX = dFdx( surf_pos );
-        vec3 vSigmaY = dFdy( surf_pos );
-        vec3 vN = surf_norm;
-        vec3 R1 = cross( vSigmaY, vN );
-        vec3 R2 = cross( vN, vSigmaX );
-        float fDet = dot( vSigmaX, R1 );
-        fDet *= ( float( gl_FrontFacing ) * 2.0 - 1.0 );
-        vec3 vGrad = sign( fDet ) * ( dHdxy.x * R1 + dHdxy.y * R2 );
-        return normalize( abs( fDet ) * surf_norm - vGrad );
-    }
-
-    // --- LECTURE MANUELLE DE L'OMBRE ---
-    float getCustomShadow() {
-      float shadow = 1.0;
-      #ifdef USE_SHADOWMAP
-      #if NUM_DIR_LIGHT_SHADOWS > 0
-        vec4 shadowCoord = vDirectionalShadowCoord[0];
-        vec3 shadowCoord3 = shadowCoord.xyz / shadowCoord.w;
-        if ( shadowCoord3.x >= 0.0 && shadowCoord3.x <= 1.0 && 
-             shadowCoord3.y >= 0.0 && shadowCoord3.y <= 1.0 && 
-             shadowCoord3.z <= 1.0 ) {
-          float shadowDepth = unpackRGBAToDepth( texture2D( directionalShadowMap[ 0 ], shadowCoord3.xy ) );
-          float bias = 0.0005; 
-          if ( shadowDepth < shadowCoord3.z - bias ) {
-            shadow = 0.0;
-          }
-        }
-      #endif
-      #endif
-      return shadow;
-    }
-
-    void main() {
-      vec2 worldXZ = vWorldPosition.xz;
-      
-      // 1. RELIEF
-      float epsilon = 0.01;
-      float H = getSandHeight(worldXZ);
-      float Hx = getSandHeight(worldXZ + vec2(epsilon, 0.0));
-      float Hy = getSandHeight(worldXZ + vec2(0.0, epsilon));
-      vec2 dHdxy = vec2(Hx - H, Hy - H) * (10.0 / epsilon) * uReliefStrength;
-      
-      vec3 normal = normalize( vNormal );
-      normal = perturbNormalArb( -vViewPosition, normal, dHdxy, 1.0 );
-
-      // 2. COULEUR SABLE
-      vec3 lightDir = normalize(vec3(0.5, 1.0, 0.3));
-      float diffuse = max(dot(normal, lightDir), 0.0);
-      float mixFactor = smoothstep(-0.2, 0.2, H) * diffuse + 0.5;
-      vec3 surfaceColor = mix(uColorBase, uColorDark, mixFactor);
-
-      // Paillettes
-      vec3 viewDir = normalize(vViewPosition);
-      vec3 halfVector = normalize(lightDir + viewDir);
-      float NdotH = dot(normal, halfVector);
-      float sparkleNoise = hash(worldXZ * 20.0 + uTime * 0.1); 
-      float spec = pow(max(NdotH, 0.0), 100.0) * sparkleNoise;
-      surfaceColor += vec3(1.0, 0.9, 0.8) * spec * uSparkleIntensity;
-
-      // ==========================================================
-      // 3. TRANSITION SABLE -> HERBE (DÉGRADÉ DOUX)
-      // ==========================================================
-      
-      float worldY = vWorldPosition.y;
-
-      // On définit une plage de hauteur pour la transition (Resserrée pour moins de vert)
-      float heightTop = 0.1;    // Le vert reste uniquement sur le plat (Y >= 0)
-      float heightBottom = -0.3;  // Le sable apparait très vite dès que ça descend
-
-      // Facteur Sable : 0.0 en haut (Top), 1.0 en bas (Bottom)
-      float sandFactor = 1.0 - smoothstep(heightBottom, heightTop, worldY);
-      
-      // Ajout de bruit sur la transition pour "casser" la ligne
-      float noiseSlope = snoise(vWorldPosition.xz * 0.3) * 0.15;
-      sandFactor = clamp(sandFactor + noiseSlope, 0.0, 1.0);
-
-      // --- AMÉLIORATION DE L'HERBE (TEXTURE) ---
-      vec3 grassColorTextured = uColorGrass;
-      
-      // Bruit basse fréquence pour les variations de teinte (comme le shader d'herbe)
-      float grassNoise = snoise(vWorldPosition.xz * 0.1 + 50.0);
-      // Variation : Un peu plus clair/sombre
-      grassColorTextured += vec3(grassNoise * 0.05); 
-      
-      // Bruit haute fréquence pour le "grain"
-      float grassGrain = hash(vWorldPosition.xz * 5.0) * 0.05;
-      grassColorTextured -= vec3(grassGrain);
-
-      vec3 finalColor = mix(grassColorTextured, surfaceColor, sandFactor);
-
-      // --- NUAGES (Ombres intégrées - Shared Logic) ---
-      float cloudMixFactor = getCloudFactor(vWorldPosition.xz, uTime);
-
-      // Ombre cloud sur le sable utilise uColorCloud, sur l'herbe utilise uColorGrass assombrie
-      // Note: uColorGrass * 0.77 approxime uColorDark de GrassShader (#5e8c45 vs #7baa5e)
-      vec3 cloudShadowColor = mix(uColorGrass * 0.77, uColorCloud, sandFactor);
-      
-      finalColor = mix(finalColor, cloudShadowColor, cloudMixFactor);
-
-      // --- OMBRES PORTÉES (Buildings) ---
-      float shadowMask = getCustomShadow(); 
-      vec3 shadowColor = finalColor * 0.6; 
-      finalColor = mix(shadowColor, finalColor, shadowMask);
-
-      #include <fog_fragment>
-
-      gl_FragColor = vec4(finalColor, 1.0);
-    }
-  `,
-};
 
 export interface SandShaderOptions {
   colorBase?: THREE.Color;
   colorDark?: THREE.Color;
   colorGrass?: THREE.Color;
-
   grainScale?: number;
   reliefStrength?: number;
-  sparkleIntensity?: number;
-
   windSpeed?: number;
   windDirection?: THREE.Vector2;
   colorCloud?: THREE.Color;
-
-  edgeSize?: number; // Distance du bord où le sable est pur
-  transitionRange?: number; // Largeur du dégradé (flou)
   worldWidth?: number;
   worldHeight?: number;
 }
 
+const DEFAULTS = {
+  colorBase: new THREE.Color("#e8d9a0"),
+  colorDark: new THREE.Color("#c9b87a"),
+  colorGrass: new THREE.Color("#7baa5e"),
+  grainScale: 3.0,
+  reliefStrength: 0.15,
+  windSpeed: CloudUniforms.uWindSpeed.value as number,
+  windDirection: (CloudUniforms.uWindDirection.value as THREE.Vector2).clone(),
+  colorCloud: new THREE.Color("#b09560"),
+  worldWidth: 50,
+  worldHeight: 50,
+};
+
 export function createSandShaderMaterial(
   options: SandShaderOptions = {},
-): THREE.ShaderMaterial {
-  const uniforms = THREE.UniformsUtils.clone(SandShader.uniforms);
-  const mergedUniforms = THREE.UniformsUtils.merge([
-    THREE.UniformsLib.lights,
-    THREE.UniformsLib.fog,
-    uniforms,
-  ]);
+): THREE.MeshStandardMaterial {
+  const values = { ...DEFAULTS, ...options };
 
-  if (options.colorBase) mergedUniforms.uColorBase.value = options.colorBase;
-  if (options.colorDark) mergedUniforms.uColorDark.value = options.colorDark;
-  if (options.colorGrass) mergedUniforms.uColorGrass.value = options.colorGrass;
-  if (options.grainScale !== undefined)
-    mergedUniforms.uGrainScale.value = options.grainScale;
-  if (options.reliefStrength !== undefined)
-    mergedUniforms.uReliefStrength.value = options.reliefStrength;
-  if (options.sparkleIntensity !== undefined)
-    mergedUniforms.uSparkleIntensity.value = options.sparkleIntensity;
-
-  if (options.windSpeed !== undefined)
-    mergedUniforms.uWindSpeed.value = options.windSpeed;
-  if (options.windDirection)
-    mergedUniforms.uWindDirection.value = options.windDirection;
-  if (options.colorCloud) mergedUniforms.uColorCloud.value = options.colorCloud;
-
-  if (options.edgeSize !== undefined)
-    mergedUniforms.uEdgeSize.value = options.edgeSize;
-  if (options.transitionRange !== undefined)
-    mergedUniforms.uTransitionRange.value = options.transitionRange;
-
-  if (options.worldWidth !== undefined || options.worldHeight !== undefined) {
-    const w = options.worldWidth || 50;
-    const h = options.worldHeight || 50;
-    mergedUniforms.uWorldSize.value.set(w, h);
-  }
-
-  return new THREE.ShaderMaterial({
-    uniforms: mergedUniforms,
-    vertexShader: SandShader.vertexShader,
-    fragmentShader: SandShader.fragmentShader,
-    lights: true,
-    fog: true,
+  const material = new THREE.MeshStandardMaterial({
+    color: values.colorBase,
+    roughness: 0.8,
+    metalness: 0,
   });
+
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uTime = { value: 0 };
+    shader.uniforms.uColorBase = { value: values.colorBase };
+    shader.uniforms.uColorDark = { value: values.colorDark };
+    shader.uniforms.uColorGrass = { value: values.colorGrass };
+    shader.uniforms.uColorCloud = { value: values.colorCloud };
+    shader.uniforms.uGrainScale = { value: values.grainScale };
+    shader.uniforms.uReliefStrength = { value: values.reliefStrength };
+    shader.uniforms.uWindSpeed = { value: values.windSpeed };
+    shader.uniforms.uWindDirection = { value: values.windDirection };
+
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        "#include <common>",
+        `varying vec3 vGroundWorldPosition;\n#include <common>`,
+      )
+      .replace(
+        "#include <project_vertex>",
+        `#include <project_vertex>
+        vGroundWorldPosition = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;`,
+      );
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        `
+        varying vec3 vGroundWorldPosition;
+        uniform float uTime;
+        uniform vec3 uColorBase;
+        uniform vec3 uColorDark;
+        uniform vec3 uColorGrass;
+        uniform vec3 uColorCloud;
+        uniform float uGrainScale;
+        uniform float uReliefStrength;
+        uniform float uWindSpeed;
+        uniform vec2 uWindDirection;
+
+        ${SimplexNoiseGLSL}
+        ${CloudParsGLSL}
+
+        float sandHash(vec2 p) {
+            p = fract(p * vec2(123.34, 456.21));
+            p += dot(p, p + 45.32);
+            return fract(p.x * p.y);
+        }
+
+        float getSandHeight(vec2 pos) {
+            float dunes = snoise(pos * 0.08) * 0.5;
+            float grain = sandHash(pos * uGrainScale * 10.0) * 0.05;
+            float fineGrain = sandHash(pos * uGrainScale * 30.0) * 0.02;
+            return dunes + grain + fineGrain;
+        }
+
+        vec3 perturbDuneNormal( vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection ) {
+            vec3 vSigmaX = dFdx( surf_pos );
+            vec3 vSigmaY = dFdy( surf_pos );
+            vec3 vN = surf_norm;
+            vec3 R1 = cross( vSigmaY, vN );
+            vec3 R2 = cross( vN, vSigmaX );
+            float fDet = dot( vSigmaX, R1 ) * faceDirection;
+            vec3 vGrad = sign( fDet ) * ( dHdxy.x * R1 + dHdxy.y * R2 );
+            return normalize( abs( fDet ) * surf_norm - vGrad );
+        }
+        #include <common>
+        `,
+      )
+      .replace(
+        "#include <color_fragment>",
+        `
+        #include <color_fragment>
+        {
+          vec2 worldXZ = vGroundWorldPosition.xz;
+          float worldY = vGroundWorldPosition.y;
+
+          // Sand tone (dune shading approximated from the height field).
+          float H = getSandHeight(worldXZ);
+          vec3 sandColor = mix(uColorBase, uColorDark, smoothstep(-0.2, 0.2, H) * 0.5 + 0.25);
+
+          // Fake grass on the flat lip of the slope, fading to sand downhill.
+          float heightTop = 0.1;
+          float heightBottom = -0.3;
+          float sandFactor = 1.0 - smoothstep(heightBottom, heightTop, worldY);
+          float noiseSlope = snoise(worldXZ * 0.3) * 0.15;
+          sandFactor = clamp(sandFactor + noiseSlope, 0.0, 1.0);
+
+          vec3 grassColorTextured = uColorGrass;
+          float grassNoise = snoise(worldXZ * 0.1 + 50.0);
+          grassColorTextured += vec3(grassNoise * 0.05);
+          float grassGrain = sandHash(worldXZ * 5.0) * 0.05;
+          grassColorTextured -= vec3(grassGrain);
+
+          vec3 groundColor = mix(grassColorTextured, sandColor, sandFactor);
+
+          float cloudMixFactor = getCloudFactor(worldXZ, uTime);
+          vec3 cloudShadowColor = mix(uColorGrass * 0.77, uColorCloud, sandFactor);
+          groundColor = mix(groundColor, cloudShadowColor, cloudMixFactor * 0.6);
+
+          diffuseColor.rgb = groundColor;
+        }
+        `,
+      )
+      .replace(
+        "#include <roughnessmap_fragment>",
+        `
+        #include <roughnessmap_fragment>
+        roughnessFactor = clamp(roughnessFactor, 0.55, 0.95);
+        `,
+      )
+      .replace(
+        "#include <normal_fragment_maps>",
+        `
+        #include <normal_fragment_maps>
+        {
+          vec2 worldXZ = vGroundWorldPosition.xz;
+          float epsilon = 0.01;
+          float H = getSandHeight(worldXZ);
+          float Hx = getSandHeight(worldXZ + vec2(epsilon, 0.0));
+          float Hy = getSandHeight(worldXZ + vec2(0.0, epsilon));
+          vec2 dHdxy = vec2(Hx - H, Hy - H) * (10.0 / epsilon) * uReliefStrength;
+          normal = perturbDuneNormal( -vViewPosition, normal, dHdxy, faceDirection );
+        }
+        `,
+      );
+
+    material.userData.shader = shader;
+  };
+
+  return material;
 }
 
 export class SandShaderController {
-  public material: THREE.ShaderMaterial;
+  public material: THREE.MeshStandardMaterial;
 
   constructor(options: SandShaderOptions = {}) {
     this.material = createSandShaderMaterial(options);
   }
 
-  public update(deltaTime: number): void {
-    if (this.material.uniforms.uTime) {
-      this.material.uniforms.uTime.value += deltaTime;
-    }
-  }
-
-  public setWorldBounds(width: number, height: number): void {
-    if (this.material.uniforms.uWorldSize) {
-      this.material.uniforms.uWorldSize.value.set(width, height);
+  public update(elapsedTime: number): void {
+    const uniforms = getShaderUniforms(this.material);
+    if (uniforms?.uTime) {
+      uniforms.uTime.value = elapsedTime;
     }
   }
 

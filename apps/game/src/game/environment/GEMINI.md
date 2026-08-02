@@ -67,3 +67,16 @@ Some tiles (like Trees, Rocks) contain resources that deplete progressively:
 - `getVisualScale()` returns a value 0-1 based on remaining resources.
 - Visual models shrink/change as resources are harvested.
 - When depleted, tiles transform (e.g., Tree → Grass).
+
+## 🎨 Material Style: PBR, not toon
+
+Ground (`GrassShader.ts`, `SandShader.ts`), water (`WaterShader.ts`) and rocks
+(`RockModel.ts`) are all `MeshStandardMaterial` — procedural colour/normal/
+roughness variation is injected via `onBeforeCompile`, but lighting, shadows
+and reflections run through THREE's real PBR pipeline. This matches the
+buildings' shared industrial palette (`visuals/materials/BuildingMaterials.ts`)
+and picks up the same procedural environment map
+(`visuals/environment/OutdoorEnvironment.ts`, installed globally by
+`SceneEnvironment`) automatically — no extra wiring needed per material.
+Trees (`TreeShader.ts`) and waterfalls (`WaterfallShader.ts`) haven't been
+migrated yet and remain stylized/toon.

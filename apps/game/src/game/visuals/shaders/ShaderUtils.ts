@@ -55,3 +55,21 @@ float getCloudFactor(vec2 position, float time) {
     return smoothstep(0.0, 0.6, noiseCloud);
 }
 `;
+
+/**
+ * Terrain materials are `MeshStandardMaterial` customised via
+ * `onBeforeCompile`, which is where THREE hands us the live `shader.uniforms`
+ * bag (unlike `ShaderMaterial`, standard materials have no public `.uniforms`
+ * until a WebGL program actually compiles). Controllers stash that shader on
+ * `material.userData.shader` from inside `onBeforeCompile` so per-frame code
+ * can reach the same uniforms afterwards.
+ */
+export function getShaderUniforms(
+  material: THREE.Material,
+): Record<string, THREE.IUniform> | undefined {
+  return (
+    material.userData as {
+      shader?: { uniforms: Record<string, THREE.IUniform> };
+    }
+  ).shader?.uniforms;
+}

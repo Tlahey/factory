@@ -3,7 +3,7 @@ import { useGameContext } from "../providers/GameProvider";
 import { createBatchedTerrain } from "../visuals/shaders/TerrainBatcher";
 import { createGrassShaderMaterial } from "../visuals/shaders/GrassShader";
 import { SandShaderController } from "../visuals/shaders/SandShader";
-import { ToonWaterController } from "../visuals/shaders/ToonWaterShader";
+import { WaterController } from "../visuals/shaders/WaterShader";
 import { WORLD_WIDTH, WORLD_HEIGHT } from "../constants";
 import { GroundLayer } from "./terrain/GroundLayer";
 import { WaterLayer } from "./terrain/WaterLayer";
@@ -36,7 +36,7 @@ export function Terrain() {
       worldWidth: WORLD_WIDTH,
       worldHeight: WORLD_HEIGHT,
     });
-    const waterController = new ToonWaterController({});
+    const waterController = new WaterController({});
 
     const data = createBatchedTerrain(
       world.grid,

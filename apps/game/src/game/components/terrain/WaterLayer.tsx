@@ -3,13 +3,13 @@ import React, { useRef, useMemo, useEffect, useState } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useGameContext } from "../../providers/GameProvider";
-import { ToonWaterController } from "../../visuals/shaders/ToonWaterShader";
+import { WaterController } from "../../visuals/shaders/WaterShader";
 import { WaterfallController } from "../../visuals/shaders/WaterfallShader";
 import { createWaterfallMeshes } from "./WaterfallUtils";
 
 interface WaterLayerProps {
   waterMesh?: THREE.Mesh | null;
-  waterController?: ToonWaterController | null;
+  waterController?: WaterController | null;
 }
 
 export function WaterLayer({ waterMesh, waterController }: WaterLayerProps) {
@@ -85,11 +85,8 @@ export function WaterLayer({ waterMesh, waterController }: WaterLayerProps) {
     }
 
     // Update Animations
-    waterController?.update(delta);
-    if (waterController && waterController.material.uniforms.uTime) {
-      waterController.material.uniforms.uTime.value = elapsedTime;
-      waterController.updateCamera(camera as THREE.PerspectiveCamera);
-    }
+    waterController?.update(elapsedTime);
+    waterController?.updateCamera(camera as THREE.PerspectiveCamera);
 
     waterfallControllerRef.current?.update(delta);
     if (

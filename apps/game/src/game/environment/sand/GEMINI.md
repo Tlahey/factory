@@ -17,4 +17,4 @@ Terrain tile found near water bodies, creating the transition between the ocean 
 
 ## Visual Properties
 
-The sand shader provides a stylized, toon-appropriate look that matches the game's aesthetic while being procedurally generated to avoid texture repetition.
+The sand shader is a `MeshStandardMaterial` customised via `onBeforeCompile`: procedural colour/grain/dune-normal variation is injected into THREE's own PBR pipeline, so sand is lit and shadowed like every other PBR surface in the game (see `environment/GEMINI.md`) while staying fully procedural (no texture repetition).

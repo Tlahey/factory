@@ -20,9 +20,11 @@ export function createRockModel(
   const group = new THREE.Group();
 
   const texture = createRockTexture();
-  const material = new THREE.MeshLambertMaterial({
+  const material = new THREE.MeshStandardMaterial({
     map: texture,
     flatShading: true,
+    roughness: 0.9,
+    metalness: 0,
   });
 
   // Get number of rock chunks from config

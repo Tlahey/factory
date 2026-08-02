@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { SandShaderController } from "../../visuals/shaders/SandShader";
 import { createGrassShaderMaterial } from "../../visuals/shaders/GrassShader";
+import { getShaderUniforms } from "../../visuals/shaders/ShaderUtils";
 
 interface GroundLayerProps {
   grassMesh?: THREE.Mesh | null;
@@ -38,22 +39,19 @@ export function GroundLayer({
     }
   }, [grassMesh]);
 
-  useFrame(({ clock }, delta) => {
+  useFrame(({ clock }) => {
     const elapsedTime = clock.getElapsedTime();
 
     // Update Grass
     if (grassMesh && grassMesh.material) {
-      const mat = grassMesh.material as THREE.ShaderMaterial;
-      if (mat.uniforms && mat.uniforms.uTime) {
-        mat.uniforms.uTime.value = elapsedTime;
+      const uniforms = getShaderUniforms(grassMesh.material as THREE.Material);
+      if (uniforms?.uTime) {
+        uniforms.uTime.value = elapsedTime;
       }
     }
 
     // Update Sand
-    sandController?.update(delta);
-    if (sandController && sandController.material.uniforms.uTime) {
-      sandController.material.uniforms.uTime.value = elapsedTime;
-    }
+    sandController?.update(elapsedTime);
   });
 
   return (

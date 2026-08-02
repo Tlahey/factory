@@ -1,163 +1,127 @@
 import * as THREE from "three";
 import { CloudParsGLSL, CloudUniforms, SimplexNoiseGLSL } from "./ShaderUtils";
 
-export const GrassShader = {
-  uniforms: {
-    uTime: { value: 0 },
+/**
+ * Grass ground material.
+ *
+ * `MeshStandardMaterial` customised via `onBeforeCompile` so the terrain is
+ * lit by the same PBR pipeline (directional light, shadows, `scene.environment`
+ * reflections) as the buildings, instead of the old hand-rolled toon shading.
+ * The procedural colour variation (grain, light patches, earth spots, cloud
+ * shadow) is injected at `#include <color_fragment>`; a matching grain pattern
+ * modulates roughness so the surface doesn't read as a flat plastic sheet.
+ */
 
-    // --- PALETTE "GHIBLI DOUX" ---
-    // Note : Base est maintenant la couleur dominante (claire), Dark est l'ombre (nuage)
-    uColorBase: { value: new THREE.Color("#7baa5e") }, // Vert moyen lumineux (Sol par défaut)
-    uColorLight: { value: new THREE.Color("#a6c875") }, // Vert très clair (Touches de lumière)
-    uColorDark: { value: new THREE.Color("#557d42") }, // Vert foncé (Ombres des nuages - Plus sombre)
-    uColorEarth: { value: new THREE.Color("#c7b0a4") }, // Terre
+export interface GrassMaterialOverrides {
+  uColorBase?: THREE.Color;
+  uColorLight?: THREE.Color;
+  uColorDark?: THREE.Color;
+  uColorEarth?: THREE.Color;
+  uWindSpeed?: number;
+  uWindDirection?: THREE.Vector2;
+}
 
-    // --- Settings ---
-    ...CloudUniforms,
-  },
-
-  vertexShader: `
-    #include <common>
-    #include <shadowmap_pars_vertex>
-    #include <fog_pars_vertex>
-
-    varying vec2 vUv;
-    varying vec3 vWorldPosition;
-
-    void main() {
-      vUv = uv;
-      #include <beginnormal_vertex>
-      #include <defaultnormal_vertex>
-      #include <begin_vertex>
-      #include <project_vertex>
-      
-      vec4 worldPosition = modelMatrix * vec4( transformed, 1.0 );
-      vWorldPosition = worldPosition.xyz;
-      
-      #include <shadowmap_vertex>
-      #include <fog_vertex>
-    }
-  `,
-
-  fragmentShader: `
-    uniform float uTime;
-    uniform vec3 uColorBase;
-    uniform vec3 uColorLight;
-    uniform vec3 uColorDark;
-    uniform vec3 uColorEarth;
-    
-    // Cloud uniforms (uWindSpeed, etc) are in CloudParsGLSL
-    
-    varying vec2 vUv;
-    varying vec3 vWorldPosition;
-
-    #include <common>
-    #include <packing>
-    #include <lights_pars_begin>
-    #include <shadowmap_pars_fragment>
-    #include <fog_pars_fragment>
-
-    // --- SHARED UTILS ---
-    ${SimplexNoiseGLSL}
-    ${CloudParsGLSL}
-
-    // --- LECTURE MANUELLE DE L'OMBRE ---
-    float getCustomShadow() {
-      float shadow = 1.0;
-      #ifdef USE_SHADOWMAP
-      #if NUM_DIR_LIGHT_SHADOWS > 0
-        vec4 shadowCoord = vDirectionalShadowCoord[0];
-        vec3 shadowCoord3 = shadowCoord.xyz / shadowCoord.w;
-        if ( shadowCoord3.x >= 0.0 && shadowCoord3.x <= 1.0 && 
-             shadowCoord3.y >= 0.0 && shadowCoord3.y <= 1.0 && 
-             shadowCoord3.z <= 1.0 ) {
-          float shadowDepth = unpackRGBAToDepth( texture2D( directionalShadowMap[ 0 ], shadowCoord3.xy ) );
-          float bias = 0.0005; 
-          if ( shadowDepth < shadowCoord3.z - bias ) {
-            shadow = 0.0;
-          }
-        }
-      #endif
-      #endif
-      return shadow;
-    }
-
-    void main() {
-      // --- ECHELLES ---
-      float scaleLight = 0.08;   // Taille des zones claires (fixes)
-      float scaleEarth = 0.25;   // Taille de la terre
-      float scaleGrain = 20.0;   // Grain GROS et VISIBLE (Fausse herbe)
-
-      // 1. Base (Couleur principale)
-      vec3 finalColor = uColorBase;
-
-      // 2. Grain "Coups de Pinceau" (Appliqué direct sur la base)
-      // On le calcule avant tout le reste pour qu'il texture tout le sol vert.
-      float grainNoise = snoise(vWorldPosition.xz * scaleGrain);
-      // Contraste fort pour être visible
-      float grainFactor = smoothstep(-0.4, 0.4, grainNoise);
-      // Mix : On assombrit/éclaircit de +/- 8%
-      vec3 grainColor = mix(finalColor * 0.92, finalColor * 1.08, grainFactor);
-      finalColor = grainColor;
-
-      // 4. Zones de Lumière (Fixes ou très lentes)
-      // Pour ajouter de la richesse et ne pas avoir juste 2 couleurs
-      float noiseLight = snoise(vWorldPosition.xz * scaleLight - vec2(50.0));
-      // Touches légères
-      finalColor = mix(finalColor, uColorLight, smoothstep(0.3, 0.7, noiseLight) * 0.5);
-
-      // 5. Taches de Terre (Par dessus tout, sans grain d'herbe)
-      float noiseEarth = snoise(vWorldPosition.xz * scaleEarth + vec2(10.0, 20.0));
-      float maskEarth = smoothstep(0.65, 0.85, noiseEarth);
-      finalColor = mix(finalColor, uColorEarth, maskEarth);
-
-      // 3. Nuages (Zone Dark qui bouge) - APPLIQUÉ À LA FIN
-      // Utilisation de la logique partagée
-      float cloudFactor = getCloudFactor(vWorldPosition.xz, uTime);
-      finalColor = mix(finalColor, uColorDark, cloudFactor);
-
-      // 6. Ombres Portées (Buildings)
-      float shadowMask = getCustomShadow(); 
-      vec3 shadowColor = finalColor * 0.6; 
-      finalColor = mix(shadowColor, finalColor, shadowMask);
-
-      #include <fog_fragment>
-
-      gl_FragColor = vec4(finalColor, 1.0);
-    }
-  `,
+const DEFAULTS = {
+  uColorBase: new THREE.Color("#7baa5e"),
+  uColorLight: new THREE.Color("#a6c875"),
+  uColorDark: new THREE.Color("#557d42"),
+  uColorEarth: new THREE.Color("#c7b0a4"),
+  uWindSpeed: CloudUniforms.uWindSpeed.value as number,
+  uWindDirection: (CloudUniforms.uWindDirection.value as THREE.Vector2).clone(),
 };
 
 export function createGrassShaderMaterial(
-  overrides: Partial<{
-    uColorBase: THREE.Color;
-    uColorLight: THREE.Color;
-    uColorDark: THREE.Color;
-    uColorEarth: THREE.Color;
-    uWindSpeed: number;
-    uWindDirection: THREE.Vector2;
-  }> = {},
-): THREE.ShaderMaterial {
-  const uniforms = THREE.UniformsUtils.merge([
-    THREE.UniformsLib.lights,
-    THREE.UniformsLib.fog,
-    GrassShader.uniforms,
-  ]);
+  overrides: GrassMaterialOverrides = {},
+): THREE.MeshStandardMaterial {
+  const values = { ...DEFAULTS, ...overrides };
 
-  if (overrides.uColorBase) uniforms.uColorBase.value = overrides.uColorBase;
-  if (overrides.uColorLight) uniforms.uColorLight.value = overrides.uColorLight;
-  if (overrides.uColorDark) uniforms.uColorDark.value = overrides.uColorDark;
-  if (overrides.uColorEarth) uniforms.uColorEarth.value = overrides.uColorEarth;
-
-  if (overrides.uWindSpeed) uniforms.uWindSpeed.value = overrides.uWindSpeed;
-  if (overrides.uWindDirection)
-    uniforms.uWindDirection.value = overrides.uWindDirection;
-
-  return new THREE.ShaderMaterial({
-    uniforms: uniforms,
-    vertexShader: GrassShader.vertexShader,
-    fragmentShader: GrassShader.fragmentShader,
-    lights: true,
-    fog: true,
+  const material = new THREE.MeshStandardMaterial({
+    color: values.uColorBase,
+    roughness: 0.92,
+    metalness: 0,
   });
+
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uTime = { value: 0 };
+    shader.uniforms.uColorBase = { value: values.uColorBase };
+    shader.uniforms.uColorLight = { value: values.uColorLight };
+    shader.uniforms.uColorDark = { value: values.uColorDark };
+    shader.uniforms.uColorEarth = { value: values.uColorEarth };
+    shader.uniforms.uWindSpeed = { value: values.uWindSpeed };
+    shader.uniforms.uWindDirection = { value: values.uWindDirection };
+
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        "#include <common>",
+        `varying vec3 vGroundWorldPosition;\n#include <common>`,
+      )
+      .replace(
+        "#include <project_vertex>",
+        `#include <project_vertex>
+        vGroundWorldPosition = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;`,
+      );
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        `
+        varying vec3 vGroundWorldPosition;
+        uniform float uTime;
+        uniform vec3 uColorBase;
+        uniform vec3 uColorLight;
+        uniform vec3 uColorDark;
+        uniform vec3 uColorEarth;
+        uniform float uWindSpeed;
+        uniform vec2 uWindDirection;
+
+        ${SimplexNoiseGLSL}
+        ${CloudParsGLSL}
+        #include <common>
+        `,
+      )
+      .replace(
+        "#include <color_fragment>",
+        `
+        #include <color_fragment>
+        {
+          vec2 worldXZ = vGroundWorldPosition.xz;
+          vec3 groundColor = uColorBase;
+
+          // Hand-painted "brush stroke" grain, coarse enough to read as texture.
+          float grainNoise = snoise(worldXZ * 20.0);
+          float grainFactor = smoothstep(-0.4, 0.4, grainNoise);
+          groundColor = mix(groundColor * 0.92, groundColor * 1.08, grainFactor);
+
+          // Slow-moving light patches.
+          float noiseLight = snoise(worldXZ * 0.08 - vec2(50.0));
+          groundColor = mix(groundColor, uColorLight, smoothstep(0.3, 0.7, noiseLight) * 0.5);
+
+          // Bare earth patches.
+          float noiseEarth = snoise(worldXZ * 0.25 + vec2(10.0, 20.0));
+          float maskEarth = smoothstep(0.65, 0.85, noiseEarth);
+          groundColor = mix(groundColor, uColorEarth, maskEarth);
+
+          // Drifting cloud shadow.
+          float cloudFactor = getCloudFactor(worldXZ, uTime);
+          groundColor = mix(groundColor, uColorDark, cloudFactor * 0.6);
+
+          diffuseColor.rgb = groundColor;
+        }
+        `,
+      )
+      .replace(
+        "#include <roughnessmap_fragment>",
+        `
+        #include <roughnessmap_fragment>
+        {
+          float roughnessNoise = snoise(vGroundWorldPosition.xz * 20.0 + 5.0);
+          roughnessFactor = clamp(roughnessFactor + roughnessNoise * 0.05, 0.6, 1.0);
+        }
+        `,
+      );
+
+    material.userData.shader = shader;
+  };
+
+  return material;
 }

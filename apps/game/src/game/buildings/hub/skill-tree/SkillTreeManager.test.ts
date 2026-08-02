@@ -219,6 +219,36 @@ describe("SkillTreeManager", () => {
     it("should return false for non-existent node", () => {
       expect(manager.canUnlock("nonexistent")).toBe(false);
     });
+
+    it("should return false for a different node while another timed research is pending", () => {
+      mockGetState.mockReturnValue(
+        createMockState({
+          unlockedSkills: ["root"],
+          pendingUnlocks: [
+            {
+              skillId: "extractor_unlock",
+              startTime: Date.now(),
+              duration: 30,
+            },
+          ],
+        }),
+      );
+
+      // cable_unlock also only requires "root", but a different research
+      // is already in progress, so it must be blocked too.
+      expect(manager.canUnlock("cable_unlock")).toBe(false);
+    });
+
+    it("should return true again once the pending research clears", () => {
+      mockGetState.mockReturnValue(
+        createMockState({
+          unlockedSkills: ["root"],
+          pendingUnlocks: [],
+        }),
+      );
+
+      expect(manager.canUnlock("cable_unlock")).toBe(true);
+    });
   });
 
   describe("getNodeCost", () => {

@@ -102,6 +102,13 @@ export class SkillTreeManager {
     // Already pending
     if (this.isPending(nodeId)) return false;
 
+    // Only one timed research can run at a time — instant unlocks
+    // (unlockDuration === 0) never enter pendingUnlocks, so they don't
+    // contend for this slot.
+    if (node.unlockDuration > 0 && this.getPendingUnlocks().length > 0) {
+      return false;
+    }
+
     // Check all requirements are unlocked
     const unlocked = this.getUnlockedNodeIds();
     return node.requires.every((reqId) => unlocked.includes(reqId));

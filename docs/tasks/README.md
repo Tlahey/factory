@@ -42,7 +42,7 @@ Each task file carries a `closed: true|false` frontmatter field: `true` once the
 | 027 | [Continuous conveyor placement while dragging](027-conveyor-drag-placement-v2.md)                 | Not started                                |
 | 028 | [Building HUD panels inherit from capability interfaces](028-building-hud-type-inheritance.md)    | Not started                                |
 | 029 | [Keep IO arrow colors unchanged in placement preview](029-preview-mode-io-arrow-color.md)         | Not started                                |
-| 030 | [Restrict skill-tree upgrades to one at a time](030-sequential-upgrades-only.md)                  | Not started                                |
+| 030 | [Restrict skill-tree upgrades to one at a time](030-sequential-upgrades-only.md)                  | Done                                       |
 | 031 | [Workshop for manual crafting](031-workshop-manual-crafting.md)                                   | Not started                                |
 | 032 | [Chunk-based map with per-chunk resource limits](032-chunk-based-map-resource-limits.md)          | Not started                                |
 | 033 | [Image-based asset preview alongside 3D models](033-model-preview-asset-system.md)                | Not started                                |

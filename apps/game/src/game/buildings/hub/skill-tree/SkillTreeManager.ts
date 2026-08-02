@@ -137,10 +137,15 @@ export class SkillTreeManager {
       const unlockCosts: Record<string, Record<string, number>> = {
         extractor_unlock: { stone: 10 },
         cable_unlock: { stone: 5 }, // Very cheap
+        sawmill_unlock: { stone: 15 },
         logistics_tech: { stone: 15 },
+        battery_unlock: { stone: 30, copper: 15 },
+        biomass_plant_unlock: { stone: 25, wood: 20 },
         conveyor_unlock: { stone: 20 },
         chest_unlock: { stone: 30 },
         electric_pole_unlock: { stone: 50, iron: 10 },
+        furnace_unlock: { stone: 40, iron: 20 },
+        solar_panel_unlock: { stone: 30, copper: 20 },
       };
       return unlockCosts[nodeId] || { stone: 10 };
     }

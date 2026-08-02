@@ -20,13 +20,10 @@ export const SOLAR_PANEL_CONFIG: SolarPanelConfigType = {
   type: "solar_panel",
   category: "power",
   cost: { stone: 10, iron_ingot: 10, copper_ingot: 20 },
-  // Checking cost: stone, iron, copper_ingot, wood are standard.
-  // Re-evaluating cost: Solar panel needs "silicon" -> sand? or just copper + iron.
-  // Let's use: 20 Iron Ingot + 20 Copper Ingot + 10 Stone (glass base).
   placement: {
     canPlaceOnResources: true,
   },
-  locked: false, // Start unlocked for testing? Or locked if skill tree. Plan said locked.
+  locked: true,
   hasMenu: true,
   width: 1,
   height: 1,

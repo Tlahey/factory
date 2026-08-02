@@ -39,9 +39,17 @@ export interface SkillNode {
  * The skill tree graph definition.
  * All nodes start from a central "root" point.
  *
+ * Progression is built around the Hub itself: every tier of new buildings is
+ * gated behind a Hub upgrade (hub_1, hub_2, ...), which in turn requires the
+ * previous tier's buildings to be unlocked first. This keeps the Hub as the
+ * mandatory hub (pun intended) of progression instead of an optional side
+ * branch, and every building upgrade chains off its own unlock node.
+ *
  * Flow:
- * - root -> building unlocks
- * - building unlock -> building upgrades
+ * - root -> Tier 1 unlocks (Extractor, Cable, Sawmill)
+ * - Tier 1 unlocks -> hub_1 (Hub upgrade, gate) -> Tier 2 unlocks
+ * - Tier 2 unlocks -> hub_2 (Hub upgrade, gate) -> Tier 3 unlocks
+ * - each building's own upgrade nodes chain off its unlock node
  */
 export const SKILL_TREE: SkillNode[] = [
   // === ROOT (Starting Point) ===
@@ -55,14 +63,14 @@ export const SKILL_TREE: SkillNode[] = [
     unlockDuration: 0,
   },
 
-  // === TIER 1: Extractor & Cable (Requires Hub) ===
+  // === TIER 1: Basic resources & power, unlocked directly from the Hub ===
   {
     id: "extractor_unlock",
     type: "unlock",
     buildingId: "extractor",
     level: 0,
     requires: ["root"],
-    position: { x: 1, y: 1 },
+    position: { x: -2, y: 1 },
     unlockDuration: 10,
   },
   {
@@ -71,40 +79,67 @@ export const SKILL_TREE: SkillNode[] = [
     buildingId: "cable",
     level: 0,
     requires: ["root"],
-    position: { x: 3, y: 1 },
+    position: { x: 1, y: 1 },
     unlockDuration: 10,
   },
-
-  // === TIER 1.2: Battery (Requires Cable) ===
   {
-    id: "battery_unlock",
+    id: "sawmill_unlock",
     type: "unlock",
-    buildingId: "battery",
+    buildingId: "sawmill",
     level: 0,
-    requires: ["cable_unlock"],
-    position: { x: 4, y: 2 },
-    unlockDuration: 20,
+    requires: ["root"],
+    position: { x: 6, y: 1 },
+    unlockDuration: 15,
   },
 
-  // === TIER 1.5: Logistics Tech (Buffer Node) ===
+  // === HUB GATE 1: Requires the Tier 1 foundation (mining + power) ===
+  {
+    id: "hub_1",
+    type: "upgrade",
+    buildingId: "hub",
+    level: 1,
+    requires: ["extractor_unlock", "cable_unlock"],
+    position: { x: 2, y: 2 },
+    unlockDuration: 90,
+  },
+
+  // === TIER 2: Logistics & storage of power, unlocked by hub_1 ===
   {
     id: "logistics_tech",
     type: "tech",
     buildingId: "hub", // Still needed for type safety but ignored for tech rendering
     level: 0,
-    requires: ["extractor_unlock", "cable_unlock"],
-    position: { x: 2, y: 2 },
+    requires: ["hub_1"],
+    position: { x: 2, y: 3 },
     unlockDuration: 20,
   },
+  {
+    id: "battery_unlock",
+    type: "unlock",
+    buildingId: "battery",
+    level: 0,
+    requires: ["hub_1"],
+    position: { x: 4, y: 3 },
+    unlockDuration: 25,
+  },
+  {
+    id: "biomass_plant_unlock",
+    type: "unlock",
+    buildingId: "biomass_plant",
+    level: 0,
+    requires: ["hub_1", "sawmill_unlock"],
+    position: { x: 7, y: 3 },
+    unlockDuration: 35,
+  },
 
-  // === TIER 2: Conveyor & Chest (Requires Logistics) ===
+  // === TIER 2 outputs: Conveyor & Chest (Requires Logistics) ===
   {
     id: "conveyor_unlock",
     type: "unlock",
     buildingId: "conveyor",
     level: 0,
     requires: ["logistics_tech"],
-    position: { x: 1, y: 3 },
+    position: { x: 0, y: 4 },
     unlockDuration: 30,
   },
   {
@@ -113,7 +148,7 @@ export const SKILL_TREE: SkillNode[] = [
     buildingId: "chest",
     level: 0,
     requires: ["logistics_tech"],
-    position: { x: 3, y: 3 },
+    position: { x: 3, y: 4 },
     unlockDuration: 30,
   },
   {
@@ -122,7 +157,7 @@ export const SKILL_TREE: SkillNode[] = [
     buildingId: "conveyor_merger",
     level: 0,
     requires: ["conveyor_unlock"],
-    position: { x: 0, y: 3 },
+    position: { x: -1.6, y: 5 },
     unlockDuration: 40,
   },
   {
@@ -131,76 +166,60 @@ export const SKILL_TREE: SkillNode[] = [
     buildingId: "conveyor_splitter",
     level: 0,
     requires: ["conveyor_unlock"],
-    position: { x: -1, y: 3 },
+    position: { x: -1, y: 5 },
     unlockDuration: 40,
   },
 
-  // === TIER 2.5: Furnace (Requires Stone/Ore processing logic?) ===
-  // Requires Conveyor/Chest to handle input/output efficiently
+  // === HUB GATE 2: Requires the full Tier 2 logistics + power foundation ===
   {
-    id: "furnace_unlock",
-    type: "unlock",
-    buildingId: "furnace",
-    level: 0,
-    requires: ["conveyor_unlock", "chest_unlock"], // Ensure logistics exist
-    position: { x: 4, y: 3 },
-    unlockDuration: 45,
+    id: "hub_2",
+    type: "upgrade",
+    buildingId: "hub",
+    level: 2,
+    requires: ["conveyor_unlock", "chest_unlock", "battery_unlock"],
+    position: { x: 2, y: 5 },
+    unlockDuration: 150,
   },
 
-  // === TIER 3: Electric Pole (Requires Conveyor & Chest) ===
+  // === TIER 3: Industrialization, unlocked by hub_2 ===
   {
     id: "electric_pole_unlock",
     type: "unlock",
     buildingId: "electric_pole",
     level: 0,
-    requires: ["conveyor_unlock", "chest_unlock"],
-    position: { x: 2, y: 4 },
+    requires: ["hub_2", "conveyor_unlock", "chest_unlock"],
+    position: { x: 1, y: 6 },
     unlockDuration: 60,
   },
-
-  // === TIER 2: Sawmill (Requires Extractor - alternative resource extraction) ===
   {
-    id: "sawmill_unlock",
+    id: "furnace_unlock",
     type: "unlock",
-    buildingId: "sawmill",
+    buildingId: "furnace",
     level: 0,
-    requires: ["extractor_unlock"],
-    position: { x: 0, y: 2 },
-    unlockDuration: 25,
+    requires: ["hub_2", "conveyor_unlock", "chest_unlock"],
+    position: { x: 2, y: 6 },
+    unlockDuration: 60,
   },
-
-  // === TIER 2.5: Biomass Plant (Requires Sawmill - wood to power) ===
   {
-    id: "biomass_plant_unlock",
+    id: "solar_panel_unlock",
     type: "unlock",
-    buildingId: "biomass_plant",
+    buildingId: "solar_panel",
     level: 0,
-    requires: ["sawmill_unlock"],
-    position: { x: -1, y: 4 },
-    unlockDuration: 35,
+    requires: ["hub_2", "battery_unlock"],
+    position: { x: 5, y: 6 },
+    unlockDuration: 45,
   },
 
-  // === UPGRADES ===
+  // === UPGRADES (each chains off its own building's unlock node) ===
 
-  // Hub Upgrades - Moved down deeply
-  {
-    id: "hub_1",
-    type: "upgrade",
-    buildingId: "hub",
-    level: 1,
-    requires: ["root"],
-    position: { x: 4, y: 5 }, // Far bottom right or separate branch
-    unlockDuration: 90,
-  },
-
-  // Extractor Upgrades - Detached from immediate flow
+  // Extractor Upgrades
   {
     id: "extractor_1",
     type: "upgrade",
     buildingId: "extractor",
     level: 1,
     requires: ["extractor_unlock"],
-    position: { x: 0, y: 4 }, // Side branch, later visually
+    position: { x: -2, y: 2 },
     unlockDuration: 60,
   },
   {
@@ -209,8 +228,17 @@ export const SKILL_TREE: SkillNode[] = [
     buildingId: "extractor",
     level: 2,
     requires: ["extractor_1"],
-    position: { x: 0, y: 5 },
+    position: { x: -2, y: 3 },
     unlockDuration: 120,
+  },
+  {
+    id: "extractor_3",
+    type: "upgrade",
+    buildingId: "extractor",
+    level: 3,
+    requires: ["extractor_2"],
+    position: { x: -2, y: 4 },
+    unlockDuration: 180,
   },
 
   // Sawmill Upgrades
@@ -220,7 +248,7 @@ export const SKILL_TREE: SkillNode[] = [
     buildingId: "sawmill",
     level: 1,
     requires: ["sawmill_unlock"],
-    position: { x: -1, y: 2 },
+    position: { x: 6, y: 2 },
     unlockDuration: 45,
   },
   {
@@ -229,8 +257,17 @@ export const SKILL_TREE: SkillNode[] = [
     buildingId: "sawmill",
     level: 2,
     requires: ["sawmill_1"],
-    position: { x: -1, y: 3 },
+    position: { x: 6, y: 3 },
     unlockDuration: 90,
+  },
+  {
+    id: "sawmill_3",
+    type: "upgrade",
+    buildingId: "sawmill",
+    level: 3,
+    requires: ["sawmill_2"],
+    position: { x: 6, y: 4 },
+    unlockDuration: 150,
   },
 
   // Conveyor Upgrades
@@ -240,7 +277,7 @@ export const SKILL_TREE: SkillNode[] = [
     buildingId: "conveyor",
     level: 1,
     requires: ["conveyor_unlock"],
-    position: { x: 1, y: 4 },
+    position: { x: 0, y: 5 },
     unlockDuration: 60,
   },
   {
@@ -249,7 +286,7 @@ export const SKILL_TREE: SkillNode[] = [
     buildingId: "conveyor",
     level: 2,
     requires: ["conveyor_1"],
-    position: { x: 1, y: 5 },
+    position: { x: 0, y: 6 },
     unlockDuration: 120,
   },
 
@@ -260,8 +297,17 @@ export const SKILL_TREE: SkillNode[] = [
     buildingId: "chest",
     level: 1,
     requires: ["chest_unlock"],
-    position: { x: 3, y: 4 },
+    position: { x: 3, y: 5 },
     unlockDuration: 60,
+  },
+  {
+    id: "chest_2",
+    type: "upgrade",
+    buildingId: "chest",
+    level: 2,
+    requires: ["chest_1"],
+    position: { x: 3, y: 6 },
+    unlockDuration: 100,
   },
 
   // Battery Upgrades
@@ -271,7 +317,7 @@ export const SKILL_TREE: SkillNode[] = [
     buildingId: "battery",
     level: 1,
     requires: ["battery_unlock"],
-    position: { x: 5, y: 3 },
+    position: { x: 4, y: 4 },
     unlockDuration: 45,
   },
   {
@@ -280,27 +326,18 @@ export const SKILL_TREE: SkillNode[] = [
     buildingId: "battery",
     level: 2,
     requires: ["battery_capacity_1"],
-    position: { x: 5, y: 4 },
+    position: { x: 4, y: 5 },
     unlockDuration: 90,
   },
 
-  // === TIER 2: Solar Panel (Requires Battery) ===
-  {
-    id: "solar_panel_unlock",
-    type: "unlock",
-    buildingId: "solar_panel",
-    level: 0,
-    requires: ["battery_unlock"],
-    position: { x: 5, y: 3 }, // Below Battery
-    unlockDuration: 40,
-  },
+  // Solar Panel Upgrades
   {
     id: "solar_panel_efficiency_1",
     type: "upgrade",
     buildingId: "solar_panel",
     level: 1,
     requires: ["solar_panel_unlock"],
-    position: { x: 5, y: 4 },
+    position: { x: 5, y: 7 },
     unlockDuration: 60,
   },
   {
@@ -309,9 +346,10 @@ export const SKILL_TREE: SkillNode[] = [
     buildingId: "solar_panel",
     level: 2,
     requires: ["solar_panel_efficiency_1"],
-    position: { x: 5, y: 5 },
+    position: { x: 5, y: 8 },
     unlockDuration: 90,
   },
+
   // Electric Pole Upgrades
   {
     id: "electric_pole_connections",
@@ -319,7 +357,7 @@ export const SKILL_TREE: SkillNode[] = [
     buildingId: "electric_pole",
     level: 1,
     requires: ["electric_pole_unlock"],
-    position: { x: 2, y: 5 },
+    position: { x: 1, y: 7 },
     unlockDuration: 45,
   },
 
@@ -330,7 +368,7 @@ export const SKILL_TREE: SkillNode[] = [
     buildingId: "biomass_plant",
     level: 1,
     requires: ["biomass_plant_unlock"],
-    position: { x: -2, y: 4 },
+    position: { x: 7, y: 4 },
     unlockDuration: 50,
   },
   {
@@ -339,8 +377,46 @@ export const SKILL_TREE: SkillNode[] = [
     buildingId: "biomass_plant",
     level: 2,
     requires: ["biomass_plant_efficiency_1"],
-    position: { x: -2, y: 5 },
+    position: { x: 7, y: 5 },
     unlockDuration: 75,
+  },
+  {
+    id: "biomass_plant_speed_1",
+    type: "upgrade",
+    buildingId: "biomass_plant",
+    level: 3,
+    requires: ["biomass_plant_capacity_1"],
+    position: { x: 7, y: 6 },
+    unlockDuration: 110,
+  },
+
+  // Furnace Upgrades
+  {
+    id: "furnace_1",
+    type: "upgrade",
+    buildingId: "furnace",
+    level: 1,
+    requires: ["furnace_unlock"],
+    position: { x: 2, y: 7 },
+    unlockDuration: 90,
+  },
+  {
+    id: "furnace_2",
+    type: "upgrade",
+    buildingId: "furnace",
+    level: 2,
+    requires: ["furnace_1"],
+    position: { x: 2, y: 8 },
+    unlockDuration: 150,
+  },
+  {
+    id: "furnace_3",
+    type: "upgrade",
+    buildingId: "furnace",
+    level: 3,
+    requires: ["furnace_2"],
+    position: { x: 2, y: 9 },
+    unlockDuration: 200,
   },
 ];
 

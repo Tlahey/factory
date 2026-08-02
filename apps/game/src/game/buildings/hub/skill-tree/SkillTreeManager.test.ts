@@ -312,6 +312,19 @@ describe("SkillTreeManager", () => {
       const visible = manager.getVisibleNodes();
       // Nodes that require only "root" should be visible
       expect(visible.some((n) => n.id === "extractor_unlock")).toBe(true);
+      expect(visible.some((n) => n.id === "cable_unlock")).toBe(true);
+      // hub_1 requires extractor_unlock + cable_unlock, not directly unlockable from root alone
+      expect(visible.some((n) => n.id === "hub_1")).toBe(false);
+    });
+
+    it("should include hub_1 once its Tier 1 requirements are unlocked", () => {
+      mockGetState.mockReturnValue(
+        createMockState({
+          unlockedSkills: ["root", "extractor_unlock", "cable_unlock"],
+        }),
+      );
+
+      const visible = manager.getVisibleNodes();
       expect(visible.some((n) => n.id === "hub_1")).toBe(true);
     });
 

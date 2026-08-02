@@ -2,7 +2,15 @@
 
 **Severity:** High (gameplay/balance correctness) — the building can be placed anywhere, including on water and on top of resource tiles, once the player can afford it.
 
-**Status:** Confirmed via code. Not yet reachable through normal play in the current save (Solar Panel shows "Insufficient" resources at game start), but the bypass is unconditional once resources are available.
+**Status:** Fixed (2026-08-02). Removed the `isValidPlacement` override in
+`SolarPanel.ts` entirely, so it now falls back to `BuildingEntity`'s default
+implementation, which already correctly reads `SolarPanelConfig.ts`'s
+existing `placement: { canPlaceOnResources: true }` block (rejects water,
+allows resource tiles, same as most producer buildings). `locked: true` was
+also already set in the current config — the stale `locked: false` comment
+quoted below no longer matches the code. Added placement regression tests
+to `SolarPanel.test.ts` (rejects water, allows grass, allows resource
+tiles).
 
 ## Root cause
 

@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { SolarPanel } from "./SolarPanel";
 import { skillTreeManager } from "../hub/skill-tree/SkillTreeManager";
 import * as NoiseUtils from "../../utils/Noise";
+import { TileFactory } from "../../environment/TileFactory";
+import { TileType } from "../../constants";
 
 // Mock SkillTreeManager
 vi.mock("../hub/skill-tree/SkillTreeManager", () => ({
@@ -21,7 +23,7 @@ describe("SolarPanel", () => {
     vi.mocked(skillTreeManager.getStatMultiplier).mockReturnValue(1.0);
     vi.mocked(skillTreeManager.getStatAdditive).mockReturnValue(0);
     vi.mocked(NoiseUtils.noise2D).mockReturnValue(0); // Clear skies by default
-    
+
     // Mock Date.now to control sunlight cycle
     vi.useFakeTimers();
   });
@@ -40,10 +42,10 @@ describe("SolarPanel", () => {
 
   it("should generate power based on time of day", () => {
     const panel = new SolarPanel(0, 0);
-    
+
     // Time 0: Midnight
     vi.setSystemTime(0);
-    panel.tick(1); 
+    panel.tick(1);
     expect(panel.sunlightIntensity).toBeCloseTo(0);
     expect(panel.getPowerGeneration()).toBeCloseTo(0);
 
@@ -62,15 +64,37 @@ describe("SolarPanel", () => {
 
   it("should reduce power when cloudy", () => {
     const panel = new SolarPanel(0, 0);
-    
+
     // Noon (Max Sun) but with heavy clouds
     vi.setSystemTime(15000);
     vi.mocked(NoiseUtils.noise2D).mockReturnValue(1.0); // Max clouds
 
     panel.tick(1);
-    
+
     // Formula: intensity *= (1 - cloud * 0.8) => 1 * (1 - 0.8) = 0.2
     expect(panel.sunlightIntensity).toBeCloseTo(0.2);
     expect(panel.getPowerGeneration()).toBeCloseTo(5 * 0.2);
+  });
+
+  describe("isValidPlacement", () => {
+    // Regression for docs/issues/003: a hardcoded `return true` override
+    // used to bypass all terrain validation for this building.
+    it("should reject placement on water", () => {
+      const panel = new SolarPanel(0, 0);
+      const water = TileFactory.createTile(TileType.WATER);
+      expect(panel.isValidPlacement(water)).toBe(false);
+    });
+
+    it("should allow placement on grass", () => {
+      const panel = new SolarPanel(0, 0);
+      const grass = TileFactory.createTile(TileType.GRASS);
+      expect(panel.isValidPlacement(grass)).toBe(true);
+    });
+
+    it("should allow placement on resource tiles (canPlaceOnResources: true)", () => {
+      const panel = new SolarPanel(0, 0);
+      const stone = TileFactory.createTile(TileType.STONE);
+      expect(panel.isValidPlacement(stone)).toBe(true);
+    });
   });
 });

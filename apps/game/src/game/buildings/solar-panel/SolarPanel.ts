@@ -90,10 +90,4 @@ export class SolarPanel
   public deserialize(_data: any) {
     this.initStats();
   }
-
-  // Force allow placement everywhere for testing/unblocking
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public isValidPlacement(_tile: any): boolean {
-    return true;
-  }
 }

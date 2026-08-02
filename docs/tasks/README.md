@@ -32,7 +32,7 @@ Each task file carries a `closed: true|false` frontmatter field: `true` once the
 | 017 | [Hub upgrade for solar panel output](017-hub-solar-upgrade.md)                                    | Not started                                |
 | 018 | [Wind turbine building](018-wind-turbine-building.md)                                             | Not started                                |
 | 019 | [Dynamic weather system](019-dynamic-weather-system.md)                                           | Not started                                |
-| 020 | [Solar panel building](020-solar-panel-building.md)                                               | Needs verification (partially implemented) |
+| 020 | [Solar panel building](020-solar-panel-building.md)                                               | Done                                       |
 | 021 | [Monster attacks and base defenses](021-monster-attacks-and-defenses.md)                          | Not started                                |
 | 022 | [Underground conveyor](022-underground-conveyor.md)                                               | Not started                                |
 | 023 | [Watchtower building for map discovery](023-watchtower-building.md)                               | Superseded by 037                          |

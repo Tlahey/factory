@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Starting iron ore and coal deposits
 
 **Status:** Not started

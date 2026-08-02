@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Restrict initial Container placement to next to the Hub
 
 **Status:** Not started

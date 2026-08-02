@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Building construction time
 
 **Status:** Not started

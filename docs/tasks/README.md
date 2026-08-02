@@ -2,12 +2,14 @@
 
 Task backlog converted from the repo's root `TODO.md` on 2026-08-02. Each entry is a standalone bug or feature request as originally noted, translated to English and split into individually actionable files. Some features reference buildings that already exist in `apps/game/src/game/buildings/` (e.g. Furnace, Solar Panel, Battery, Conveyor Merger/Splitter) — those are marked **Needs verification (partially implemented)** since the task is to complete/verify requirements against the current code, not build from scratch.
 
+Each task file carries a `closed: true|false` frontmatter field: `true` once the task is fully done or retired (e.g. superseded by another task), `false` while it's still open (not started, partially implemented, or design-only).
+
 ## Bugs
 
 | #   | Task                                                                                             | Status                                     |
 | --- | ------------------------------------------------------------------------------------------------ | ------------------------------------------ |
-| 001 | [Drag-and-drop lacks a shared, typed interface](001-drag-drop-typed-interface.md)                | Not started                                |
-| 002 | [Resources can enter through a building's output side](002-conveyor-io-direction-enforcement.md) | Not started                                |
+| 001 | [Drag-and-drop lacks a shared, typed interface](001-drag-drop-typed-interface.md)                | Done                                       |
+| 002 | [Resources can enter through a building's output side](002-conveyor-io-direction-enforcement.md) | Done                                       |
 | 003 | [Construction menu dialogue popup reopens every time](003-construction-menu-dialogue-repeats.md) | Done                                       |
 | 004 | [Battery's stored energy is not saved](004-battery-energy-not-persisted.md)                      | Needs verification (partially implemented) |
 | 005 | [Sawmill doesn't show power consumption in HUD](005-sawmill-hud-consumption-missing.md)          | Needs verification (partially implemented) |

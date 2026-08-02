@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Conveyor splitter
 
 **Status:** Needs verification (partially implemented)

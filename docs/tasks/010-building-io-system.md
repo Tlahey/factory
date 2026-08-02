@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Building input/output system
 
 **Status:** Needs verification (partially implemented)

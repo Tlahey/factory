@@ -1,6 +1,10 @@
+---
+closed: true
+---
+
 # Bug: Resources can enter through a building's output side
 
-**Status:** Not started
+**Status:** Done
 
 ## Description
 

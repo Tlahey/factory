@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Keep IO arrow colors unchanged in placement preview
 
 **Status:** Not started

@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Hidden rare minerals inside rock tiles
 
 **Status:** Not started

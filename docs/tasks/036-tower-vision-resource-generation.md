@@ -1,3 +1,7 @@
+---
+closed: true
+---
+
 # Feature: Tower building for vision and resource generation
 
 **Status:** Superseded by [037-multi-island-exploration-progression.md](037-multi-island-exploration-progression.md) (the resource-generation-in-revealed-zone idea from this file was not carried over — flagged there as a follow-up decision)

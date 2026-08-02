@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Monster attacks and base defenses
 
 **Status:** Not started

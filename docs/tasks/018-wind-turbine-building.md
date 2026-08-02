@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Wind turbine building
 
 **Status:** Not started

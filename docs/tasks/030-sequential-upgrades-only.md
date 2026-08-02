@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Restrict skill-tree upgrades to one at a time
 
 **Status:** Not started

@@ -1,6 +1,10 @@
+---
+closed: true
+---
+
 # Bug: Drag-and-drop lacks a shared, typed interface
 
-**Status:** Not started
+**Status:** Done
 
 ## Description
 

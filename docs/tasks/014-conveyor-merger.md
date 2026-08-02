@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Conveyor merger
 
 **Status:** Needs verification (partially implemented)

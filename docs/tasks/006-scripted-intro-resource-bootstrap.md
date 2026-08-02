@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Scripted intro to bootstrap starting rock
 
 **Status:** Not started

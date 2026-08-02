@@ -1,3 +1,7 @@
+---
+closed: true
+---
+
 # Bug: Construction menu dialogue popup reopens every time
 
 **Status:** Done

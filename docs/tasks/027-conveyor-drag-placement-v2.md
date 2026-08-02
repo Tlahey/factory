@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Continuous conveyor placement while dragging
 
 **Status:** Not started

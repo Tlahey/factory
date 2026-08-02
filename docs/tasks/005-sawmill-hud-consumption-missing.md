@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Bug: Sawmill doesn't show power consumption in HUD
 
 **Status:** Needs verification (partially implemented)

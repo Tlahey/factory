@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Hub starting conditions
 
 **Status:** Not started

@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Solar panel building
 
 **Status:** Needs verification (partially implemented)

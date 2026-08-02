@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Bug: Battery's stored energy is not saved
 
 **Status:** Needs verification (partially implemented)

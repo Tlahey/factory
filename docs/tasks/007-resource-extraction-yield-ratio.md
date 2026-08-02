@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Per-resource extraction yield ratio
 
 **Status:** Not started

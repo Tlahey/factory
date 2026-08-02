@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Hub upgrade for solar panel output
 
 **Status:** Not started

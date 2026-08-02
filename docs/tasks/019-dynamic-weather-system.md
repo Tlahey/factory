@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Dynamic weather system
 
 **Status:** Not started

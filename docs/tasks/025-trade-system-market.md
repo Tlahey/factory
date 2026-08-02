@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Trade system and Market building
 
 **Status:** Not started

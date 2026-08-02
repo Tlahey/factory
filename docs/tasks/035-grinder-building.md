@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Grinder building
 
 **Status:** Not started

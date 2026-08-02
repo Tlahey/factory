@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Minimap
 
 **Status:** Not started

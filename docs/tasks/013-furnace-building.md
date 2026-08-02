@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Furnace building
 
 **Status:** Needs verification (partially implemented)

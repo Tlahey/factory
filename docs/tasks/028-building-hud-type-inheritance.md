@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Building HUD panels inherit from capability interfaces
 
 **Status:** Not started

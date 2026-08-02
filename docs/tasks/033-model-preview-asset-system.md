@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Image-based asset preview alongside 3D models
 
 **Status:** Not started

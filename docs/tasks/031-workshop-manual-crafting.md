@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Workshop for manual crafting
 
 **Status:** Not started

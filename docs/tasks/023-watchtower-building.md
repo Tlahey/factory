@@ -1,3 +1,7 @@
+---
+closed: true
+---
+
 # Feature: Watchtower building for map discovery
 
 **Status:** Superseded by [037-multi-island-exploration-progression.md](037-multi-island-exploration-progression.md)

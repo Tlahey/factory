@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Chunk-based map with per-chunk resource limits
 
 **Status:** Not started

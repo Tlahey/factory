@@ -1,3 +1,7 @@
+---
+closed: false
+---
+
 # Feature: Multi-island exploration & progression (fog-of-war, exploration tower, shipwreck unlock)
 
 **Status:** Design complete — not started (implementation not yet begun)

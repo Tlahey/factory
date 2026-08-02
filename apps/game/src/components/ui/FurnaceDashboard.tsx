@@ -36,6 +36,7 @@ export default function FurnaceDashboard({
   const updateInventorySlot = useGameStore(
     (state) => state.updateInventorySlot,
   );
+  const addItem = useGameStore((state) => state.addItem);
   const setIsDraggingItem = useGameStore((state) => state.setIsDraggingItem);
 
   // Filter recipes to only show unlocked ones
@@ -221,6 +222,15 @@ export default function FurnaceDashboard({
     }
   };
 
+  // Instantly collect the output buffer into the player's inventory
+  const handleCollectOutput = () => {
+    if (!furnace.outputSlot) return;
+    const { type, count } = furnace.outputSlot;
+    addItem(type, count);
+    furnace.removeItemsFromOutput(count);
+    forceUpdate((n) => n + 1);
+  };
+
   const selectedRecipe = furnace.selectedRecipeId
     ? FURNACE_CONFIG.recipes.find((r) => r.id === furnace.selectedRecipeId)
     : null;
@@ -348,7 +358,9 @@ export default function FurnaceDashboard({
                   className={`w-2 h-2 rounded-full ${furnace.active ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse" : "bg-red-500"}`}
                 />
                 <span className="text-xs text-gray-400 uppercase tracking-wider font-bold">
-                  {furnace.active ? "Operational" : "Offline"}
+                  {furnace.active
+                    ? t("common.statuses.operational")
+                    : t("common.statuses.offline")}
                 </span>
               </div>
             </div>
@@ -370,7 +382,7 @@ export default function FurnaceDashboard({
             <div className="p-4 bg-white/5 rounded-xl border border-white/5">
               <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                 <Zap size={14} className="text-yellow-500" />
-                Power Consumption
+                {t("furnace.power_consumption")}
               </h3>
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-mono font-light text-white">
@@ -387,7 +399,7 @@ export default function FurnaceDashboard({
             <div>
               <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                 <Flame size={14} className="text-orange-500" />
-                Smelting Status
+                {t("furnace.smelting_status")}
               </h3>
               <div className="relative w-48 h-48 mx-auto">
                 {/* Circular Progress Placeholder - CSS Conic Gradient would be cool here, simply using border for now */}
@@ -397,7 +409,7 @@ export default function FurnaceDashboard({
                     {(furnace.getProcessingSpeed() * 100).toFixed(0)}%
                   </span>
                   <span className="text-xs text-gray-500 uppercase">
-                    Efficiency
+                    {t("common.efficiency")}
                   </span>
                 </div>
               </div>
@@ -406,13 +418,13 @@ export default function FurnaceDashboard({
               <div className="mt-6 space-y-3">
                 {furnace.activeJobs.length === 0 && (
                   <div className="text-center text-sm text-gray-600 italic py-4">
-                    No active smelting jobs
+                    {t("furnace.no_active_jobs")}
                   </div>
                 )}
                 {furnace.activeJobs.map((job, idx) => (
                   <div key={idx} className="space-y-1">
                     <div className="flex justify-between text-xs text-gray-400">
-                      <span>Batch #{idx + 1}</span>
+                      <span>{t("furnace.batch", { number: idx + 1 })}</span>
                       <span>{(job.progress * 100).toFixed(0)}%</span>
                     </div>
                     <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
@@ -436,7 +448,7 @@ export default function FurnaceDashboard({
             <div className="mb-8 relative z-sub-header">
               <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                 <Settings size={14} />
-                Configuration
+                {t("furnace.configuration")}
               </h3>
 
               {/* Trigger Button */}
@@ -466,7 +478,7 @@ export default function FurnaceDashboard({
                         {t("furnace.select_recipe")}
                       </span>
                       <span className="text-sm text-gray-500">
-                        Click to open the recipe catalog
+                        {t("furnace.click_to_open_catalog")}
                       </span>
                     </div>
                     <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center bg-black/20 group-hover:border-white/30 transition-all">
@@ -507,7 +519,7 @@ export default function FurnaceDashboard({
               {/* Input Queue */}
               <div className="bg-white/5 rounded-xl p-4 border border-white/5">
                 <ItemBufferPanel
-                  title="Input Feed"
+                  title={t("furnace.input_feed")}
                   items={furnace.inputQueue}
                   capacity={furnace.getQueueSize()}
                   color="blue"
@@ -517,13 +529,13 @@ export default function FurnaceDashboard({
                   onDrop={handleInputDrop}
                 />
                 <p className="text-xs text-center text-gray-500 mt-2">
-                  Drag items from inventory or connect conveyor belts
+                  {t("furnace.drag_items_hint")}
                 </p>
               </div>
 
               {/* Output Buffer */}
               <ItemBufferPanel
-                title="Output Buffer"
+                title={t("furnace.output_buffer")}
                 items={furnace.outputSlot ? [furnace.outputSlot] : []}
                 capacity={furnace.OUTPUT_CAPACITY}
                 color="orange"
@@ -531,6 +543,7 @@ export default function FurnaceDashboard({
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 onDrop={handleOutputDrop}
+                onCollect={handleCollectOutput}
               />
             </div>
           </div>

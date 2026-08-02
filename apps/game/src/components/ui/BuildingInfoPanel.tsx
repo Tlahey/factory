@@ -155,7 +155,7 @@ export default function BuildingInfoPanel() {
     };
 
     // IMMEDIATELY REMOVE TO PREVENT DUPLICATION (e.g. chest outputting to conveyor while dragging)
-    if (source === "chest" && (isChest || isExtractor)) {
+    if (source === "chest" && (isChest || isExtractor || isSawmill)) {
       if (building.removeSlot) {
         building.removeSlot(index);
       } else {
@@ -183,10 +183,10 @@ export default function BuildingInfoPanel() {
     // If NOT a success (drag cancelled or dropped on invalid target), restore the item
     if (!isSuccess && draggedItemRef.current) {
       const { source, type, count } = draggedItemRef.current;
-      if (source === "chest" && (isChest || isExtractor) && type) {
+      if (source === "chest" && (isChest || isExtractor || isSawmill) && type) {
         if (isChest) {
           (building as Chest).addItem(type, count);
-        } else if (isExtractor) {
+        } else if (isExtractor || isSawmill) {
           building.slots.push({ type, count });
         }
         setBuilding(building);
@@ -285,7 +285,9 @@ export default function BuildingInfoPanel() {
               {t(`building.${config.id}.name`)}
             </h3>
             <p className="text-xs text-gray-400 mt-1">
-              {isChest ? `Lv. ${building.maxSlots - 4}` : t("common.building")}
+              {isChest
+                ? `${t("common.level_abbr")}${building.maxSlots - 4}`
+                : t("common.building")}
             </p>
           </div>
         </div>
@@ -371,7 +373,7 @@ export default function BuildingInfoPanel() {
             !(building instanceof SolarPanel) &&
             building.getType() !== "electric_pole" && (
               <div className="flex items-center justify-center h-full text-gray-500 text-sm italic py-8 text-center uppercase tracking-widest opacity-50">
-                No statistics available
+                {t("common.no_statistics")}
               </div>
             )}
 

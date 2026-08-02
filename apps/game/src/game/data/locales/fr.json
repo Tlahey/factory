@@ -20,7 +20,30 @@
   },
   "furnace": {
     "select_recipe": "Choisir Recette",
-    "no_recipes_unlocked": "Aucune recette débloquée. Recherchez les recettes au HUB."
+    "no_recipes_unlocked": "Aucune recette débloquée. Recherchez les recettes au HUB.",
+    "power_consumption": "Consommation d'énergie",
+    "smelting_status": "Statut de fusion",
+    "no_active_jobs": "Aucune fusion active",
+    "batch": "Lot #{{number}}",
+    "configuration": "Configuration",
+    "click_to_open_catalog": "Cliquez pour ouvrir le catalogue de recettes",
+    "click_to_configure": "Cliquez ici pour configurer la production",
+    "input_feed": "Alimentation d'entrée",
+    "output_buffer": "Tampon de sortie",
+    "input_queue": "File d'attente d'entrée",
+    "drag_items_hint": "Glissez des objets depuis l'inventaire ou connectez des convoyeurs",
+    "processing": "Traitement des ressources...",
+    "waiting_inputs": "En attente d'approvisionnement...",
+    "smelting_progress": "Progression de la fusion",
+    "speed": "Vitesse",
+    "output_storage": "Stockage de sortie",
+    "drag_to_collect": "Glisser pour récupérer"
+  },
+  "conveyor": {
+    "invalid_destination": "Le convoyeur doit mener vers une destination valide (Conteneur) pour commencer à transporter des objets.",
+    "on_belt": "Sur le convoyeur",
+    "drag_to_remove": "Glisser pour retirer l'objet",
+    "waiting_items": "En attente d'objets..."
   },
   "common": {
     "stone": "Roche",
@@ -63,7 +86,8 @@
       "operational": "OPÉRATIONNEL",
       "idle": "EN ATTENTE",
       "active": "ACTIF",
-      "disabled": "DÉSACTIVÉ"
+      "disabled": "DÉSACTIVÉ",
+      "offline": "HORS LIGNE"
     },
     "select_item": "Sélectionnez un élément pour voir les détails",
     "free": "Gratuit",
@@ -85,9 +109,24 @@
     "charge": "Charge",
     "stored": "Stocké",
     "capacity": "Capacité",
-    "time_ago": "il y a {time}",
+    "time_ago": "il y a {{time}}",
     "now": "Maintenant",
-    "drop_to_delete": "Déposer pour supprimer"
+    "drop_to_delete": "Déposer pour supprimer",
+    "inventory": "Inventaire",
+    "reorganize_inventory": "Réorganiser l'inventaire",
+    "quantity": "Quantité",
+    "space_available": "Espace disponible",
+    "level_abbr": "Niv.",
+    "empty": "Vide",
+    "empty_slot": "Emplacement vide",
+    "no_statistics": "Aucune statistique disponible",
+    "drag_to_take": "Glisser pour prendre les objets",
+    "double_click_to_collect": "Double-cliquer pour récupérer",
+    "no_fuel": "Pas de combustible",
+    "no_network": "Aucun réseau",
+    "fuel_storage": "Stockage de combustible",
+    "low_fuel_warning": "Combustible faible !",
+    "power_flow": "Flux d'énergie"
   },
   "building": {
     "extractor": {
@@ -144,11 +183,13 @@
     },
     "biomass_plant": {
       "name": "Centrale à Biomasse",
-      "description": "Génère de l'électricité en brûlant du bois. Alimentez-le en biomasse pour produire de l'énergie verte."
+      "description": "Génère de l'électricité en brûlant du bois. Alimentez-le en biomasse pour produire de l'énergie verte.",
+      "burner_title": "Brûleur à bois"
     },
     "solar_panel": {
       "name": "Panneau Solaire",
-      "description": "Génère de l'énergie propre à partir de la lumière du soleil. L'efficacité dépend du moment de la journée."
+      "description": "Génère de l'énergie propre à partir de la lumière du soleil. L'efficacité dépend du moment de la journée.",
+      "sunlight_efficiency": "Efficacité solaire"
     }
   },
   "skill_tree": {
@@ -184,7 +225,10 @@
     "recipe_research": "Recherche de Recettes",
     "recipe_research_desc": "Déposez des ressources pour débloquer de nouvelles recettes.",
     "unlock_previous": "Débloquez la recette précédente d'abord",
-    "all_recipes_unlocked": "Toutes les recettes débloquées !"
+    "all_recipes_unlocked": "Toutes les recettes débloquées !",
+    "main_generator": "GÉNÉRATEUR PRINCIPAL",
+    "gathering_data": "Collecte de données...",
+    "active_upgrades": "Améliorations actives"
   },
   "upgrade": {
     "extractor": {
@@ -255,6 +299,20 @@
         "description": "Augmente le taux d'extraction de 60%"
       }
     },
+    "biomass_plant": {
+      "efficiency_1": {
+        "name": "Combustion Améliorée I",
+        "description": "Augmente la production d'énergie de 25%"
+      },
+      "capacity_1": {
+        "name": "Stockage de Combustible I",
+        "description": "Augmente la capacité de stockage de combustible de 10 bois"
+      },
+      "speed_1": {
+        "name": "Combustion Rapide I",
+        "description": "Réduit le temps de consommation de combustible de 20%"
+      }
+    },
     "solar_panel": {
       "efficiency_1": {
         "name": "Cellules Photovoltaïques",
@@ -263,6 +321,26 @@
       "storage_1": {
         "name": "Connexion en Série",
         "description": "Permet de connecter plus de câbles au panneau (+1 connexion)."
+      }
+    },
+    "furnace": {
+      "speed": {
+        "1": {
+          "name": "Haut Fourneau I",
+          "desc": "Augmente la vitesse de fusion de 50%"
+        }
+      },
+      "parallel": {
+        "1": {
+          "name": "Double Chambre",
+          "desc": "Ajoute 1 emplacement de traitement parallèle"
+        }
+      },
+      "queue": {
+        "1": {
+          "name": "Trémie Étendue",
+          "desc": "Ajoute 5 emplacements de file d'attente"
+        }
       }
     }
   },
@@ -409,5 +487,24 @@
       "action_rotate": "Pivoter",
       "action_reset": "Réinitialiser la vue"
     }
+  },
+  "splash": {
+    "initializing": "Initialisation des systèmes de l'usine..."
+  },
+  "menu": {
+    "paused": "PAUSE",
+    "resume": "Reprendre",
+    "save_game": "Sauvegarder",
+    "load_game": "Charger",
+    "new_game": "Nouvelle Partie",
+    "new_game_confirm": "Toute progression non sauvegardée sera perdue. Êtes-vous sûr ?",
+    "restart_confirm": "Recommencer",
+    "cancel": "Annuler",
+    "language": "Langue"
+  },
+  "control_bar": {
+    "select": "Sélectionner",
+    "delete": "Supprimer",
+    "build": "Construire"
   }
 }

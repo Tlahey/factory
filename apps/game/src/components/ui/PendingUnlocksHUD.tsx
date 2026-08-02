@@ -70,7 +70,7 @@ function PendingUnlockItem({
             ? `${t("skill_tree.unlocking")} ${t(
                 `building.${node.buildingId}.name`,
               )}`
-            : `${t(`building.${node.buildingId}.name`)} Lv.${node.level}`}
+            : `${t(`building.${node.buildingId}.name`)} ${t("common.level_abbr")}${node.level}`}
         </div>
         <div className="flex items-center gap-1 text-[10px] text-indigo-400">
           <Clock className="w-3 h-3" />

@@ -20,7 +20,30 @@
   },
   "furnace": {
     "select_recipe": "Select Recipe",
-    "no_recipes_unlocked": "No recipes unlocked. Research recipes in the HUB."
+    "no_recipes_unlocked": "No recipes unlocked. Research recipes in the HUB.",
+    "power_consumption": "Power Consumption",
+    "smelting_status": "Smelting Status",
+    "no_active_jobs": "No active smelting jobs",
+    "batch": "Batch #{{number}}",
+    "configuration": "Configuration",
+    "click_to_open_catalog": "Click to open the recipe catalog",
+    "click_to_configure": "Click here to configure production",
+    "input_feed": "Input Feed",
+    "output_buffer": "Output Buffer",
+    "input_queue": "Input Queue",
+    "drag_items_hint": "Drag items from inventory or connect conveyor belts",
+    "processing": "Processing resources...",
+    "waiting_inputs": "Waiting for inputs...",
+    "smelting_progress": "Smelting Progress",
+    "speed": "Speed",
+    "output_storage": "Output Storage",
+    "drag_to_collect": "Drag to collect"
+  },
+  "conveyor": {
+    "invalid_destination": "Conveyor must lead to a valid destination (Container) to start moving items.",
+    "on_belt": "On Belt",
+    "drag_to_remove": "Drag to remove item",
+    "waiting_items": "Waiting for items..."
   },
   "common": {
     "stone": "Stone",
@@ -63,7 +86,8 @@
       "operational": "OPERATIONAL",
       "idle": "IDLE",
       "active": "ACTIVE",
-      "disabled": "DISABLED"
+      "disabled": "DISABLED",
+      "offline": "OFFLINE"
     },
     "select_item": "Select an item to view details",
     "free": "Free",
@@ -85,9 +109,24 @@
     "charge": "Charge",
     "stored": "Stored",
     "capacity": "Capacity",
-    "time_ago": "{time} ago",
+    "time_ago": "{{time}} ago",
     "now": "Now",
-    "drop_to_delete": "Drop to delete"
+    "drop_to_delete": "Drop to delete",
+    "inventory": "Inventory",
+    "reorganize_inventory": "Reorganize inventory",
+    "quantity": "Quantity",
+    "space_available": "Space Available",
+    "level_abbr": "Lv.",
+    "empty": "Empty",
+    "empty_slot": "Empty Slot",
+    "no_statistics": "No statistics available",
+    "drag_to_take": "Drag to take items",
+    "double_click_to_collect": "Double-click to collect",
+    "no_fuel": "No Fuel",
+    "no_network": "No Network",
+    "fuel_storage": "Fuel Storage",
+    "low_fuel_warning": "Low fuel!",
+    "power_flow": "Power Flow"
   },
   "building": {
     "extractor": {
@@ -144,11 +183,13 @@
     },
     "biomass_plant": {
       "name": "Biomass Power Plant",
-      "description": "Generates electricity by burning wood. Feed it biomass to produce sustainable power."
+      "description": "Generates electricity by burning wood. Feed it biomass to produce sustainable power.",
+      "burner_title": "Wood Burner"
     },
     "solar_panel": {
       "name": "Solar Panel",
-      "description": "Generates clean energy from sunlight. Efficiency depends on the time of day."
+      "description": "Generates clean energy from sunlight. Efficiency depends on the time of day.",
+      "sunlight_efficiency": "Sunlight Efficiency"
     }
   },
   "skill_tree": {
@@ -184,7 +225,10 @@
     "recipe_research": "Recipe Research",
     "recipe_research_desc": "Deposit resources to unlock new furnace recipes.",
     "unlock_previous": "Unlock previous recipe first",
-    "all_recipes_unlocked": "All recipes unlocked!"
+    "all_recipes_unlocked": "All recipes unlocked!",
+    "main_generator": "MAIN GENERATOR",
+    "gathering_data": "Gathering Data...",
+    "active_upgrades": "Active Upgrades"
   },
   "upgrade": {
     "extractor": {
@@ -277,6 +321,26 @@
       "storage_1": {
         "name": "Daisy Chaining",
         "description": "Allows connecting more cables to the panel (+1 connection)."
+      }
+    },
+    "furnace": {
+      "speed": {
+        "1": {
+          "name": "Blast Furnace I",
+          "desc": "Increases smelting speed by 50%"
+        }
+      },
+      "parallel": {
+        "1": {
+          "name": "Dual Chamber",
+          "desc": "Adds 1 parallel processing slot"
+        }
+      },
+      "queue": {
+        "1": {
+          "name": "Extended Hopper",
+          "desc": "Adds 5 input queue slots"
+        }
       }
     }
   },
@@ -423,5 +487,24 @@
       "action_rotate": "Rotate",
       "action_reset": "Reset view"
     }
+  },
+  "splash": {
+    "initializing": "Initializing Factory Systems..."
+  },
+  "menu": {
+    "paused": "PAUSED",
+    "resume": "Resume",
+    "save_game": "Save Game",
+    "load_game": "Load Game",
+    "new_game": "New Game",
+    "new_game_confirm": "All unsaved progress will be lost. Are you sure?",
+    "restart_confirm": "Restart",
+    "cancel": "Cancel",
+    "language": "Language"
+  },
+  "control_bar": {
+    "select": "Select",
+    "delete": "Delete",
+    "build": "Build"
   }
 }

@@ -40,13 +40,14 @@ export function FuelCombustionPanel({
   isBurning,
   isEnabled,
   fuelType = "wood",
-  title = "Fuel Storage",
+  title,
   consumptionTime,
   hasNetwork = true,
 }: FuelCombustionPanelProps) {
   const { t } = useTranslation();
 
   const fillPercentage = Math.min((fuelAmount / maxFuel) * 100, 100);
+  const panelTitle = title ?? t("common.fuel_storage");
 
   // Determine status
   let statusText = t("common.statuses.idle");
@@ -56,7 +57,7 @@ export function FuelCombustionPanel({
     statusText = t("common.statuses.disabled");
     statusColor = "bg-gray-500";
   } else if (!hasNetwork) {
-    statusText = "No Network"; // TODO: Add translation
+    statusText = t("common.no_network");
     statusColor = "bg-red-500";
   } else if (isBurning) {
     statusText = t("common.statuses.active");
@@ -84,7 +85,7 @@ export function FuelCombustionPanel({
       <div className="flex items-center justify-between">
         <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
           <Fuel size={12} className="text-orange-400" />
-          {title}
+          {panelTitle}
         </h4>
         <div className="flex items-center gap-2">
           {/* Status Badge */}
@@ -165,7 +166,7 @@ export function FuelCombustionPanel({
               </div>
             ) : (
               <div className="text-white/10 text-xs font-medium uppercase tracking-widest text-center px-2">
-                No Fuel
+                {t("common.no_fuel")}
               </div>
             )}
           </div>
@@ -189,7 +190,7 @@ export function FuelCombustionPanel({
         {consumptionTime && (
           <div className="bg-black/20 rounded-lg border border-white/5 p-2 flex flex-col items-center justify-center">
             <div className="text-[9px] text-gray-500 uppercase tracking-widest mb-0.5 flex items-center gap-1">
-              <Timer size={10} /> Consum.
+              <Timer size={10} /> {t("common.consumption")}
             </div>
             <div className="text-sm font-mono font-bold text-white">
               {(60 / consumptionTime).toFixed(0)}{" "}
@@ -202,7 +203,7 @@ export function FuelCombustionPanel({
       {/* Low Fuel Warning */}
       {isEnabled && fuelAmount > 0 && fuelAmount <= 3 && (
         <div className="absolute bottom-12 left-0 right-0 text-[10px] text-yellow-500 font-bold text-center animate-pulse pointer-events-none">
-          ⚠ Low fuel!
+          ⚠ {t("common.low_fuel_warning")}
         </div>
       )}
     </div>

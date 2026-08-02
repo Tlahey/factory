@@ -1,8 +1,10 @@
 import { useGameStore } from "@/game/state/store";
 import clsx from "clsx";
 import { MousePointer2, Trash2, Package, LayoutGrid } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function ControlBar() {
+  const { t } = useTranslation();
   const selectedBuilding = useGameStore((state) => state.selectedBuilding);
   const setSelectedBuilding = useGameStore(
     (state) => state.setSelectedBuilding,
@@ -15,7 +17,7 @@ export default function ControlBar() {
   const controls = [
     {
       id: "select",
-      name: "Select",
+      name: t("control_bar.select"),
       icon: MousePointer2,
       color: "text-blue-400",
       action: () =>
@@ -25,7 +27,7 @@ export default function ControlBar() {
     },
     {
       id: "delete",
-      name: "Delete",
+      name: t("control_bar.delete"),
       icon: Trash2,
       color: "text-red-500",
       action: () =>
@@ -35,7 +37,7 @@ export default function ControlBar() {
     },
     {
       id: "inventory",
-      name: "Inventory",
+      name: t("common.inventory"),
       icon: Package,
       color: "text-amber-400",
       action: () => toggleInventory(),
@@ -44,7 +46,7 @@ export default function ControlBar() {
     },
     {
       id: "build",
-      name: "Build",
+      name: t("control_bar.build"),
       icon: LayoutGrid,
       color: "text-green-400",
       action: () => toggleBuildingMenu(),

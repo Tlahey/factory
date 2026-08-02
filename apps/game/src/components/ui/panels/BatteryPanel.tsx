@@ -124,7 +124,7 @@ function BatteryFlowGraph({ building }: { building: Battery }) {
     return (
       <div className="mb-4">
         <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-          Power Flow
+          {t("common.power_flow")}
         </div>
         <div className="h-24 bg-black/40 rounded border border-white/10 relative overflow-hidden flex items-center justify-center">
           <div className="text-xs text-gray-600">

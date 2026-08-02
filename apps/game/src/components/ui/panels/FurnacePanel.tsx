@@ -187,7 +187,7 @@ export function FurnacePanel({
                   {t("furnace.select_recipe")}
                 </span>
                 <span className="text-xs text-gray-500">
-                  Click here to configure production
+                  {t("furnace.click_to_configure")}
                 </span>
               </div>
               <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center bg-black/20 group-hover:border-white/30 transition-all">
@@ -218,7 +218,7 @@ export function FurnacePanel({
       {/* Input Queue Buffer */}
       <div>
         <ItemBufferPanel
-          title="Input Queue"
+          title={t("furnace.input_queue")}
           items={building.inputQueue}
           capacity={building.getQueueSize()}
           color="blue"
@@ -226,8 +226,8 @@ export function FurnacePanel({
         />
         <p className="text-[10px] text-gray-500 text-center mt-1 animate-pulse">
           {building.inputQueue.length > 0
-            ? "Processing resources..."
-            : "Waiting for inputs..."}
+            ? t("furnace.processing")
+            : t("furnace.waiting_inputs")}
         </p>
       </div>
 
@@ -235,9 +235,10 @@ export function FurnacePanel({
       {building.activeJobs.length > 0 && (
         <div className="space-y-2 bg-black/20 p-3 rounded-lg border border-white/5">
           <div className="flex justify-between text-[10px] text-gray-400 uppercase tracking-widest font-bold">
-            <span>Smelting Progress</span>
+            <span>{t("furnace.smelting_progress")}</span>
             <span className="text-orange-400">
-              {(building.getProcessingSpeed() * 100).toFixed(0)}% Speed
+              {(building.getProcessingSpeed() * 100).toFixed(0)}%{" "}
+              {t("furnace.speed")}
             </span>
           </div>
           {building.activeJobs.map((job, idx) => (
@@ -258,9 +259,11 @@ export function FurnacePanel({
       <div className="flex items-center justify-between bg-gradient-to-r from-white/5 to-transparent p-4 rounded-xl border border-white/10">
         <div className="flex flex-col">
           <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-            Output Storage
+            {t("furnace.output_storage")}
           </span>
-          <span className="text-[10px] text-gray-600">Drag to collect</span>
+          <span className="text-[10px] text-gray-600">
+            {t("furnace.drag_to_collect")}
+          </span>
         </div>
 
         <div
@@ -294,7 +297,7 @@ export function FurnacePanel({
             </>
           ) : (
             <span className="text-[9px] text-gray-600 uppercase font-bold tracking-widest">
-              Empty
+              {t("common.empty")}
             </span>
           )}
         </div>

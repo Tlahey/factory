@@ -14,7 +14,9 @@
   --z-index-overlay: 150;
   /* Tutorial Highlight Background */
   --z-index-dialog: 200;
-  /* Dialogues, Modals (Furnace) */
+  /* Game Modals (Build Menu, Furnace, Hub) */
+  --z-index-dialogue: 205;
+  /* Narrative Dialogue Box - always above Game Modals so tutorial text is never buried behind an open panel */
   --z-index-hud: 210;
   /* Base HUD (Inventory) - Must be above dialogs for drag & drop */
   --z-index-menu: 300;
@@ -31,6 +33,7 @@
   --z-index-hover-card: 80;
   --z-index-debug: 90;
   --z-index-dialog-blocker: 190;
+  /* Narrative Dialogue's world-click blocker - stays below Game Modals so a blocking dialogue can still spotlight an element inside an open panel */
 }
 
 body {

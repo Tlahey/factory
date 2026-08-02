@@ -1,5 +1,13 @@
 export type Locale = "en" | "fr";
 
+const LOCALE_STORAGE_KEY = "factory-game-locale";
+
+function readStoredLocale(): Locale {
+  if (typeof window === "undefined") return "en";
+  const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+  return stored === "fr" ? "fr" : "en";
+}
+
 class LocalizationManager {
   private static instance: LocalizationManager;
   private locale: Locale = "en";
@@ -9,8 +17,9 @@ class LocalizationManager {
   private listeners: Set<() => void> = new Set();
 
   private constructor() {
-    // Load default locale
-    this.loadTranslations("en");
+    // Load the persisted locale (falls back to "en" on the server or first visit)
+    this.locale = readStoredLocale();
+    this.loadTranslations(this.locale);
   }
 
   public static getInstance(): LocalizationManager {
@@ -23,6 +32,9 @@ class LocalizationManager {
   public async setLocale(locale: Locale): Promise<void> {
     if (this.locale === locale) return;
     this.locale = locale;
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+    }
     await this.loadTranslations(locale);
     this.notifyListeners();
   }

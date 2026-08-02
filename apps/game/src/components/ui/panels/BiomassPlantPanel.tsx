@@ -50,7 +50,7 @@ export function BiomassPlantPanel({
         isBurning={building.isBurning}
         isEnabled={building.isEnabled}
         fuelType="wood"
-        title="Wood Burner"
+        title={t("building.biomass_plant.burner_title")}
         consumptionTime={
           (building.getConfig() as BiomassPlantConfigType).consumptionTime
         }

@@ -244,10 +244,10 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Level 4: Building Menu (Modal - z-overlay: 150) */}
+        {/* Level 4: Building Menu (Modal - z-dialog: 200) */}
         <BuildingMenu />
 
-        {/* Level 5: Hotbar Sidebar (On Top for Interaction - z-hud: 160) */}
+        {/* Level 5: Hotbar Sidebar (On Top for Interaction - z-hud: 210) */}
         <div className="absolute inset-0 z-hud pointer-events-none p-6 text-white">
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-end">
             <BuildingSidebar />

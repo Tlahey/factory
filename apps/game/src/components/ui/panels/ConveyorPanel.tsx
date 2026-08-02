@@ -76,8 +76,7 @@ export function ConveyorPanel({
       {!building.isResolved && (
         <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
           <p className="text-xs text-red-400 italic text-center">
-            Conveyor must lead to a valid destination (Container) to start
-            moving items.
+            {t("conveyor.invalid_destination")}
           </p>
         </div>
       )}
@@ -85,7 +84,7 @@ export function ConveyorPanel({
       {/* Visual Item on Belt (Draggable) */}
       <div className="p-4 bg-white/5 border border-white/10 rounded-xl flex flex-col items-center">
         <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-          On Belt
+          {t("conveyor.on_belt")}
         </h4>
         <div
           className={`
@@ -131,13 +130,15 @@ export function ConveyorPanel({
           )}
 
           {!building.currentItem && (
-            <span className="text-[10px] text-gray-600 uppercase">Empty</span>
+            <span className="text-[10px] text-gray-600 uppercase">
+              {t("common.empty")}
+            </span>
           )}
         </div>
         <p className="text-[10px] text-gray-500 mt-2 text-center">
           {building.currentItem
-            ? "Drag to remove item"
-            : "Waiting for items..."}
+            ? t("conveyor.drag_to_remove")
+            : t("conveyor.waiting_items")}
         </p>
       </div>
     </div>

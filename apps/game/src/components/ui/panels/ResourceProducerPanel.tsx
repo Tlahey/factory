@@ -1,7 +1,7 @@
 "use client";
 
 import { BuildingEntity } from "@/game/entities/BuildingEntity";
-import { InventorySlot } from "@/game/state/store";
+import { InventorySlot, useGameStore } from "@/game/state/store";
 import { Zap, Box } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ItemBufferPanel } from "./ItemBufferPanel";
@@ -113,6 +113,18 @@ export function ResourceProducerPanel({
     resourceType ||
     (building.slots.length > 0 ? building.slots[0].type : "Unknown");
 
+  // Instantly collect the output buffer into the player's inventory
+  const handleCollect = () => {
+    const item = building.slots[0];
+    if (!item) return;
+    useGameStore.getState().addItem(item.type, item.count);
+    if (building.removeSlot) {
+      building.removeSlot(0);
+    } else {
+      building.slots.splice(0, 1);
+    }
+  };
+
   return (
     <div className="space-y-6 py-2">
       {/* Status & Stats Panel */}
@@ -174,7 +186,7 @@ export function ResourceProducerPanel({
 
       {/* Output Buffer */}
       <ItemBufferPanel
-        title="Output Buffer"
+        title={t("furnace.output_buffer")}
         items={building.slots}
         capacity={building.BUFFER_CAPACITY}
         color="orange"
@@ -182,6 +194,7 @@ export function ResourceProducerPanel({
         onDragEnd={onDragEnd}
         onDragOver={onDragOver}
         sourceId="chest"
+        onCollect={handleCollect}
       />
     </div>
   );

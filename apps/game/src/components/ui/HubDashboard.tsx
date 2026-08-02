@@ -256,7 +256,7 @@ const SkillTreeNode = ({ data }: NodeProps) => {
                 ? t("skill_tree.root")
                 : isUnlockNode
                   ? ""
-                  : `Lv.${node.level}`}
+                  : `${t("common.level_abbr")}${node.level}`}
             </span>
           </div>
         )}
@@ -502,7 +502,7 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                   className={`w-3 h-3 rounded-full ${hub.isEnabled ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse" : "bg-red-500"}`}
                 />
                 <span className="text-sm font-bold tracking-tight text-white/90">
-                  MAIN GENERATOR
+                  {t("hub.main_generator")}
                 </span>
               </div>
 
@@ -552,7 +552,7 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                   if (history.length < 2)
                     return (
                       <div className="text-xs text-gray-600 flex items-center justify-center h-full">
-                        Gathering Data...
+                        {t("hub.gathering_data")}
                       </div>
                     );
 
@@ -632,9 +632,11 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
               </div>
               <div className="flex justify-between px-1 mt-1">
                 <span className="text-[9px] text-gray-600 font-mono">
-                  60s ago
+                  {t("common.time_ago", { time: "60s" })}
                 </span>
-                <span className="text-[9px] text-gray-600 font-mono">Now</span>
+                <span className="text-[9px] text-gray-600 font-mono">
+                  {t("common.now")}
+                </span>
               </div>
             </div>
 
@@ -644,54 +646,67 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
             ).length > 0 && (
               <div className="mb-4">
                 <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
-                  Active Upgrades
+                  {t("hub.active_upgrades")}
                 </h4>
                 <div className="space-y-2">
-                  {(["extractor", "chest", "hub"] as BuildingId[]).map(
-                    (buildingId) => {
-                      const level =
-                        skillTreeManager.getBuildingUpgradeLevel(buildingId);
-                      const upgrade =
-                        skillTreeManager.getActiveUpgrade(buildingId);
-                      if (level === 0 || !upgrade) return null;
+                  {(
+                    [
+                      "hub",
+                      "extractor",
+                      "sawmill",
+                      "conveyor",
+                      "chest",
+                      "battery",
+                      "solar_panel",
+                      "biomass_plant",
+                      "electric_pole",
+                      "furnace",
+                    ] as BuildingId[]
+                  ).map((buildingId) => {
+                    const level =
+                      skillTreeManager.getBuildingUpgradeLevel(buildingId);
+                    const upgrade =
+                      skillTreeManager.getActiveUpgrade(buildingId);
+                    if (level === 0 || !upgrade) return null;
 
-                      return (
-                        <div
-                          key={buildingId}
-                          className="p-2 bg-white/5 border border-white/10 rounded-lg"
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="w-6 h-6 rounded overflow-hidden bg-black/30">
-                              <ModelPreview
-                                type="building"
-                                id={buildingId}
-                                width={24}
-                                height={24}
-                                static
-                              />
-                            </div>
-                            <span className="text-xs font-bold text-white">
-                              {t(`building.${buildingId}.name`)} Lv.{level}
-                            </span>
+                    return (
+                      <div
+                        key={buildingId}
+                        className="p-2 bg-white/5 border border-white/10 rounded-lg"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-6 h-6 rounded overflow-hidden bg-black/30">
+                            <ModelPreview
+                              type="building"
+                              id={buildingId}
+                              width={24}
+                              height={24}
+                              static
+                            />
                           </div>
-                          <div className="flex flex-wrap gap-1">
-                            {upgrade.effects.map((effect, i) => (
-                              <span
-                                key={i}
-                                className="px-1.5 py-0.5 text-[9px] font-mono rounded bg-indigo-500/20 text-indigo-300"
-                              >
-                                {effect.type === "multiplier"
-                                  ? `${effect.stat} ×${effect.value}`
-                                  : effect.type === "additive"
-                                    ? `${effect.stat} +${effect.value}`
-                                    : `Unlock: ${effect.stat}`}
-                              </span>
-                            ))}
-                          </div>
+                          <span className="text-xs font-bold text-white">
+                            {t(`building.${buildingId}.name`)}{" "}
+                            {t("common.level_abbr")}
+                            {level}
+                          </span>
                         </div>
-                      );
-                    },
-                  )}
+                        <div className="flex flex-wrap gap-1">
+                          {upgrade.effects.map((effect, i) => (
+                            <span
+                              key={i}
+                              className="px-1.5 py-0.5 text-[9px] font-mono rounded bg-indigo-500/20 text-indigo-300"
+                            >
+                              {effect.type === "multiplier"
+                                ? `${effect.stat} ×${effect.value}`
+                                : effect.type === "additive"
+                                  ? `${effect.stat} +${effect.value}`
+                                  : `${t("skill_tree.unlock")}: ${effect.stat}`}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -722,7 +737,7 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                         <span className="text-xs font-bold text-indigo-300 truncate">
                           {node.type === "unlock"
                             ? t(`building.${node.buildingId}.name`)
-                            : `${t(`building.${node.buildingId}.name`)} Lv.${node.level}`}
+                            : `${t(`building.${node.buildingId}.name`)} ${t("common.level_abbr")}${node.level}`}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -801,7 +816,7 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                   className="w-full h-full relative"
                 >
                   <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4 absolute top-4 left-4 z-sub-dropdown bg-gray-900/50 backdrop-blur px-2 py-1 rounded">
-                    Arbre d&apos;upgrade
+                    {t("skill_tree.title")}
                   </h3>
 
                   <div className="w-full h-full">
@@ -843,7 +858,7 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                                 )}`
                               : hoveredUpgrade
                                 ? t(hoveredUpgrade.name)
-                                : `${t(`building.${hoveredNode.buildingId}.name`)} Lv.${hoveredNode.level}`}
+                                : `${t(`building.${hoveredNode.buildingId}.name`)} ${t("common.level_abbr")}${hoveredNode.level}`}
                           </h3>
                           <p className="text-xs text-gray-400 mt-0.5">
                             {hoveredNode.type === "unlock"
@@ -867,7 +882,7 @@ export default function HubDashboard({ hub, onClose }: HubDashboardProps) {
                                     ? `${effect.stat} ×${effect.value}`
                                     : effect.type === "additive"
                                       ? `${effect.stat} +${effect.value}`
-                                      : `Unlock: ${effect.stat}`}
+                                      : `${t("skill_tree.unlock")}: ${effect.stat}`}
                                 </span>
                               ))}
                             </div>

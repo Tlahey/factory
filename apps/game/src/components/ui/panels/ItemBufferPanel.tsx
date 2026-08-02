@@ -2,6 +2,7 @@
 
 import { Box } from "lucide-react";
 import ModelPreview from "../ModelPreview";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ItemBufferPanelProps {
   title: string;
@@ -18,6 +19,8 @@ interface ItemBufferPanelProps {
   onDrop?: (e: React.DragEvent) => void;
   onDragEnd?: (e: React.DragEvent) => void;
   sourceId?: string; // Identifier for drag source
+  /** Called when the main item is double-clicked, to instantly collect it into the inventory */
+  onCollect?: () => void;
 }
 
 export function ItemBufferPanel({
@@ -30,7 +33,9 @@ export function ItemBufferPanel({
   onDragOver,
   onDrop,
   sourceId = "chest",
+  onCollect,
 }: ItemBufferPanelProps) {
+  const { t } = useTranslation();
   // Normalize main item for display (first item or null)
   const mainItem = items.length > 0 ? items[0] : null;
   const currentCount = items.reduce((acc, item) => acc + item.count, 0);
@@ -145,6 +150,9 @@ export function ItemBufferPanel({
             if (onDragOver) onDragOver(e);
           }}
           onDrop={onDrop}
+          onDoubleClick={() => {
+            if (mainItem && onCollect) onCollect();
+          }}
         >
           {mainItem ? (
             <>
@@ -167,7 +175,7 @@ export function ItemBufferPanel({
             </>
           ) : (
             <div className="text-white/10 text-xs font-medium uppercase tracking-widest">
-              Empty
+              {t("common.empty")}
             </div>
           )}
         </div>
@@ -175,7 +183,12 @@ export function ItemBufferPanel({
 
       {onDragStart && (
         <p className="text-[10px] text-center text-gray-500 mt-1">
-          Drag to take items
+          {t("common.drag_to_take")}
+        </p>
+      )}
+      {onCollect && mainItem && (
+        <p className="text-[10px] text-center text-gray-500">
+          {t("common.double_click_to_collect")}
         </p>
       )}
     </div>

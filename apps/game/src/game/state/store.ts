@@ -317,7 +317,7 @@ export const useGameStore = create<GameState>()(
       setCameraDistance: (distance) => set({ cameraDistance: distance }),
       setCameraScheme: (scheme) => set({ cameraScheme: scheme }),
       setCameraDragging: (dragging) => set({ isCameraDragging: dragging }),
-      fpsLimit: 0,
+      fpsLimit: 30,
       setFpsLimit: (limit) => set({ fpsLimit: limit }),
 
       // UI Overhaul Implementation

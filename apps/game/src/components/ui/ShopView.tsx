@@ -133,7 +133,9 @@ export default function ShopView({ onPurchased }: ShopViewProps) {
                               : "bg-red-500/10 border-red-500/20 text-red-400",
                           )}
                         >
-                          <span className="capitalize">{resource}</span>
+                          <span className="capitalize">
+                            {t(`resource.${resource}`)}
+                          </span>
                           <span className="font-bold">{amount}</span>
                         </div>
                       );

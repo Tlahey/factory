@@ -143,7 +143,7 @@ export default function DialogueOverlay() {
         <div className="fixed inset-0 z-dialog-blocker cursor-default bg-transparent"></div>
       )}
 
-      <div className="fixed bottom-6 left-6 w-[500px] z-dialog pointer-events-auto">
+      <div className="fixed bottom-6 left-6 w-[500px] z-dialogue pointer-events-auto">
         <div
           className={`
             bg-slate-900/95 border border-amber-400/50 rounded-xl p-6 shadow-[0_0_50px_rgba(0,0,0,0.8)] 

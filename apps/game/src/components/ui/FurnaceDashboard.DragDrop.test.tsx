@@ -49,8 +49,9 @@ let _capturedOutputBufferProps: any = {};
 
 vi.mock("./panels/ItemBufferPanel", () => ({
   ItemBufferPanel: (props: any) => {
-    if (props.title === "Input Feed") capturedInputBufferProps = props;
-    if (props.title === "Output Buffer") _capturedOutputBufferProps = props;
+    if (props.title === "furnace.input_feed") capturedInputBufferProps = props;
+    if (props.title === "furnace.output_buffer")
+      _capturedOutputBufferProps = props;
     return <div data-testid={`buffer-${props.sourceId}`} />;
   },
 }));

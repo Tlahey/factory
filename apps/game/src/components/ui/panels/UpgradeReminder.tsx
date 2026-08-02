@@ -23,7 +23,8 @@ export function UpgradeReminder({
           {t(activeUpgrade.name)}
         </span>
         <span className="text-xs font-mono text-indigo-400">
-          Lv.{upgradeLevel}
+          {t("common.level_abbr")}
+          {upgradeLevel}
         </span>
       </div>
       <p className="text-xs text-gray-400">{t(activeUpgrade.description)}</p>
@@ -37,7 +38,7 @@ export function UpgradeReminder({
               ? `${effect.stat} ×${effect.value}`
               : effect.type === "additive"
                 ? `${effect.stat} +${effect.value}`
-                : `Unlock: ${effect.stat}`}
+                : `${t("skill_tree.unlock")}: ${effect.stat}`}
           </span>
         ))}
       </div>

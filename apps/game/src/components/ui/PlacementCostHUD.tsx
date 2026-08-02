@@ -4,8 +4,10 @@ import { useGameStore } from "@/game/state/store";
 import { getBuildingConfig } from "@/game/buildings/BuildingConfig";
 import ModelPreview from "./ModelPreview";
 import clsx from "clsx";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export function PlacementCostHUD() {
+  const { t } = useTranslation();
   const selectedBuilding = useGameStore((state) => state.selectedBuilding);
   const hoveredBarBuilding = useGameStore((state) => state.hoveredBarBuilding);
   const inventory = useGameStore((state) => state.inventory);
@@ -53,7 +55,7 @@ export function PlacementCostHUD() {
 
             {/* Tooltip */}
             <div className="absolute bottom-full mb-2 px-2 py-1 bg-black/90 text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10 z-sub-content capitalize">
-              {resource.replace(/_/g, " ")}
+              {t(`resource.${resource}`)}
             </div>
 
             <div className="w-12 h-12 flex items-center justify-center relative z-base">

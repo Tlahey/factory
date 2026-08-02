@@ -6,8 +6,10 @@ import ModelPreview from "./ModelPreview";
 import { BuildingId, getBuildingConfig } from "@/game/buildings/BuildingConfig";
 import BuildingHoverCard from "./BuildingHoverCard";
 import { getAllowedCount } from "@/game/buildings/hub/shop/ShopConfig";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function BuildingSidebar() {
+  const { t } = useTranslation();
   const selectedBuilding = useGameStore((state) => state.selectedBuilding);
   const setSelectedBuilding = useGameStore(
     (state) => state.setSelectedBuilding,
@@ -151,7 +153,7 @@ export default function BuildingSidebar() {
                   !canAfford &&
                   "cursor-not-allowed opacity-50 border-red-900/30",
               )}
-              title={buildingId || "Empty Slot"}
+              title={buildingId || t("common.empty_slot")}
             >
               {buildingId ? (
                 <div className="p-2">

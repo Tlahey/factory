@@ -60,7 +60,7 @@ export default function BuildingMenu() {
   return (
     <div
       className={clsx(
-        "fixed inset-0 z-overlay flex items-center justify-center transition-all duration-200",
+        "fixed inset-0 z-dialog flex items-center justify-center transition-all duration-200",
         isBuildingMenuOpen
           ? "opacity-100 pointer-events-auto visible"
           : "opacity-0 pointer-events-none invisible",

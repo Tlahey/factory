@@ -109,7 +109,7 @@ function TooltipContent({
       </div>
       {isPole && (
         <div className="flex justify-between items-center text-xs">
-          <span className="text-gray-400">Connections:</span>
+          <span className="text-gray-400">{t("common.connections")}:</span>
           <span
             className={`font-mono font-bold ${connections >= maxConnections ? "text-amber-400" : "text-green-400"}`}
           >

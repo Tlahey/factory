@@ -7,8 +7,10 @@ import ModelPreview from "./ModelPreview";
 import { TrashZone } from "./TrashZone";
 
 import { useDraggable } from "@/hooks/useDraggable";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function HUD() {
+  const { t } = useTranslation();
   const inventory = useGameStore((state) => state.inventory);
   const isInventoryOpen = useGameStore((state) => state.isInventoryOpen);
   const isDraggingItem = useGameStore((state) => state.isDraggingItem);
@@ -159,7 +161,7 @@ export default function HUD() {
           <span className="text-white font-bold text-sm tracking-widest uppercase flex items-center gap-2 pointer-events-none">
             <Package size={16} className="text-amber-400" />
             <span className="bg-gradient-to-r from-amber-400 to-amber-200 bg-clip-text text-transparent">
-              Inventory
+              {t("common.inventory")}
             </span>
           </span>
           <div className="flex items-center gap-2">
@@ -169,7 +171,7 @@ export default function HUD() {
             <button
               onClick={() => useGameStore.getState().reorganizeInventory()}
               onMouseDown={(e) => e.stopPropagation()}
-              title="Reorganize inventory"
+              title={t("common.reorganize_inventory")}
               className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-amber-400 border border-white/5 hover:border-amber-400/30"
             >
               <ArrowUpDown size={12} />
@@ -237,7 +239,7 @@ export default function HUD() {
                     {slot.type}
                   </div>
                   <div className="text-[10px] text-gray-400 uppercase tracking-wide">
-                    Quantity:{" "}
+                    {t("common.quantity")}:{" "}
                     <span className="text-white font-mono">{slot.count}</span>
                   </div>
                   {/* Arrow */}
@@ -251,7 +253,8 @@ export default function HUD() {
         {/* Footer Hint */}
         <div className="mt-4 pt-3 border-t border-white/5 text-center">
           <span className="text-[9px] text-gray-500 font-mono tracking-widest uppercase opacity-60">
-            Space Available: {inventory.filter((s) => !s.type).length}
+            {t("common.space_available")}:{" "}
+            {inventory.filter((s) => !s.type).length}
           </span>
         </div>
       </div>

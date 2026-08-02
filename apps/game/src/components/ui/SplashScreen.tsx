@@ -1,7 +1,9 @@
 import { useGameStore } from "@/game/state/store";
 import { useEffect, useState } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function SplashScreen() {
+  const { t } = useTranslation();
   const isSceneReady = useGameStore((state) => state.isSceneReady);
   const [isVisible, setIsVisible] = useState(true);
 
@@ -34,9 +36,7 @@ export default function SplashScreen() {
           FACTORY <span className="text-blue-500">GAME</span>
         </h1>
         <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-gray-400 text-sm mt-4">
-          Initializing Factory Systems...
-        </p>
+        <p className="text-gray-400 text-sm mt-4">{t("splash.initializing")}</p>
       </div>
     </div>
   );
